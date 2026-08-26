@@ -18,6 +18,15 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
         ]);
+
+        // Railway (ve benzeri PaaS'lar) HTTPS'i kendi proxy'sinde sonlandırıyor,
+        // uygulamaya düz HTTP olarak iletiyor. Bunu Laravel'e bildirmezsek
+        // url()/asset() gibi yardımcılar http:// üretir ve tarayıcı bunu
+        // "mixed content" diye engeller (CSS/JS hiç yüklenmez).
+        $middleware->trustProxies(at: '*', headers: Request::HEADER_X_FORWARDED_FOR
+            | Request::HEADER_X_FORWARDED_HOST
+            | Request::HEADER_X_FORWARDED_PORT
+            | Request::HEADER_X_FORWARDED_PROTO);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
