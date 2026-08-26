@@ -11,7 +11,7 @@ RUN npm run build
 FROM php:8.3-cli-alpine
 
 RUN apk add --no-cache \
-        git unzip libzip-dev libpng-dev icu-dev oniguruma-dev sqlite \
+        git unzip libzip-dev libpng-dev icu-dev oniguruma-dev sqlite sqlite-dev \
     && docker-php-ext-install pdo pdo_sqlite pdo_mysql zip gd intl bcmath \
     && rm -rf /var/cache/apk/*
 
