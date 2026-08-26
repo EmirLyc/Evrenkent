@@ -14,53 +14,63 @@
 
     $groups = [
         'Yayın Yönetimi' => [
-            ['label' => 'Kitaplar', 'href' => route('panel.adminpanel.kitaplar.index')],
-            ['label' => 'Dergiler', 'href' => route('panel.adminpanel.dergiler.index')],
-            ['label' => 'Sözlükler', 'href' => route('panel.adminpanel.placeholder', 'sozlukler')],
-            ['label' => 'Tüm Yayınlar', 'href' => route('panel.adminpanel.placeholder', 'tum-yayinlar')],
-            ['label' => 'Onay Bekleyenler', 'href' => route('panel.adminpanel.onaylar.index'), 'badge' => $pendingTotal],
+            ['label' => 'Kitaplar', 'icon' => 'book-open', 'href' => route('panel.adminpanel.kitaplar.index')],
+            ['label' => 'Dergiler', 'icon' => 'newspaper', 'href' => route('panel.adminpanel.dergiler.index')],
+            ['label' => 'Sözlükler', 'icon' => 'language', 'href' => route('panel.adminpanel.placeholder', 'sozlukler')],
+            ['label' => 'Tüm Yayınlar', 'icon' => 'rectangle-stack', 'href' => route('panel.adminpanel.placeholder', 'tum-yayinlar')],
+            ['label' => 'Onay Bekleyenler', 'icon' => 'clock', 'href' => route('panel.adminpanel.onaylar.index'), 'badge' => $pendingTotal],
         ],
         'Kullanıcı Yönetimi' => [
-            ['label' => 'Kullanıcılar', 'href' => route('panel.adminpanel.kullanicilar.index')],
-            ['label' => 'Yazarlar', 'href' => route('panel.adminpanel.kullanicilar.index', ['rol' => 'yazar'])],
-            ['label' => 'Dergi Editörleri', 'href' => route('panel.adminpanel.kullanicilar.index', ['rol' => 'dergi_editoru'])],
-            ['label' => 'Roller ve Yetkiler', 'href' => route('panel.adminpanel.kullanicilar.roller')],
+            ['label' => 'Kullanıcılar', 'icon' => 'users', 'href' => route('panel.adminpanel.kullanicilar.index')],
+            ['label' => 'Yazarlar', 'icon' => 'pencil-square', 'href' => route('panel.adminpanel.kullanicilar.index', ['rol' => 'yazar'])],
+            ['label' => 'Dergi Editörleri', 'icon' => 'identification', 'href' => route('panel.adminpanel.kullanicilar.index', ['rol' => 'dergi_editoru'])],
+            ['label' => 'Roller ve Yetkiler', 'icon' => 'shield-check', 'href' => route('panel.adminpanel.kullanicilar.roller')],
         ],
         'İstatistikler' => [
-            ['label' => 'Satışlar', 'href' => route('panel.adminpanel.placeholder', 'istatistik-satislar')],
-            ['label' => 'Abonelikler', 'href' => route('panel.adminpanel.placeholder', 'istatistik-abonelikler')],
-            ['label' => 'Kitaplar', 'href' => route('panel.adminpanel.placeholder', 'istatistik-kitaplar')],
-            ['label' => 'Dergiler', 'href' => route('panel.adminpanel.placeholder', 'istatistik-dergiler')],
-            ['label' => 'Sözlükler', 'href' => route('panel.adminpanel.placeholder', 'istatistik-sozlukler')],
-            ['label' => 'Yazarlar', 'href' => route('panel.adminpanel.placeholder', 'istatistik-yazarlar')],
+            ['label' => 'Satışlar', 'icon' => 'chart-bar', 'href' => route('panel.adminpanel.placeholder', 'istatistik-satislar')],
+            ['label' => 'Abonelikler', 'icon' => 'arrow-path', 'href' => route('panel.adminpanel.placeholder', 'istatistik-abonelikler')],
+            ['label' => 'Kitaplar', 'icon' => 'book-open', 'href' => route('panel.adminpanel.placeholder', 'istatistik-kitaplar')],
+            ['label' => 'Dergiler', 'icon' => 'newspaper', 'href' => route('panel.adminpanel.placeholder', 'istatistik-dergiler')],
+            ['label' => 'Sözlükler', 'icon' => 'language', 'href' => route('panel.adminpanel.placeholder', 'istatistik-sozlukler')],
+            ['label' => 'Yazarlar', 'icon' => 'pencil-square', 'href' => route('panel.adminpanel.placeholder', 'istatistik-yazarlar')],
         ],
         'Gelir Merkezi' => [
-            ['label' => 'Platform Geliri', 'href' => route('panel.adminpanel.placeholder', 'platform-geliri')],
-            ['label' => 'Yazar Hakedişleri', 'href' => route('panel.adminpanel.placeholder', 'yazar-hakedisleri')],
-            ['label' => 'Ödemeler', 'href' => route('panel.adminpanel.placeholder', 'odemeler')],
-            ['label' => 'Faturalar', 'href' => route('panel.adminpanel.placeholder', 'faturalar')],
+            ['label' => 'Platform Geliri', 'icon' => 'banknotes', 'href' => route('panel.adminpanel.placeholder', 'platform-geliri')],
+            ['label' => 'Yazar Hakedişleri', 'icon' => 'gift', 'href' => route('panel.adminpanel.placeholder', 'yazar-hakedisleri')],
+            ['label' => 'Ödemeler', 'icon' => 'credit-card', 'href' => route('panel.adminpanel.placeholder', 'odemeler')],
+            ['label' => 'Faturalar', 'icon' => 'document-text', 'href' => route('panel.adminpanel.placeholder', 'faturalar')],
         ],
         'Platform' => [
-            ['label' => 'Ana Sayfa Yönetimi', 'href' => route('panel.adminpanel.placeholder', 'ana-sayfa-yonetimi')],
-            ['label' => 'Kategoriler', 'href' => route('panel.adminpanel.kategoriler.index')],
-            ['label' => 'Premium Sistemi', 'href' => route('panel.adminpanel.placeholder', 'premium-sistemi')],
-            ['label' => 'İndirimler', 'href' => route('panel.adminpanel.placeholder', 'indirimler')],
-            ['label' => 'Bildirimler', 'href' => route('panel.adminpanel.placeholder', 'bildirimler-sistemi')],
-            ['label' => 'Sistem Ayarları', 'href' => route('panel.adminpanel.placeholder', 'sistem-ayarlari')],
+            ['label' => 'Ana Sayfa Yönetimi', 'icon' => 'home-modern', 'href' => route('panel.adminpanel.placeholder', 'ana-sayfa-yonetimi')],
+            ['label' => 'Kategoriler', 'icon' => 'tag', 'href' => route('panel.adminpanel.kategoriler.index')],
+            ['label' => 'Premium Sistemi', 'icon' => 'sparkles', 'href' => route('panel.adminpanel.placeholder', 'premium-sistemi')],
+            ['label' => 'İndirimler', 'icon' => 'receipt-percent', 'href' => route('panel.adminpanel.placeholder', 'indirimler')],
+            ['label' => 'Bildirimler', 'icon' => 'bell', 'href' => route('panel.adminpanel.placeholder', 'bildirimler-sistemi')],
+            ['label' => 'Sistem Ayarları', 'icon' => 'cog-6-tooth', 'href' => route('panel.adminpanel.placeholder', 'sistem-ayarlari')],
         ],
         'Denetim Merkezi' => [
-            ['label' => 'İşlem Geçmişi', 'href' => route('panel.adminpanel.placeholder', 'islem-gecmisi')],
-            ['label' => 'Sistem Günlükleri', 'href' => route('panel.adminpanel.placeholder', 'sistem-gunlukleri')],
+            ['label' => 'İşlem Geçmişi', 'icon' => 'clipboard-document-list', 'href' => route('panel.adminpanel.placeholder', 'islem-gecmisi')],
+            ['label' => 'Sistem Günlükleri', 'icon' => 'document-magnifying-glass', 'href' => route('panel.adminpanel.placeholder', 'sistem-gunlukleri')],
         ],
     ];
+
+    // Mockup'ta (dosyalar/2.4-)...png) aktif kalem hem açık (beyaz) zeminli hem de solda
+    // ince turuncu bir vurgu çizgisiyle işaretleniyor — düz beyaz blok tek başına yeterli
+    // değildi. border-l-4 her satırda (aktif olsun olmasın) sabit yer kaplıyor ki aktif
+    // olan öğe render olunca satırlar arasında genişlik/hiza kayması olmasın.
+    $navLinkBase = 'flex items-center justify-between gap-2 pl-2.5 pr-3 py-1.5 rounded-lg text-sm border-l-4 transition-colors';
+    $navLinkActive = 'border-brand-500 bg-white text-slate-900 font-medium';
+    $navLinkInactive = 'border-transparent text-slate-300 hover:bg-slate-800';
 @endphp
 
 <div class="mb-7">
     <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2.5">Gösterge Paneli</div>
     <div class="space-y-0.5">
-        <a href="{{ route('panel.adminpanel.index') }}" class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm {{ request()->routeIs('panel.adminpanel.index') ? 'bg-white text-slate-900 font-medium' : 'text-slate-300 hover:bg-slate-800' }}">
-            <x-heroicon-o-home class="w-4 h-4" />
-            Ana Sayfa
+        <a href="{{ route('panel.adminpanel.index') }}" class="{{ $navLinkBase }} {{ request()->routeIs('panel.adminpanel.index') ? $navLinkActive : $navLinkInactive }}">
+            <span class="flex items-center gap-2.5">
+                <x-heroicon-o-home class="w-4 h-4 shrink-0" />
+                Ana Sayfa
+            </span>
         </a>
     </div>
 </div>
@@ -80,10 +90,13 @@
                      Editörleri hepsi panel.adminpanel.kullanicilar.index, sadece ?rol= değişiyor) —
                      routeIs() bunların hepsini aynı anda aktif işaretler, fullUrlIs() tam URL'yi
                      karşılaştırdığı için doğru olanı seçer. --}}
-                <a href="{{ $link['href'] }}" @if (! empty($link['external'])) data-turbo="false" @endif class="flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors {{ request()->fullUrlIs($link['href']) ? 'bg-white text-slate-900 font-medium' : 'text-slate-300 hover:bg-slate-800' }}">
-                    {{ $link['label'] }}
+                <a href="{{ $link['href'] }}" @if (! empty($link['external'])) data-turbo="false" @endif class="{{ $navLinkBase }} {{ request()->fullUrlIs($link['href']) ? $navLinkActive : $navLinkInactive }}">
+                    <span class="flex items-center gap-2.5 min-w-0">
+                        @svg('heroicon-o-' . $link['icon'], 'w-4 h-4 shrink-0')
+                        <span class="truncate">{{ $link['label'] }}</span>
+                    </span>
                     @if (! empty($link['badge']))
-                        <span class="min-w-[1.25rem] h-5 px-1 rounded-full bg-brand-500 text-white text-[11px] leading-5 text-center">{{ $link['badge'] }}</span>
+                        <span class="min-w-[1.25rem] h-5 px-1 rounded-full bg-brand-500 text-white text-[11px] leading-5 text-center shrink-0">{{ $link['badge'] }}</span>
                     @endif
                 </a>
             @endforeach
