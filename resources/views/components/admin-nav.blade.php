@@ -60,7 +60,7 @@
     // panel-nav.blade.php'deki aynı desen. border-l-4 aktif olmayan satırlarda da (border-transparent)
     // yer kapladığı için hiza kaymıyor, mr-5 sağ kenarda pay bırakıyor.
     $navLinkBase = 'flex items-center justify-between gap-2 pl-3 pr-3 py-1.5 mr-5 rounded-r-lg text-sm border-l-4 transition-colors';
-    $navLinkActive = 'border-brand-500 bg-white text-slate-900 font-medium';
+    $navLinkActive = 'border-brand-500 bg-brand-50 text-brand-800 font-medium';
     $navLinkInactive = 'border-transparent text-slate-300 hover:bg-slate-800';
     $groupHeading = 'text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2.5 pl-4';
 @endphp
