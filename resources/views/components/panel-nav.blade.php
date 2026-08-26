@@ -29,9 +29,21 @@
     ];
 @endphp
 
+@php
+    // Aktif öğenin sol vurgu çizgisi sidebar'ın gerçek (padding'siz) kenarına yapışsın diye
+    // dıştaki sarmalayıcı artık yatayda boşluksuz (bkz. layouts/public.blade.php) — boşluk
+    // ve sağ kenar payı (mr-5) her linkin kendi içinde. border-l-4 aktif olmayan öğelerde de
+    // (border-transparent) yer kapladığı için satırlar arası hiza kaymıyor.
+    $navLinkBase = 'flex items-center pl-4 pr-3 py-1.5 mr-5 rounded-r-lg text-sm border-l-4 transition-colors';
+    $navLinkInactive = 'border-transparent text-slate-600 hover:bg-slate-100';
+    $navLinkBrandActive = 'border-brand-500 bg-brand-50 text-brand-800 font-medium';
+    $navLinkDarkActive = 'border-slate-900 bg-slate-900 text-white font-medium';
+    $groupHeading = 'text-xs font-semibold uppercase tracking-wider mb-2.5 pl-4';
+@endphp
+
 @if (auth()->user()->hasRole('yazar'))
     <div class="mb-7">
-        <div class="text-xs font-semibold text-brand-700 uppercase tracking-wider mb-2.5">Yayın Yönetimi</div>
+        <div class="{{ $groupHeading }} text-brand-700">Yayın Yönetimi</div>
         <div class="space-y-0.5">
             @foreach ([
                 'panel.yayinlarim.index' => ['Yayınlarım', route('panel.yayinlarim.index')],
@@ -41,7 +53,7 @@
                 'panel.yayinlarim.yayinlananlar' => ['Yayınlananlar', route('panel.yayinlarim.yayinlananlar')],
                 'panel.yayinlarim.istatistiklerim' => ['İstatistiklerim', route('panel.yayinlarim.istatistiklerim')],
             ] as $routeName => [$label, $href])
-                <a href="{{ $href }}" class="block px-3 py-1.5 rounded-lg text-sm {{ request()->routeIs($routeName) ? 'bg-brand-50 text-brand-800 font-medium ring-1 ring-inset ring-brand-200' : 'text-slate-600 hover:bg-slate-100' }}">
+                <a href="{{ $href }}" class="{{ $navLinkBase }} {{ request()->routeIs($routeName) ? $navLinkBrandActive : $navLinkInactive }}">
                     {{ $label }}
                 </a>
             @endforeach
@@ -51,7 +63,7 @@
 
 @if (auth()->user()->hasRole('dergi_editoru'))
     <div class="mb-7">
-        <div class="text-xs font-semibold text-brand-700 uppercase tracking-wider mb-2.5">Dergi Yönetimi</div>
+        <div class="{{ $groupHeading }} text-brand-700">Dergi Yönetimi</div>
         <div class="space-y-0.5">
             @foreach ([
                 'panel.dergi.index' => ['Ana Sayfa', route('panel.dergi.index')],
@@ -59,7 +71,7 @@
                 'panel.dergi.makale-havuzu' => ['Makale Havuzu', route('panel.dergi.makale-havuzu')],
                 'panel.dergi.yayin-takvimi' => ['Yayın Takvimi', route('panel.dergi.yayin-takvimi')],
             ] as $routeName => [$label, $href])
-                <a href="{{ $href }}" class="block px-3 py-1.5 rounded-lg text-sm {{ request()->routeIs($routeName) ? 'bg-brand-50 text-brand-800 font-medium ring-1 ring-inset ring-brand-200' : 'text-slate-600 hover:bg-slate-100' }}">
+                <a href="{{ $href }}" class="{{ $navLinkBase }} {{ request()->routeIs($routeName) ? $navLinkBrandActive : $navLinkInactive }}">
                     {{ $label }}
                 </a>
             @endforeach
@@ -69,10 +81,10 @@
 
 @foreach ($navGroups as $group => $links)
     <div class="mb-7">
-        <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2.5">{{ $group }}</div>
+        <div class="{{ $groupHeading }} text-slate-400">{{ $group }}</div>
         <div class="space-y-0.5">
             @foreach ($links as $routeName => [$label, $href])
-                <a href="{{ $href }}" class="block px-3 py-1.5 rounded-lg text-sm {{ request()->routeIs($routeName) ? 'bg-slate-900 text-white font-medium' : 'text-slate-600 hover:bg-slate-100' }}">
+                <a href="{{ $href }}" class="{{ $navLinkBase }} {{ request()->routeIs($routeName) ? $navLinkDarkActive : $navLinkInactive }}">
                     {{ $label }}
                 </a>
             @endforeach
@@ -83,10 +95,10 @@
 {{-- Çıkış Yap — bilerek diğer linklerden ayrı ve kırmızı: hem header'ı
      kalabalıklaştırmasın (mobilde daha da sıkışıktı) hem de yanlışlıkla
      tıklanmasın diye görsel olarak ayrışıyor. --}}
-<div class="pt-3 mt-1 border-t border-slate-200">
+<div class="pt-3 mt-1 mr-5 border-t border-slate-200">
     <form method="POST" action="{{ route('logout') }}">
         @csrf
-        <button type="submit" class="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm text-red-600 hover:bg-red-50 transition-colors">
+        <button type="submit" class="w-full flex items-center gap-2 pl-4 pr-3 py-1.5 rounded-lg text-sm text-red-600 hover:bg-red-50 transition-colors">
             <x-heroicon-o-arrow-right-on-rectangle class="w-4 h-4" />
             Çıkış Yap
         </button>

@@ -122,7 +122,10 @@
                             : '-translate-x-full lg:translate-x-0 lg:w-0 lg:border-r-0'"
                         class="sidebar-scroll fixed top-16 bottom-0 left-0 z-40 w-72 shadow-xl bg-paper transition-transform duration-200 overflow-x-hidden overflow-y-auto lg:shadow-none lg:z-auto lg:static lg:sticky lg:bottom-auto lg:h-[calc(100vh-4rem)] lg:self-start lg:shrink-0 lg:transition-[width]"
                     >
-                        <div class="w-72 p-5">
+                        {{-- Yatayda bilerek padding yok: aktif menü öğesinin sol vurgu çizgisi
+                             sidebar'ın gerçek kenarına yapışsın istiyoruz (bkz. x-panel-nav içindeki
+                             border-l-4 + mr-5 deseni), o yüzden boşluk her linkin kendi içinde. --}}
+                        <div class="w-72 py-5">
                             <x-panel-nav />
                         </div>
                     </aside>

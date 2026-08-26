@@ -55,16 +55,18 @@
     ];
 
     // Mockup'ta (dosyalar/2.4-)...png) aktif kalem hem açık (beyaz) zeminli hem de solda
-    // ince turuncu bir vurgu çizgisiyle işaretleniyor — düz beyaz blok tek başına yeterli
-    // değildi. border-l-4 her satırda (aktif olsun olmasın) sabit yer kaplıyor ki aktif
-    // olan öğe render olunca satırlar arasında genişlik/hiza kayması olmasın.
-    $navLinkBase = 'flex items-center justify-between gap-2 pl-2.5 pr-3 py-1.5 rounded-lg text-sm border-l-4 transition-colors';
+    // ince turuncu bir vurgu çizgisiyle işaretleniyor, çizgi de sidebar'ın gerçek (padding'siz)
+    // kenarına yapışık duruyor — bkz. layouts/admin-panel.blade.php'deki py-5 sarmalayıcı ve
+    // panel-nav.blade.php'deki aynı desen. border-l-4 aktif olmayan satırlarda da (border-transparent)
+    // yer kapladığı için hiza kaymıyor, mr-5 sağ kenarda pay bırakıyor.
+    $navLinkBase = 'flex items-center justify-between gap-2 pl-3 pr-3 py-1.5 mr-5 rounded-r-lg text-sm border-l-4 transition-colors';
     $navLinkActive = 'border-brand-500 bg-white text-slate-900 font-medium';
     $navLinkInactive = 'border-transparent text-slate-300 hover:bg-slate-800';
+    $groupHeading = 'text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2.5 pl-4';
 @endphp
 
 <div class="mb-7">
-    <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2.5">Gösterge Paneli</div>
+    <div class="{{ $groupHeading }}">Gösterge Paneli</div>
     <div class="space-y-0.5">
         <a href="{{ route('panel.adminpanel.index') }}" class="{{ $navLinkBase }} {{ request()->routeIs('panel.adminpanel.index') ? $navLinkActive : $navLinkInactive }}">
             <span class="flex items-center gap-2.5">
@@ -77,7 +79,7 @@
 
 @foreach ($groups as $group => $links)
     <div class="mb-7">
-        <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2.5">{{ $group }}</div>
+        <div class="{{ $groupHeading }}">{{ $group }}</div>
         <div class="space-y-0.5">
             @foreach ($links as $link)
                 {{-- Filament, Turbo'nun yönettiği sayfalarla aynı SPA akışına dahil değil (kendi
@@ -104,14 +106,14 @@
     </div>
 @endforeach
 
-<div class="pt-3 mt-1 border-t border-slate-800">
-    <a href="{{ url('/admin') }}" data-turbo="false" class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm text-slate-400 hover:bg-slate-800 transition-colors">
+<div class="pt-3 mt-1 mr-5 border-t border-slate-800">
+    <a href="{{ url('/admin') }}" data-turbo="false" class="flex items-center gap-2 pl-4 pr-3 py-1.5 rounded-lg text-sm text-slate-400 hover:bg-slate-800 transition-colors">
         <x-heroicon-o-arrow-top-right-on-square class="w-4 h-4" />
         Filament Yönetim Paneli
     </a>
     <form method="POST" action="{{ route('logout') }}">
         @csrf
-        <button type="submit" class="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm text-red-400 hover:bg-red-950/50 transition-colors">
+        <button type="submit" class="w-full flex items-center gap-2 pl-4 pr-3 py-1.5 rounded-lg text-sm text-red-400 hover:bg-red-950/50 transition-colors">
             <x-heroicon-o-arrow-right-on-rectangle class="w-4 h-4" />
             Çıkış Yap
         </button>
