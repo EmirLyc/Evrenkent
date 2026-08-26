@@ -36,8 +36,10 @@
     // (border-transparent) yer kapladığı için satırlar arası hiza kaymıyor.
     $navLinkBase = 'flex items-center pl-4 pr-3 py-1.5 mr-5 rounded-r-lg text-sm border-l-4 transition-colors';
     $navLinkInactive = 'border-transparent text-slate-600 hover:bg-slate-100';
-    $navLinkBrandActive = 'border-brand-500 bg-brand-50 text-brand-800 font-medium';
-    $navLinkDarkActive = 'border-slate-900 bg-slate-900 text-white font-medium';
+    // Tüm gruplarda (Yayın Yönetimi / Dergi Yönetimi / diğerleri) aktif öğe aynı stil:
+    // düşük opaklıklı turuncu zemin + turuncu metin + sol turuncu çizgi. Ayrı bir "koyu"
+    // aktif stil yok, panel genelinde tek bir vurgu rengi var.
+    $navLinkActive = 'border-brand-500 bg-brand-50 text-brand-800 font-medium';
     $groupHeading = 'text-xs font-semibold uppercase tracking-wider mb-2.5 pl-4';
 @endphp
 
@@ -53,7 +55,7 @@
                 'panel.yayinlarim.yayinlananlar' => ['Yayınlananlar', route('panel.yayinlarim.yayinlananlar')],
                 'panel.yayinlarim.istatistiklerim' => ['İstatistiklerim', route('panel.yayinlarim.istatistiklerim')],
             ] as $routeName => [$label, $href])
-                <a href="{{ $href }}" class="{{ $navLinkBase }} {{ request()->routeIs($routeName) ? $navLinkBrandActive : $navLinkInactive }}">
+                <a href="{{ $href }}" class="{{ $navLinkBase }} {{ request()->routeIs($routeName) ? $navLinkActive : $navLinkInactive }}">
                     {{ $label }}
                 </a>
             @endforeach
@@ -71,7 +73,7 @@
                 'panel.dergi.makale-havuzu' => ['Makale Havuzu', route('panel.dergi.makale-havuzu')],
                 'panel.dergi.yayin-takvimi' => ['Yayın Takvimi', route('panel.dergi.yayin-takvimi')],
             ] as $routeName => [$label, $href])
-                <a href="{{ $href }}" class="{{ $navLinkBase }} {{ request()->routeIs($routeName) ? $navLinkBrandActive : $navLinkInactive }}">
+                <a href="{{ $href }}" class="{{ $navLinkBase }} {{ request()->routeIs($routeName) ? $navLinkActive : $navLinkInactive }}">
                     {{ $label }}
                 </a>
             @endforeach
@@ -84,7 +86,7 @@
         <div class="{{ $groupHeading }} text-slate-400">{{ $group }}</div>
         <div class="space-y-0.5">
             @foreach ($links as $routeName => [$label, $href])
-                <a href="{{ $href }}" class="{{ $navLinkBase }} {{ request()->routeIs($routeName) ? $navLinkDarkActive : $navLinkInactive }}">
+                <a href="{{ $href }}" class="{{ $navLinkBase }} {{ request()->routeIs($routeName) ? $navLinkActive : $navLinkInactive }}">
                     {{ $label }}
                 </a>
             @endforeach
