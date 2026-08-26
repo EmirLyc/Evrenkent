@@ -25,24 +25,35 @@
                  örneklendi) sadece logo hücresi sidebar'la aynı koyu lacivert, geri kalan
                  tüm üst bar (hamburger, arama, ikonlar, avatar) sayfa arka planıyla aynı —
                  lg ve üstünde logo hücresi tam sidebar genişliğinde (w-72) ki alttaki
-                 sidebar'la kesintisiz tek bir blok gibi görünsün. Mobilde (sidebar zaten
-                 sabit bir sütun değil, kayan bir overlay olduğu için) logo hücresi ayrı
-                 tutulmuyor, hamburger'le birlikte aynı açık renkli şeride giriyor. --}}
+                 sidebar'la kesintisiz tek bir blok gibi görünsün. Sidebar kapatıldığında
+                 (lg'de artık altında bir sidebar kalmadığı için) logo hücresi de header'ın
+                 açık rengine geçiyor. Mobilde (sidebar zaten sabit bir sütun değil, kayan
+                 bir overlay olduğu için) logo hücresi ayrı tutulmuyor, hamburger'le
+                 birlikte aynı açık renkli şeride giriyor. --}}
             <header class="sticky top-0 z-20 bg-slate-100 border-b border-slate-200">
                 <div class="flex items-stretch h-16">
-                    <a href="{{ route('panel.adminpanel.index') }}" class="hidden lg:flex items-center gap-2.5 w-72 shrink-0 px-6 bg-navy group">
-                        <span class="flex items-center justify-center w-8 h-8 rounded-full bg-white text-slate-900">
+                    <button type="button" title="Menü" @click="$store.ui.sidebarOpen = !$store.ui.sidebarOpen" class="hidden lg:flex items-center justify-center w-16 shrink-0 border-r border-slate-200 text-slate-500 hover:text-slate-900 transition-colors">
+                        <x-heroicon-o-bars-3 class="w-6 h-6" />
+                    </button>
+
+                    <a href="{{ route('panel.adminpanel.index') }}"
+                        class="hidden lg:flex items-center gap-2.5 w-72 shrink-0 px-6 group transition-colors duration-200"
+                        :class="$store.ui.sidebarOpen ? 'bg-navy' : 'bg-slate-100'">
+                        <span class="flex items-center justify-center w-8 h-8 rounded-full transition-colors duration-200"
+                            :class="$store.ui.sidebarOpen ? 'bg-white text-slate-900' : 'bg-navy text-white'">
                             <x-heroicon-o-book-open class="w-4 h-4" />
                         </span>
-                        <span class="font-serif text-lg font-semibold tracking-tight text-white leading-tight">
+                        <span class="font-serif text-lg font-semibold tracking-tight leading-tight transition-colors duration-200"
+                            :class="$store.ui.sidebarOpen ? 'text-white' : 'text-slate-900'">
                             Evrenkent
-                            <span class="block text-[10px] font-sans font-medium tracking-widest text-slate-400 uppercase leading-none">Süper Admin Paneli</span>
+                            <span class="block text-[10px] font-sans font-medium tracking-widest uppercase leading-none transition-colors duration-200"
+                                :class="$store.ui.sidebarOpen ? 'text-slate-400' : 'text-slate-500'">Süper Admin Paneli</span>
                         </span>
                     </a>
 
                     <div class="flex-1 min-w-0 grid grid-cols-[auto_1fr_auto] items-center gap-6 px-6">
                         <div class="flex items-center gap-4 shrink-0">
-                            <button type="button" title="Menü" @click="$store.ui.sidebarOpen = !$store.ui.sidebarOpen" class="text-slate-500 hover:text-slate-900 transition-colors">
+                            <button type="button" title="Menü" @click="$store.ui.sidebarOpen = !$store.ui.sidebarOpen" class="lg:hidden text-slate-500 hover:text-slate-900 transition-colors">
                                 <x-heroicon-o-bars-3 class="w-6 h-6" />
                             </button>
 
