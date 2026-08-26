@@ -12,7 +12,7 @@
     </button>
 
     <div x-show="open" x-cloak x-transition.origin.top.right
-        class="absolute right-0 mt-3 w-80 card divide-y divide-slate-100 z-30 max-h-96 overflow-y-auto">
+        class="absolute right-0 top-full mt-3 w-80 card divide-y divide-slate-100 z-30 max-h-96 overflow-y-auto">
         <div class="flex items-center justify-between px-4 py-3">
             <span class="text-sm font-medium text-slate-900">Bildirimler</span>
             @if ($unreadCount > 0)
