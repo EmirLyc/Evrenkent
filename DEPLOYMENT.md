@@ -1,5 +1,30 @@
 # Evrenkent — Canlıya Alma Öncesi Kontrol Listesi
 
+## 🚂 Railway'de gösterim (demo) amaçlı deploy
+
+Bu repo Railway için hazır bir `Dockerfile` + `railway.json` içeriyor (nginx/php-fpm yok, basit `php artisan serve` ile — sadece geliştirme aşamasında başkalarına göstermek için, tam prod kurulumu değil, bkz. aşağıdaki kritik madde listesi).
+
+**Kurulum adımları (railway.app dashboard):**
+
+1. **New Project → Deploy from GitHub repo** → `EmirLyc/Evrenkent` seçin.
+2. Railway `Dockerfile`'ı otomatik algılar (builder: DOCKERFILE, `railway.json` sayesinde).
+3. Servise şu environment değişkenlerini ekleyin (Settings → Variables):
+   - `APP_NAME=Evrenkent`
+   - `APP_ENV=production`
+   - `APP_DEBUG=false`
+   - `APP_KEY=` → önce boş bırakıp bir deploy yapın, loglarda üretilen key'i görüp buraya **kalıcı olarak** yapıştırın (aksi halde her redeploy'da key değişir, oturumlar/şifreleme bozulur).
+   - `APP_URL=https://<railway-verdiği-domain>` (Settings → Networking → Generate Domain sonrası).
+   - `DB_CONNECTION=sqlite`
+   - `DB_DATABASE=/app/database/database.sqlite`
+   - `SESSION_SECURE_COOKIE=true`
+   - `MAIL_MAILER=log` (gerçek SMTP eklenene kadar)
+4. **Volume ekleyin** (Settings → Volumes → New Volume, mount path: `/app/database`) — böylece SQLite dosyası her redeploy'da silinmez, veriler kalıcı olur. Volume eklemezseniz her deploy'da veritabanı sıfırlanır (demo için bu bile kabul edilebilir olabilir).
+5. Networking → **Generate Domain** ile bir `*.up.railway.app` adresi alın, sonra `APP_URL` değişkenini bu adresle güncelleyip yeniden deploy edin.
+6. İlk deploy'da `entrypoint.sh` otomatik olarak migration çalıştırır. Demo verisi (`DemoContentSeeder`) istenirse Railway'in Shell/CLI'ından elle tetiklenebilir — otomatik çalışmaz (aşağıdaki kritik maddeye bakın).
+
+Bu bir **gösterim/demo** kurulumudur — aşağıdaki "🔴 Kritik" maddeler gerçek canlıya geçmeden önce hâlâ geçerlidir (özellikle mock ödeme ve gerçek e-posta servisi).
+
+
 Bu proje şu an **yerel geliştirme ortamı** için yapılandırılmıştır. Gerçek bir sunucuya (canlı ortama) taşınmadan önce aşağıdaki maddeler mutlaka ele alınmalıdır. Bunlar kod değişikliği değil, ortam/konfigürasyon işleridir.
 
 ## 🔴 Kritik (mutlaka yapılmalı)
