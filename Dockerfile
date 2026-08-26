@@ -20,7 +20,9 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 WORKDIR /app
 
 COPY composer.json composer.lock ./
-RUN composer install --no-dev --no-scripts --no-interaction --prefer-dist --optimize-autoloader
+# Not: --no-dev KULLANILMIYOR — bu demo/gösterim ortamı seeder'lar (fakerphp/faker)
+# üzerinden örnek içerik üretiyor, o yüzden dev bağımlılıkları da kuruluyor.
+RUN composer install --no-scripts --no-interaction --prefer-dist --optimize-autoloader
 
 COPY . .
 COPY --from=assets /app/public/build public/build
