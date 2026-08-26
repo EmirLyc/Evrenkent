@@ -32,24 +32,26 @@
                  birlikte aynı açık renkli şeride giriyor. --}}
             <header class="sticky top-0 z-20 bg-slate-100 border-b border-slate-200">
                 <div class="flex items-stretch h-16">
-                    <button type="button" title="Menü" @click="$store.ui.sidebarOpen = !$store.ui.sidebarOpen" class="hidden lg:flex items-center justify-center w-16 shrink-0 border-r border-slate-200 text-slate-500 hover:text-slate-900 transition-colors">
-                        <x-heroicon-o-bars-3 class="w-6 h-6" />
-                    </button>
-
-                    <a href="{{ route('panel.adminpanel.index') }}"
-                        class="hidden lg:flex items-center gap-2.5 w-72 shrink-0 px-6 group transition-colors duration-200"
+                    <div class="hidden lg:flex items-center gap-3 w-72 shrink-0 pl-5 pr-6 transition-colors duration-200"
                         :class="$store.ui.sidebarOpen ? 'bg-navy' : 'bg-slate-100'">
-                        <span class="flex items-center justify-center w-8 h-8 rounded-full transition-colors duration-200"
-                            :class="$store.ui.sidebarOpen ? 'bg-white text-slate-900' : 'bg-navy text-white'">
-                            <x-heroicon-o-book-open class="w-4 h-4" />
-                        </span>
-                        <span class="font-serif text-lg font-semibold tracking-tight leading-tight transition-colors duration-200"
-                            :class="$store.ui.sidebarOpen ? 'text-white' : 'text-slate-900'">
-                            Evrenkent
-                            <span class="block text-[10px] font-sans font-medium tracking-widest uppercase leading-none transition-colors duration-200"
-                                :class="$store.ui.sidebarOpen ? 'text-slate-400' : 'text-slate-500'">Süper Admin Paneli</span>
-                        </span>
-                    </a>
+                        <button type="button" title="Menü" @click="$store.ui.sidebarOpen = !$store.ui.sidebarOpen" class="shrink-0 transition-colors"
+                            :class="$store.ui.sidebarOpen ? 'text-white/70 hover:text-white' : 'text-slate-500 hover:text-slate-900'">
+                            <x-heroicon-o-bars-3 class="w-6 h-6" />
+                        </button>
+
+                        <a href="{{ route('panel.adminpanel.index') }}" class="flex items-center gap-2.5 min-w-0 group">
+                            <span class="flex items-center justify-center w-8 h-8 rounded-full shrink-0 transition-colors duration-200"
+                                :class="$store.ui.sidebarOpen ? 'bg-white text-slate-900' : 'bg-navy text-white'">
+                                <x-heroicon-o-book-open class="w-4 h-4" />
+                            </span>
+                            <span class="font-serif text-lg font-semibold tracking-tight leading-tight truncate transition-colors duration-200"
+                                :class="$store.ui.sidebarOpen ? 'text-white' : 'text-slate-900'">
+                                Evrenkent
+                                <span class="block text-[10px] font-sans font-medium tracking-widest uppercase leading-none transition-colors duration-200"
+                                    :class="$store.ui.sidebarOpen ? 'text-slate-400' : 'text-slate-500'">Süper Admin Paneli</span>
+                            </span>
+                        </a>
+                    </div>
 
                     <div class="flex-1 min-w-0 grid grid-cols-[auto_1fr_auto] items-center gap-6 px-6">
                         <div class="flex items-center gap-4 shrink-0">
