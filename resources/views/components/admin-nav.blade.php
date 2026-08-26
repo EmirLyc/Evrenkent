@@ -75,7 +75,12 @@
                      body-only swap ile "ziyaret" etmeye çalışırsa Filament'in JS'i bozuk bir
                      ortamda çalışır (çift Alpine instance'ı, tanımsız $store.sidebar vb.).
                      data-turbo="false" tam sayfa yüklemeye zorlayıp bunu önlüyor. --}}
-                <a href="{{ $link['href'] }}" @if (! empty($link['external'])) data-turbo="false" @endif class="flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg text-sm text-slate-300 hover:bg-slate-800 transition-colors">
+                {{-- request()->routeIs() değil fullUrlIs() kullanılıyor: aynı route birden fazla
+                     linkte farklı query string ile tekrar ediyor (ör. Kullanıcılar/Yazarlar/Dergi
+                     Editörleri hepsi panel.adminpanel.kullanicilar.index, sadece ?rol= değişiyor) —
+                     routeIs() bunların hepsini aynı anda aktif işaretler, fullUrlIs() tam URL'yi
+                     karşılaştırdığı için doğru olanı seçer. --}}
+                <a href="{{ $link['href'] }}" @if (! empty($link['external'])) data-turbo="false" @endif class="flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors {{ request()->fullUrlIs($link['href']) ? 'bg-white text-slate-900 font-medium' : 'text-slate-300 hover:bg-slate-800' }}">
                     {{ $link['label'] }}
                     @if (! empty($link['badge']))
                         <span class="min-w-[1.25rem] h-5 px-1 rounded-full bg-brand-500 text-white text-[11px] leading-5 text-center">{{ $link['badge'] }}</span>
