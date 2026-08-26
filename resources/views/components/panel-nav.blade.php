@@ -6,25 +6,25 @@
 @php
     $navGroups = [
         'Kişisel Kütüphanem' => [
-            'panel.index' => ['Kitaplığım', route('panel.index')],
-            'panel.favorilerim' => ['Favorilerim', route('panel.favorilerim')],
-            'panel.okuma-listem' => ['Okuma Listem', route('panel.okuma-listem')],
-            'panel.okuduklarim' => ['Okuduklarım', route('panel.okuduklarim')],
+            'panel.index' => ['Kitaplığım', route('panel.index'), 'book-open'],
+            'panel.favorilerim' => ['Favorilerim', route('panel.favorilerim'), 'heart'],
+            'panel.okuma-listem' => ['Okuma Listem', route('panel.okuma-listem'), 'bookmark'],
+            'panel.okuduklarim' => ['Okuduklarım', route('panel.okuduklarim'), 'check-circle'],
         ],
         'Çalışma Alanım' => [
-            'panel.defterim' => ['Defterim', route('panel.defterim')],
-            'panel.notlarim' => ['Notlarım', route('panel.notlarim')],
-            'panel.alintilarim' => ['Alıntılarım', route('panel.alintilarim')],
+            'panel.defterim' => ['Defterim', route('panel.defterim'), 'pencil'],
+            'panel.notlarim' => ['Notlarım', route('panel.notlarim'), 'pencil-square'],
+            'panel.alintilarim' => ['Alıntılarım', route('panel.alintilarim'), 'chat-bubble-left-right'],
         ],
         'Alışveriş ve Abonelik' => [
-            'panel.sepetim' => ['Sepetim', route('panel.sepetim')],
-            'panel.satin-aldiklarim' => ['Satın Aldıklarım', route('panel.satin-aldiklarim')],
-            'panel.aboneligim' => ['Aboneliğim', route('panel.aboneligim')],
+            'panel.sepetim' => ['Sepetim', route('panel.sepetim'), 'shopping-bag'],
+            'panel.satin-aldiklarim' => ['Satın Aldıklarım', route('panel.satin-aldiklarim'), 'shopping-cart'],
+            'panel.aboneligim' => ['Aboneliğim', route('panel.aboneligim'), 'sparkles'],
         ],
         'Hesap ve Destek' => [
-            'profile.edit' => ['Ayarlar', route('profile.edit')],
-            'panel.yardim' => ['Yardım Merkezi', route('panel.yardim')],
-            'panel.iletisim' => ['İletişim', route('panel.iletisim')],
+            'profile.edit' => ['Ayarlar', route('profile.edit'), 'cog-6-tooth'],
+            'panel.yardim' => ['Yardım Merkezi', route('panel.yardim'), 'question-mark-circle'],
+            'panel.iletisim' => ['İletişim', route('panel.iletisim'), 'envelope'],
         ],
     ];
 @endphp
@@ -48,15 +48,16 @@
         <div class="{{ $groupHeading }} text-brand-700">Yayın Yönetimi</div>
         <div class="space-y-0.5">
             @foreach ([
-                'panel.yayinlarim.index' => ['Yayınlarım', route('panel.yayinlarim.index')],
-                'panel.yayinlarim.taslaklarim' => ['Taslaklarım', route('panel.yayinlarim.taslaklarim')],
-                'panel.yayinlarim.gonderilenler' => ['Gönderilenler', route('panel.yayinlarim.gonderilenler')],
-                'panel.yayinlarim.geri-donenler' => ['Geri Dönenler', route('panel.yayinlarim.geri-donenler')],
-                'panel.yayinlarim.yayinlananlar' => ['Yayınlananlar', route('panel.yayinlarim.yayinlananlar')],
-                'panel.yayinlarim.istatistiklerim' => ['İstatistiklerim', route('panel.yayinlarim.istatistiklerim')],
-            ] as $routeName => [$label, $href])
+                'panel.yayinlarim.index' => ['Yayınlarım', route('panel.yayinlarim.index'), 'book-open'],
+                'panel.yayinlarim.taslaklarim' => ['Taslaklarım', route('panel.yayinlarim.taslaklarim'), 'document'],
+                'panel.yayinlarim.gonderilenler' => ['Gönderilenler', route('panel.yayinlarim.gonderilenler'), 'paper-airplane'],
+                'panel.yayinlarim.geri-donenler' => ['Geri Dönenler', route('panel.yayinlarim.geri-donenler'), 'arrow-uturn-left'],
+                'panel.yayinlarim.yayinlananlar' => ['Yayınlananlar', route('panel.yayinlarim.yayinlananlar'), 'check-circle'],
+                'panel.yayinlarim.istatistiklerim' => ['İstatistiklerim', route('panel.yayinlarim.istatistiklerim'), 'chart-bar'],
+            ] as $routeName => [$label, $href, $icon])
                 <a href="{{ $href }}" class="{{ $navLinkBase }} {{ request()->routeIs($routeName) ? $navLinkActive : $navLinkInactive }}">
-                    {{ $label }}
+                    @svg('heroicon-o-' . $icon, 'w-4 h-4 shrink-0')
+                    <span class="ml-2.5 truncate">{{ $label }}</span>
                 </a>
             @endforeach
         </div>
@@ -68,13 +69,14 @@
         <div class="{{ $groupHeading }} text-brand-700">Dergi Yönetimi</div>
         <div class="space-y-0.5">
             @foreach ([
-                'panel.dergi.index' => ['Ana Sayfa', route('panel.dergi.index')],
-                'panel.dergi.sayilarim' => ['Sayılarım', route('panel.dergi.sayilarim')],
-                'panel.dergi.makale-havuzu' => ['Makale Havuzu', route('panel.dergi.makale-havuzu')],
-                'panel.dergi.yayin-takvimi' => ['Yayın Takvimi', route('panel.dergi.yayin-takvimi')],
-            ] as $routeName => [$label, $href])
+                'panel.dergi.index' => ['Ana Sayfa', route('panel.dergi.index'), 'home'],
+                'panel.dergi.sayilarim' => ['Sayılarım', route('panel.dergi.sayilarim'), 'newspaper'],
+                'panel.dergi.makale-havuzu' => ['Makale Havuzu', route('panel.dergi.makale-havuzu'), 'rectangle-stack'],
+                'panel.dergi.yayin-takvimi' => ['Yayın Takvimi', route('panel.dergi.yayin-takvimi'), 'calendar'],
+            ] as $routeName => [$label, $href, $icon])
                 <a href="{{ $href }}" class="{{ $navLinkBase }} {{ request()->routeIs($routeName) ? $navLinkActive : $navLinkInactive }}">
-                    {{ $label }}
+                    @svg('heroicon-o-' . $icon, 'w-4 h-4 shrink-0')
+                    <span class="ml-2.5 truncate">{{ $label }}</span>
                 </a>
             @endforeach
         </div>
@@ -85,9 +87,10 @@
     <div class="mb-7">
         <div class="{{ $groupHeading }} text-slate-400">{{ $group }}</div>
         <div class="space-y-0.5">
-            @foreach ($links as $routeName => [$label, $href])
+            @foreach ($links as $routeName => [$label, $href, $icon])
                 <a href="{{ $href }}" class="{{ $navLinkBase }} {{ request()->routeIs($routeName) ? $navLinkActive : $navLinkInactive }}">
-                    {{ $label }}
+                    @svg('heroicon-o-' . $icon, 'w-4 h-4 shrink-0')
+                    <span class="ml-2.5 truncate">{{ $label }}</span>
                 </a>
             @endforeach
         </div>
