@@ -69,6 +69,39 @@ const createDocumentNode = (documents) => Node.create({
     },
 });
 
+// Video satırı (Faz F3, mockup 3): <figure data-video="adres" data-title=".." data-duration="12:45">
+// — paragraflar arasında ayrı blok. Editörde CSS ile "▶ Video: başlık (süre)" olarak görünür;
+// okuma sayfasında RichText::render adresi VideoEmbed ile doğrulayıp oynatıcı bağlantısına çevirir.
+const VideoLink = Node.create({
+    name: 'videoLink',
+    group: 'block',
+    atom: true,
+    selectable: true,
+    draggable: true,
+
+    addAttributes() {
+        const attribute = (name) => ({
+            default: '',
+            parseHTML: (element) => element.getAttribute(name) || '',
+            renderHTML: (attributes) => ({ [name]: attributes[{ 'data-video': 'url', 'data-title': 'title', 'data-duration': 'duration' }[name]] }),
+        });
+
+        return {
+            url: attribute('data-video'),
+            title: attribute('data-title'),
+            duration: attribute('data-duration'),
+        };
+    },
+
+    parseHTML() {
+        return [{ tag: 'figure[data-video]' }];
+    },
+
+    renderHTML({ HTMLAttributes }) {
+        return ['figure', mergeAttributes(HTMLAttributes, { class: 'video-edit' })];
+    },
+});
+
 export function createEditor({ element, content, documents = [], onUpdate, onSelection }) {
     return new Editor({
         element,
@@ -87,6 +120,7 @@ export function createEditor({ element, content, documents = [], onUpdate, onSel
             }),
             Footnote,
             createDocumentNode(documents),
+            VideoLink,
         ],
         editorProps: {
             attributes: { class: 'rich-content rich-editor-surface', 'aria-label': 'İçerik' },

@@ -83,6 +83,9 @@ Alpine.data('richEditor', ({ importUrl = null, titleInput = null, documents = []
         panel: null,
         panelText: '',
         editingFootnote: false,
+        editingVideo: false,
+        video: { url: '', title: '', duration: '' },
+        panelError: '',
         importing: false,
         importError: '',
         importNotice: '',
@@ -128,6 +131,13 @@ Alpine.data('richEditor', ({ importUrl = null, titleInput = null, documents = []
             } else if (type === 'document') {
                 this.panel = type;
                 return;
+            } else if (type === 'video') {
+                const selected = editor.state.selection.node;
+                this.editingVideo = selected?.type.name === 'videoLink';
+                this.video = this.editingVideo
+                    ? { url: selected.attrs.url, title: selected.attrs.title, duration: selected.attrs.duration }
+                    : { url: '', title: '', duration: '' };
+                this.panelError = '';
             } else {
                 const selected = editor.state.selection.node;
                 this.editingFootnote = selected?.type.name === 'footnote';
@@ -138,6 +148,30 @@ Alpine.data('richEditor', ({ importUrl = null, titleInput = null, documents = []
         },
         savePanel() {
             const text = this.panelText.trim();
+
+            if (this.panel === 'video') {
+                const attrs = {
+                    url: this.video.url.trim(),
+                    title: this.video.title.trim(),
+                    duration: this.video.duration.trim(),
+                };
+                // Sunucu (VideoEmbed) de aynı kontrolü yapıyor; burada yazar hemen uyarılsın diye.
+                if (!/^https?:\/\/((www\.|m\.)?(youtube\.com|youtu\.be|youtube-nocookie\.com)|(player\.)?vimeo\.com)\//i.test(attrs.url)) {
+                    this.panelError = 'Sadece YouTube ya da Vimeo bağlantısı eklenebilir.';
+                    return;
+                }
+                if (attrs.duration && !/^\d{1,3}(:\d{2}){1,2}$/.test(attrs.duration)) {
+                    this.panelError = 'Süreyi dakika:saniye biçiminde yazın (ör. 12:45).';
+                    return;
+                }
+                const chain = editor.chain().focus();
+                this.editingVideo
+                    ? chain.updateAttributes('videoLink', attrs).run()
+                    : chain.insertContent({ type: 'videoLink', attrs }).run();
+                this.closePanel();
+                return;
+            }
+
             const chain = editor.chain().focus();
 
             if (this.panel === 'link') {
@@ -159,14 +193,16 @@ Alpine.data('richEditor', ({ importUrl = null, titleInput = null, documents = []
             editor?.chain().focus().insertContent({ type: 'embeddedDocument', attrs: { id: String(id) } }).run();
             this.closePanel();
         },
-        removeFootnote() {
+        removeSelected() {
             editor?.chain().focus().deleteSelection().run();
             this.closePanel();
         },
         closePanel() {
             this.panel = null;
             this.panelText = '';
+            this.panelError = '';
             this.editingFootnote = false;
+            this.editingVideo = false;
         },
 
         async importWord(event) {
@@ -214,8 +250,8 @@ Alpine.data('richEditor', ({ importUrl = null, titleInput = null, documents = []
     };
 });
 
-// Gömülü belge görüntüleyici (x-document-viewer, Faz F2 — mockup 3.1 "tıklayınca belge
-// açılır"). Okuma sayfasındaki kar tanesi işaretleri ve panelin Belgeler listesindeki
+// Gömülü belge ve video görüntüleyici (x-document-viewer, Faz F2/F3 — mockup 3.1 "tıklayınca
+// belge açılır"). Okuma sayfasındaki kar tanesi işaretleri ve panelin Belgeler listesindeki
 // "Görüntüle" bağlantıları data-document-viewer taşıyor; tıklama window'da yakalanıp
 // bağlantı yerine modal açılıyor (JS yoksa bağlantı dosyayı doğrudan açar). PDF'ler
 // pdf.js ile tuvale çiziliyor (pdf-viewer.js, sadece gerektiğinde yüklenir).
@@ -238,8 +274,13 @@ Alpine.data('documentViewer', () => {
             if (!this.$root.isConnected) return;
             const link = event.target.closest?.('[data-document-viewer]');
             if (!link || event.defaultPrevented || event.button > 0 || event.metaKey || event.ctrlKey || event.shiftKey) return;
+            const type = link.dataset.documentViewer;
+            // Video (Faz F3): oynatıcı adresi sunucuda video kimliğinden kuruluyor (VideoEmbed);
+            // burada da sadece bu iki oynatıcıya izin veriliyor.
+            const url = type === 'video' ? link.dataset.embedUrl : link.getAttribute('href');
+            if (type === 'video' && !/^https:\/\/(www\.youtube-nocookie\.com\/embed\/|player\.vimeo\.com\/video\/)/.test(url || '')) return;
             event.preventDefault();
-            this.show(link.getAttribute('href'), link.dataset.documentViewer, link.dataset.documentTitle || '');
+            this.show(url, type, link.dataset.documentTitle || '');
         },
         async show(url, type, title) {
             this.close();

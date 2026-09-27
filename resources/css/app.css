@@ -171,6 +171,46 @@
         @apply block;
     }
 
+    /* Video satırı (Faz F3, mockup 3): turuncu halkalı oynat simgesi + lacivert kalın başlık + süre. */
+    .rich-content p.video-link {
+        @apply my-6;
+    }
+    .rich-content p.video-link a {
+        @apply inline-flex items-start gap-2.5 no-underline text-navy hover:text-brand-700;
+    }
+    .rich-content .video-link-icon {
+        @apply w-7 h-7 shrink-0 text-brand-500 -mt-0.5;
+    }
+    /* Başlık + süre tek metin: dar ekranda süre başlığın ardından akar, ayrı sütuna düşmez. */
+    .rich-content .video-link-text {
+        @apply min-w-0;
+    }
+    .rich-content .video-link-title {
+        @apply font-serif font-semibold;
+    }
+    .rich-content .video-link-duration {
+        @apply ml-1.5 whitespace-nowrap text-slate-500 font-normal;
+    }
+
+    /* Editör: video satırı — içerik yok (atom), görünüm öznitelikten. */
+    .rich-editor-surface figure.video-edit {
+        @apply my-4 flex items-center gap-2 rounded-md border border-dashed border-brand-300 bg-brand-50/60 px-3 py-2 text-sm font-medium text-navy cursor-pointer;
+    }
+    .rich-editor-surface figure.video-edit::before {
+        content: "►  Video: " attr(data-title); /* ► — ▶ Windows'ta emoji olarak çiziliyor */
+    }
+    .rich-editor-surface figure.video-edit[data-title=""]::before,
+    .rich-editor-surface figure.video-edit:not([data-title])::before {
+        content: "►  Video: " attr(data-video);
+    }
+    .rich-editor-surface figure.video-edit[data-duration]:not([data-duration=""])::after {
+        @apply font-normal text-slate-500;
+        content: "(" attr(data-duration) " dk.)";
+    }
+    .rich-editor-surface figure.video-edit.ProseMirror-selectednode {
+        @apply ring-2 ring-brand-400;
+    }
+
     /* Editör: dipnot işareti sırayla numaralanır (okuma sayfasındaki numarayla aynı). */
     .rich-editor-surface {
         @apply min-h-[18rem] px-4 py-3 outline-none;

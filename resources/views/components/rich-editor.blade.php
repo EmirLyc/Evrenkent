@@ -78,6 +78,9 @@
         <button type="button" class="rich-editor-btn gap-1 text-sm font-medium" title="Dipnot ekle (seçili dipnotu düzenler)" aria-label="Dipnot" :class="isActive('footnote') && 'is-active'" :disabled="!ready" @click="openPanel('footnote')">
             <x-heroicon-o-hashtag class="w-4 h-4" /> Dipnot
         </button>
+        <button type="button" class="rich-editor-btn" title="Video ekle (YouTube / Vimeo; seçili videoyu düzenler)" aria-label="Video" :class="(panel === 'video' || isActive('videoLink')) && 'is-active'" :disabled="!ready" @click="panel === 'video' ? closePanel() : openPanel('video')">
+            <x-heroicon-o-play-circle class="w-5 h-5" />
+        </button>
         @if ($documentsUrl)
             <button type="button" class="rich-editor-btn" title="Belge ekle (kar tanesi)" aria-label="Belge ekle" :class="panel === 'document' && 'is-active'" :disabled="!ready" @click="panel === 'document' ? closePanel() : openPanel('document')">
                 <x-snowflake-icon class="w-5 h-5" />
@@ -123,6 +126,23 @@
         </div>
     @endif
 
+    {{-- Video paneli (Faz F3) --}}
+    <div x-show="panel === 'video'" x-cloak class="border-b border-slate-200 bg-slate-50 px-3 py-3 space-y-2" @keydown.escape.prevent="closePanel()">
+        <div class="text-xs font-medium text-slate-600" x-text="editingVideo ? 'Videoyu düzenle' : 'Video ekle — imlecin olduğu yere ayrı satır olarak eklenir'"></div>
+        <input type="url" inputmode="url" x-model="video.url" @keydown.enter.prevent="savePanel()" placeholder="YouTube ya da Vimeo bağlantısı" aria-label="Video bağlantısı" class="w-full rounded-md border-slate-300 text-sm focus:border-slate-500 focus:ring-slate-500">
+        <div class="grid grid-cols-[1fr_7rem] gap-2">
+            <input type="text" x-model="video.title" @keydown.enter.prevent="savePanel()" placeholder="Başlık (ör. Osmanlı Diplomasisinde Yazışma Usulü)" aria-label="Video başlığı" class="w-full rounded-md border-slate-300 text-sm focus:border-slate-500 focus:ring-slate-500">
+            <input type="text" inputmode="numeric" x-model="video.duration" @keydown.enter.prevent="savePanel()" placeholder="Süre 12:45" aria-label="Video süresi" class="w-full rounded-md border-slate-300 text-sm focus:border-slate-500 focus:ring-slate-500">
+        </div>
+        <p x-show="panelError" x-text="panelError" class="text-sm text-red-600" role="alert"></p>
+        <p class="text-xs text-slate-400">Liste dışı (unlisted) videolar da olur. Okur videoyu sayfadan ayrılmadan izler.</p>
+        <div class="flex flex-wrap items-center gap-2">
+            <button type="button" class="btn-dark btn-sm" @click="savePanel()" x-text="editingVideo ? 'Güncelle' : 'Ekle'"></button>
+            <button type="button" class="btn-ghost btn-sm" @click="closePanel()">Vazgeç</button>
+            <button type="button" x-show="editingVideo" class="btn-sm btn text-red-600 hover:bg-red-50 ml-auto" @click="removeSelected()">Videoyu Sil</button>
+        </div>
+    </div>
+
     {{-- Bağlantı / dipnot paneli --}}
     <div x-show="panel === 'link' || panel === 'footnote'" x-cloak class="border-b border-slate-200 bg-slate-50 px-3 py-3" @keydown.escape.prevent="closePanel()">
         <label :for="'{{ $id }}-panel'" class="block text-xs font-medium text-slate-600 mb-1" x-text="panel === 'link' ? 'Bağlantı adresi (boş bırakırsanız bağlantı kaldırılır)' : (editingFootnote ? 'Dipnotu düzenle' : 'Dipnot metni — imlecin olduğu yere eklenir')"></label>
@@ -135,7 +155,7 @@
         <div class="flex flex-wrap items-center gap-2 mt-2">
             <button type="button" class="btn-dark btn-sm" @click="savePanel()">Kaydet</button>
             <button type="button" class="btn-ghost btn-sm" @click="closePanel()">Vazgeç</button>
-            <button type="button" x-show="panel === 'footnote' && editingFootnote" class="btn-sm btn text-red-600 hover:bg-red-50 ml-auto" @click="removeFootnote()">Dipnotu Sil</button>
+            <button type="button" x-show="panel === 'footnote' && editingFootnote" class="btn-sm btn text-red-600 hover:bg-red-50 ml-auto" @click="removeSelected()">Dipnotu Sil</button>
         </div>
     </div>
 

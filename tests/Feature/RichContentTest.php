@@ -89,6 +89,26 @@ class RichContentTest extends TestCase
             ->assertDontSee('data-footnote', false);
     }
 
+    /** Faz F3: video satırı bölüm kaydında korunur, okuma sayfasında oynatıcı bağlantısı olur. */
+    public function test_video_line_is_saved_and_rendered_on_the_reading_page(): void
+    {
+        $author = $this->user('yazar');
+        $book = $this->draftBook($author);
+
+        $this->actingAs($author)->post(route('panel.yayinlarim.kitap.bolumler.store', $book), [
+            'title' => 'Yazışmalar',
+            'order' => 1,
+            'content' => '<p>Metin</p><figure data-video="https://www.youtube.com/watch?v=dQw4w9WgXcQ" data-title="Yazışma Usulü" data-duration="12:45"></figure>',
+        ])->assertRedirect(route('panel.yayinlarim.kitap.bolumler', $book));
+
+        // Yazar taslak kitabını okuma sayfasında önizleyebiliyor.
+        $this->actingAs($author)->get(route('kitaplar.oku', $book))
+            ->assertOk()
+            ->assertSee('data-document-viewer="video"', false)
+            ->assertSee('https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ', false)
+            ->assertSeeInOrder(['Video: Yazışma Usulü', '(12:45 dk.)']);
+    }
+
     public function test_article_page_renders_html_instead_of_escaped_tags(): void
     {
         $article = Article::factory()->create([
