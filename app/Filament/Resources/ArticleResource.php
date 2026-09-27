@@ -8,7 +8,7 @@ use App\Filament\Resources\ArticleResource\Pages;
 use App\Models\Article;
 use App\Notifications\ContentApproved;
 use App\Support\ContentPublisher;
-use App\Notifications\ContentRevisionRequested;
+use App\Support\ContentReviewer;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
@@ -155,19 +155,27 @@ class ArticleResource extends Resource
                     ->icon('heroicon-o-x-circle')
                     ->color('danger')
                     ->visible(fn (Article $record): bool => auth()->user()->can('reject', $record))
+                    // 2026-09-27, karar A: revizyon ile kalıcı ret ayrı — ContentReviewer (panelle aynı yol).
                     ->form([
+                        Forms\Components\Radio::make('decision')
+                            ->label('Karar')
+                            ->options(['revizyon' => 'Revizyon iste (düzeltip tekrar gönderebilir)', 'ret' => 'Kalıcı olarak reddet (tekrar gönderilemez)'])
+                            ->default('revizyon')
+                            ->required(),
                         Forms\Components\Textarea::make('note')
-                            ->label('Revizyon Notu')
+                            ->label('Not / gerekçe')
                             ->required(),
                     ])
                     ->action(function (Article $record, array $data): void {
                         abort_unless(auth()->user()->can('reject', $record), 403);
 
-                        $record->update(['status' => ContentStatus::RevizyonIstendi]);
-                        static::recordReview($record, 'revizyon_istendi', $data['note']);
-                        $record->author->notify(new ContentRevisionRequested($record, $data['note']));
-
-                        Notification::make()->title('Makale revizyona gönderildi')->warning()->send();
+                        if ($data['decision'] === 'ret') {
+                            ContentReviewer::reject($record, auth()->user(), $data['note']);
+                            Notification::make()->title('Makale kalıcı olarak reddedildi')->danger()->send();
+                        } else {
+                            ContentReviewer::requestRevision($record, auth()->user(), $data['note']);
+                            Notification::make()->title('Makale revizyona gönderildi')->warning()->send();
+                        }
                     }),
 
                 Tables\Actions\Action::make('publish')

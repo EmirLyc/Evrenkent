@@ -5,6 +5,7 @@ use App\Http\Controllers\AdminCategoryController;
 use App\Http\Controllers\AdminDiscountController;
 use App\Http\Controllers\AdminMagazineController;
 use App\Http\Controllers\AdminPremiumController;
+use App\Http\Controllers\AdminRejectedController;
 use App\Http\Controllers\AdminMagazineIssueController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\CartController;
@@ -129,6 +130,14 @@ Route::middleware('auth')->prefix('panel')->as('panel.')->group(function () {
     Route::middleware('role:super_admin')->prefix('admin-panel')->as('adminpanel.')->group(function () {
         Route::get('/', [SuperAdminController::class, 'index'])->name('index');
         Route::get('/yakinda/{section}', [SuperAdminController::class, 'placeholder'])->name('placeholder');
+
+        // Kalıcı reddedilen içerik (2026-09-27, karar A) + yanlışlıkla reddedileni geri açma.
+        Route::prefix('reddedilenler')->as('reddedilenler.')->group(function () {
+            Route::get('/', [AdminRejectedController::class, 'index'])->name('index');
+            Route::post('/kitap/{book}/geri-ac', [AdminRejectedController::class, 'reopenBook'])->name('kitap.geri-ac');
+            Route::post('/dergi/{magazineIssue}/geri-ac', [AdminRejectedController::class, 'reopenIssue'])->name('dergi.geri-ac');
+            Route::post('/makale/{article}/geri-ac', [AdminRejectedController::class, 'reopenArticle'])->name('makale.geri-ac');
+        });
 
         // İçerik Onayları: Filament'teki BookResource/ArticleResource/MagazineIssueResource
         // approve/reject/publish action'larının kendi panelimizdeki paraleli.

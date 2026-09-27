@@ -59,6 +59,23 @@ class RichText
         return trim(preg_replace('/<p>(\s|&nbsp;|<br\s*\/?>)*<\/p>/i', '', $html));
     }
 
+    /**
+     * Arama için düz metin (content_text sütunu): etiketler boşluğa, HTML varlıkları karakterlere
+     * çevrilir ("Paşa&#039;nın" → "Paşa'nın"); dipnot metinleri ve video başlıkları da dahil.
+     * Arama HTML üzerinde yapılınca "span" gibi etiket adları eşleşiyor, kesme işaretli kelimeler
+     * bulunamıyordu.
+     */
+    public static function plainText(?string $html): string
+    {
+        $html = (string) $html;
+        preg_match_all('/data-(?:footnote|title)="([^"]*)"/', $html, $extras);
+
+        $text = preg_replace('/<[^>]+>/', ' ', $html).' '.implode(' ', $extras[1]);
+        $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+        return trim(preg_replace('/\s+/u', ' ', $text));
+    }
+
     /** İçerikte okunacak bir metin var mı ("<p></p>" gibi boş editör çıktısı sayılmaz). */
     public static function hasText(?string $value): bool
     {

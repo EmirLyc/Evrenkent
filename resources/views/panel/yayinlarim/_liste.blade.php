@@ -13,6 +13,11 @@
                         <span class="text-xs uppercase text-brand-700 font-medium tracking-wide">Kitap</span>
                         <div class="font-medium text-slate-900 truncate">{{ $book->title }}</div>
                         <x-status-badge :status="$book->status" class="mt-1.5" />
+                        @if ($book->status === \App\Enums\ContentStatus::Reddedildi && $book->reviews->first()?->note)
+                            <p class="text-sm text-red-800 bg-red-50 border border-red-200 rounded-md px-3 py-1.5 mt-2 max-w-md">
+                                <span class="font-medium">Ret gerekçesi:</span> {{ $book->reviews->first()->note }}
+                            </p>
+                        @endif
                         @if ($book->status === \App\Enums\ContentStatus::RevizyonIstendi && $book->reviews->first()?->note)
                             <p class="text-sm text-orange-800 bg-orange-50 border border-orange-200 rounded-md px-3 py-1.5 mt-2 max-w-md">
                                 <span class="font-medium">Süper Admin notu:</span> {{ $book->reviews->first()->note }}
@@ -29,7 +34,7 @@
                             Düzenle
                         </a>
                     @endcan
-                    @if ($showActions ?? false)
+                    @if (($showActions ?? false) && auth()->user()->can('submit', $book))
                         <form method="POST" action="{{ route('panel.yayinlarim.kitap.gonder', $book) }}">
                             @csrf
                             <button type="submit" class="btn-dark btn-sm">
@@ -58,6 +63,11 @@
                         <span class="text-xs uppercase text-brand-700 font-medium tracking-wide">Makale</span>
                         <div class="font-medium text-slate-900 truncate">{{ $article->title }}</div>
                         <x-status-badge :status="$article->status" class="mt-1.5" />
+                        @if ($article->status === \App\Enums\ContentStatus::Reddedildi && $article->reviews->first()?->note)
+                            <p class="text-sm text-red-800 bg-red-50 border border-red-200 rounded-md px-3 py-1.5 mt-2 max-w-md">
+                                <span class="font-medium">Ret gerekçesi:</span> {{ $article->reviews->first()->note }}
+                            </p>
+                        @endif
                         @if ($article->status === \App\Enums\ContentStatus::RevizyonIstendi && $article->reviews->first()?->note)
                             <p class="text-sm text-orange-800 bg-orange-50 border border-orange-200 rounded-md px-3 py-1.5 mt-2 max-w-md">
                                 <span class="font-medium">Not:</span> {{ $article->reviews->first()->note }}
@@ -71,7 +81,7 @@
                             Düzenle
                         </a>
                     @endcan
-                    @if ($showActions ?? false)
+                    @if (($showActions ?? false) && auth()->user()->can('submit', $article))
                         <form method="POST" action="{{ route('panel.yayinlarim.makale.gonder', $article) }}">
                             @csrf
                             <button type="submit" class="btn-dark btn-sm">

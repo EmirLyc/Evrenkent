@@ -39,7 +39,8 @@ class BookPolicy
     public function delete(User $user, Book $book): bool
     {
         return $user->hasRole('super_admin')
-            || ($book->author_id === $user->id && $book->status === ContentStatus::Taslak);
+            // Kalıcı reddedilen (2026-09-27) kitabını da silebilir — düzenleyip tekrar gönderemez.
+            || ($book->author_id === $user->id && in_array($book->status, [ContentStatus::Taslak, ContentStatus::Reddedildi], true));
     }
 
     public function restore(User $user, Book $book): bool

@@ -410,4 +410,13 @@ document.addEventListener('turbo:render', () => {
     }
 });
 
+// Turbo <body>'yi değiştirirken eski sayfanın Alpine bileşenleri her zaman temizlenmiyordu:
+// window dinleyicileri (@click.window, @keydown.window) ve destroy() kancaları (Tiptap
+// editörü, geri sayım interval'i, PDF yüklemesi) kopmuş DOM'da yaşamaya devam ediyordu
+// (belge görüntüleyicide "Görüntüle" tepkisiz kalınca görüldü). Yeni body takılmadan önce eski
+// ağaç açıkça yok ediliyor; Alpine'in kendi temizliğiyle çakışmaz (işlem tekrarlanabilir).
+document.addEventListener('turbo:before-render', () => {
+    Alpine.destroyTree(document.body);
+});
+
 Alpine.start();

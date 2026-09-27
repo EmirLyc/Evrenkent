@@ -7,8 +7,8 @@ use App\Models\Article;
 use App\Models\Book;
 use App\Models\MagazineIssue;
 use App\Notifications\ContentApproved;
-use App\Notifications\ContentRevisionRequested;
 use App\Support\ContentPublisher;
+use App\Support\ContentReviewer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -109,14 +109,7 @@ class ContentApprovalController extends Controller
     {
         $this->authorize('reject', $book);
 
-        $data = $request->validate(['note' => ['required', 'string']]);
-
-        $book->update(['status' => ContentStatus::RevizyonIstendi]);
-        $this->recordReview($book, 'revizyon_istendi', $data['note']);
-        $book->author->notify(new ContentRevisionRequested($book, $data['note']));
-
-        return redirect()->route('panel.adminpanel.onaylar.index', ['tur' => 'kitaplar'])
-            ->with('status', 'Kitap revizyona gönderildi.');
+        return $this->decide($request, $book, 'kitaplar', 'Kitap');
     }
 
     /** Zaten "Onaylandı" durumunda bekleyen (ör. zamanlanmış) bir kitabı hemen yayına alır. */
@@ -165,6 +158,9 @@ class ContentApprovalController extends Controller
             'title' => $magazineIssue->title,
             'backRoute' => route('panel.adminpanel.onaylar.index', ['tur' => 'dergiler']),
             'submitRoute' => route('panel.adminpanel.onaylar.dergi.reddet', $magazineIssue),
+            'rejectNote' => $magazineIssue->articles()->whereNotIn('status', [ContentStatus::Yayinda, ContentStatus::Taslak, ContentStatus::Reddedildi])->exists()
+                ? 'Kalıcı retle birlikte bu sayıya gönderilmiş makaleler revizyona döner; yazarları başka bir sayıya taşıyabilir.'
+                : null,
         ]);
     }
 
@@ -172,14 +168,7 @@ class ContentApprovalController extends Controller
     {
         $this->authorize('reject', $magazineIssue);
 
-        $data = $request->validate(['note' => ['required', 'string']]);
-
-        $magazineIssue->update(['status' => ContentStatus::RevizyonIstendi]);
-        $this->recordReview($magazineIssue, 'revizyon_istendi', $data['note']);
-        $magazineIssue->editor->notify(new ContentRevisionRequested($magazineIssue, $data['note']));
-
-        return redirect()->route('panel.adminpanel.onaylar.index', ['tur' => 'dergiler'])
-            ->with('status', 'Sayı revizyona gönderildi (Dergi Editörüne döndü).');
+        return $this->decide($request, $magazineIssue, 'dergiler', 'Sayı');
     }
 
     public function publishIssue(MagazineIssue $magazineIssue): RedirectResponse
@@ -245,14 +234,7 @@ class ContentApprovalController extends Controller
     {
         $this->authorize('reject', $article);
 
-        $data = $request->validate(['note' => ['required', 'string']]);
-
-        $article->update(['status' => ContentStatus::RevizyonIstendi]);
-        $this->recordReview($article, 'revizyon_istendi', $data['note']);
-        $article->author->notify(new ContentRevisionRequested($article, $data['note']));
-
-        return redirect()->route('panel.adminpanel.onaylar.index', ['tur' => 'makaleler'])
-            ->with('status', 'Makale revizyona gönderildi.');
+        return $this->decide($request, $article, 'makaleler', 'Makale');
     }
 
     public function publishArticle(Article $article): RedirectResponse
@@ -297,6 +279,32 @@ class ContentApprovalController extends Controller
             $message = $record instanceof MagazineIssue
                 ? 'Sayı onaylandı ve onaylı makaleleriyle birlikte yayınlandı.'
                 : "{$label} onaylandı ve yayınlandı.";
+        }
+
+        return redirect()->route('panel.adminpanel.onaylar.index', ['tur' => $tab])->with('status', $message);
+    }
+
+    /**
+     * Onay ekranındaki olumsuz karar (2026-09-27, karar A): "Revizyon iste" içeriği sahibine
+     * geri gönderir, "Kalıcı olarak reddet" kapatır. İkisi de ContentReviewer'dan geçer
+     * (Filament'teki Reddet aksiyonları da).
+     */
+    private function decide(Request $request, Book|Article|MagazineIssue $content, string $tab, string $label): RedirectResponse
+    {
+        $data = $request->validate([
+            'decision' => ['required', 'in:revizyon,ret'],
+            'note' => ['required', 'string', 'max:2000'],
+        ], [
+            'decision.required' => 'Revizyon mu istiyorsunuz, kalıcı olarak mı reddediyorsunuz? Birini seçin.',
+            'note.required' => 'Sahibinin gerekçeyi bilmesi için bir not yazın.',
+        ]);
+
+        if ($data['decision'] === 'ret') {
+            ContentReviewer::reject($content, $request->user(), $data['note']);
+            $message = "{$label} kalıcı olarak reddedildi. Reddedilenler sayfasından görebilirsiniz.";
+        } else {
+            ContentReviewer::requestRevision($content, $request->user(), $data['note']);
+            $message = "{$label} revizyona gönderildi.";
         }
 
         return redirect()->route('panel.adminpanel.onaylar.index', ['tur' => $tab])->with('status', $message);

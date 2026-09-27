@@ -47,7 +47,8 @@ class ArticlePolicy
     public function delete(User $user, Article $article): bool
     {
         return $user->hasRole('super_admin')
-            || ($article->author_id === $user->id && $article->status === ContentStatus::Taslak);
+            // Kalıcı reddedilen (2026-09-27) makalesini de silebilir — düzenleyip tekrar gönderemez.
+            || ($article->author_id === $user->id && in_array($article->status, [ContentStatus::Taslak, ContentStatus::Reddedildi], true));
     }
 
     public function restore(User $user, Article $article): bool

@@ -16,7 +16,12 @@ trait HasRichContent
 {
     protected function content(): Attribute
     {
-        return Attribute::make(set: fn (?string $value) => RichText::normalize($value));
+        return Attribute::make(set: function (?string $value) {
+            $html = RichText::normalize($value);
+
+            // Arama düz metin üzerinde (bkz. RichText::plainText, SearchController).
+            return ['content' => $html, 'content_text' => RichText::plainText($html)];
+        });
     }
 
     /** Okuma sayfası HTML'i (dipnotlar numaralı, gömülü belgeler kar tanesi ikonu). */

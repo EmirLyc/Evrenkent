@@ -20,6 +20,8 @@
             ['label' => 'Sözlükler', 'icon' => 'language', 'href' => route('panel.adminpanel.placeholder', 'sozlukler')],
             ['label' => 'Tüm Yayınlar', 'icon' => 'rectangle-stack', 'href' => route('panel.adminpanel.placeholder', 'tum-yayinlar')],
             ['label' => 'Onay Bekleyenler', 'icon' => 'clock', 'href' => route('panel.adminpanel.onaylar.index'), 'badge' => $pendingTotal],
+            // 2026-09-27, karar A: kalıcı reddedilen tüm içerik tek listede.
+            ['label' => 'Reddedilenler', 'icon' => 'no-symbol', 'href' => route('panel.adminpanel.reddedilenler.index')],
         ],
         'Kullanıcı Yönetimi' => [
             ['label' => 'Kullanıcılar', 'icon' => 'users', 'href' => route('panel.adminpanel.kullanicilar.index')],

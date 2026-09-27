@@ -104,4 +104,20 @@ class SearchTest extends TestCase
             ->assertOk()
             ->assertSee('bir sonuç bulunamadı');
     }
+
+    /** İçerik HTML olarak saklanıyor; arama düz metin kopyasında (content_text). */
+    public function test_article_content_search_uses_plain_text(): void
+    {
+        Article::factory()->create([
+            'status' => ContentStatus::Yayinda,
+            'title' => 'Londra Raporları',
+            'content' => "<p>Fuad Paşa'nın raporu<span data-footnote=\"Hariciye arşivi\"></span></p>",
+        ]);
+
+        $this->get(route('arama', ['q' => "Paşa'nın"]))->assertSee('Londra Raporları');
+        $this->get(route('arama', ['q' => 'Hariciye arşivi']))->assertSee('Londra Raporları');
+        // Etiket ve öznitelik adları eşleşmemeli.
+        $this->get(route('arama', ['q' => 'span']))->assertDontSee('Londra Raporları');
+        $this->get(route('arama', ['q' => 'data-footnote']))->assertDontSee('Londra Raporları');
+    }
 }

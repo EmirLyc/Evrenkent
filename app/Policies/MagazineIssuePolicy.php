@@ -36,7 +36,8 @@ class MagazineIssuePolicy
     public function delete(User $user, MagazineIssue $magazineIssue): bool
     {
         return $user->hasRole('super_admin')
-            || ($magazineIssue->editor_id === $user->id && $magazineIssue->status === ContentStatus::Taslak);
+            // Kalıcı reddedilen (2026-09-27) sayısını da silebilir; içindeki makaleler sayısız kalır (nullOnDelete).
+            || ($magazineIssue->editor_id === $user->id && in_array($magazineIssue->status, [ContentStatus::Taslak, ContentStatus::Reddedildi], true));
     }
 
     public function restore(User $user, MagazineIssue $magazineIssue): bool

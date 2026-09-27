@@ -61,7 +61,7 @@ Bu proje şu an **yerel geliştirme ortamı** için yapılandırılmıştır. Ge
 
 ## ✅ Zaten Kontrol Edildi, Sorun Yok
 
-- `npm audit` — bilinen güvenlik açığı yok. `composer audit` 2026-09-27'de `league/commonmark` (projede Markdown render edilmiyor) ve `livewire/livewire` (Filament üzerinden) için uyarı veriyor — canlıya geçmeden bağımlılıklar güncellenmeli (bkz. `UI_RESTYLE_NOTES.md` → Açık konular).
+- `composer audit` ve `npm audit` — bilinen güvenlik açığı yok (2026-09-27'de `league/commonmark` ve `livewire/livewire` yama sürümlerine güncellendi).
 - Blade view'ları `{{ }}` ile otomatik escape ediyor. Tek bilinçli istisna bölüm/makale içeriği (Faz F1, zengin metin): `{!! $x->renderedContent() !!}` — içerik her kayıtta `symfony/html-sanitizer` ile izinli etiketlere indiriliyor (`App\Support\RichText`) ve render'da tekrar temizleniyor; script/olay öznitelikleri/`javascript:` bağlantıları testlerle doğrulanıyor (`RichTextTest`).
 - Word (.docx) içe aktarma için gereken `zip` ve `dom` PHP eklentileri Docker imajında var (`zip` Dockerfile'da kuruluyor, `dom` resmi imajda varsayılan); `composer.json`'da `ext-zip`/`ext-dom` olarak da belirtildi. Yüklenen dosya saklanmıyor.
 - CSRF koruması tüm formlarda aktif (Laravel varsayılanı).

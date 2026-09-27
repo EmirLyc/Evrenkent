@@ -38,7 +38,8 @@ class PublicationController extends Controller
 
     public function geriDonenler(): View
     {
-        return $this->listView('Geri Dönenler', ContentStatus::RevizyonIstendi, 'panel.yayinlarim.geri-donenler', showActions: true);
+        // Kalıcı reddedilenler de burada (kırmızı rozet + gerekçe); düzenleme/gönderme kapalı, silinebilir.
+        return $this->listView('Geri Dönenler', [ContentStatus::RevizyonIstendi, ContentStatus::Reddedildi], 'panel.yayinlarim.geri-donenler', showActions: true);
     }
 
     public function yayinlananlar(): View
@@ -68,7 +69,8 @@ class PublicationController extends Controller
      */
     private function assignableMagazineIssues()
     {
-        return MagazineIssue::where('status', '!=', ContentStatus::Yayinda)
+        // Yayındaki ve kalıcı reddedilmiş sayılara makale gönderilemez.
+        return MagazineIssue::whereNotIn('status', [ContentStatus::Yayinda, ContentStatus::Reddedildi])
             ->whereIn('magazine_id', auth()->user()->authoredMagazines()->pluck('magazines.id'))
             ->with('magazine')
             ->orderBy('title')

@@ -75,7 +75,7 @@ class ContentApprovalTest extends TestCase
         $book = Book::factory()->create(['status' => ContentStatus::Gonderildi]);
 
         $this->actingAs($admin)
-            ->post(route('panel.adminpanel.onaylar.kitap.reddet', $book), ['note' => 'Kapak eksik.'])
+            ->post(route('panel.adminpanel.onaylar.kitap.reddet', $book), ['decision' => 'revizyon', 'note' => 'Kapak eksik.'])
             ->assertRedirect(route('panel.adminpanel.onaylar.index', ['tur' => 'kitaplar']));
 
         $book->refresh();
@@ -90,7 +90,7 @@ class ContentApprovalTest extends TestCase
         $book = Book::factory()->create(['status' => ContentStatus::Gonderildi]);
 
         $this->actingAs($admin)
-            ->post(route('panel.adminpanel.onaylar.kitap.reddet', $book), [])
+            ->post(route('panel.adminpanel.onaylar.kitap.reddet', $book), ['decision' => 'revizyon'])
             ->assertSessionHasErrors('note');
     }
 
@@ -135,7 +135,7 @@ class ContentApprovalTest extends TestCase
         $this->assertSame(ContentStatus::Yayinda, $issue->refresh()->status);
 
         $issue2 = MagazineIssue::factory()->create(['status' => ContentStatus::Gonderildi]);
-        $this->actingAs($admin)->post(route('panel.adminpanel.onaylar.dergi.reddet', $issue2), ['note' => 'Eksik makale.']);
+        $this->actingAs($admin)->post(route('panel.adminpanel.onaylar.dergi.reddet', $issue2), ['decision' => 'revizyon', 'note' => 'Eksik makale.']);
         $this->assertSame(ContentStatus::RevizyonIstendi, $issue2->refresh()->status);
     }
 
@@ -159,7 +159,7 @@ class ContentApprovalTest extends TestCase
         $this->assertSame(ContentStatus::Yayinda, $article->refresh()->status);
 
         $article2 = Article::factory()->create(['status' => ContentStatus::Incelemede]);
-        $this->actingAs($admin)->post(route('panel.adminpanel.onaylar.makale.reddet', $article2), ['note' => 'Kaynak eksik.']);
+        $this->actingAs($admin)->post(route('panel.adminpanel.onaylar.makale.reddet', $article2), ['decision' => 'revizyon', 'note' => 'Kaynak eksik.']);
         $this->assertSame(ContentStatus::RevizyonIstendi, $article2->refresh()->status);
     }
 

@@ -52,7 +52,8 @@ class SearchController extends Controller
                 ->with(['author', 'magazineIssue'])
                 ->where(function ($query) use ($like) {
                     $query->where('title', 'like', $like)
-                        ->orWhere('content', 'like', $like)
+                        // HTML değil düz metin kopyası: etiket adları eşleşmesin, "Paşa'nın" bulunsun.
+                        ->orWhere('content_text', 'like', $like)
                         ->orWhereHas('author', fn ($q) => $q->where('name', 'like', $like));
                 })
                 ->latest('published_at')
