@@ -67,16 +67,40 @@
                 <p class="text-sm text-slate-500 mt-2">
                     Bu kitap şu an tanıtım aşamasında — satın alma ve okuma, yayın tarihinde açılacak.
                 </p>
+            @elseif ($hasPurchased)
+                {{-- Satın alındı hâli (mockup: 6-)Satın Alındıktan Sonra Kitap Tanıtım Sayfası.png) —
+                     fiyat artık anlamsız, yerine satın alma tarihi gösteriliyor. --}}
+                <div class="flex items-center gap-3">
+                    <x-heroicon-o-check-circle class="w-9 h-9 text-emerald-700 shrink-0" />
+                    <div class="text-lg font-serif font-semibold text-slate-900">Satın alındı</div>
+                </div>
+                <p class="text-sm text-slate-500 mt-3">
+                    Bu kitabı {{ $purchase->purchased_at->translatedFormat('j F Y') }} tarihinde satın aldınız.
+                </p>
             @else
-                <div class="text-2xl font-serif font-semibold text-slate-900">{{ number_format($book->price, 2, ',', '.') }} TL</div>
+                {{-- İndirimli fiyat varsa satın alma/sepet de onu ücretlendiriyor (User::purchase) —
+                     anasayfa/katalog kartlarıyla aynı şekilde eski fiyat üstü çizili gösteriliyor. --}}
+                @if ($book->discount_price !== null)
+                    <div class="text-sm text-slate-400 line-through">{{ number_format($book->price, 2, ',', '.') }} TL</div>
+                    <div class="text-2xl font-serif font-semibold text-brand-700">{{ number_format($book->discount_price, 2, ',', '.') }} TL</div>
+                @else
+                    <div class="text-2xl font-serif font-semibold text-slate-900">{{ number_format($book->price, 2, ',', '.') }} TL</div>
+                @endif
                 <div class="text-xs text-slate-400 mt-1">KDV dahil</div>
+            @endif
 
+            @unless ($isUpcoming)
                 <div class="flex flex-col gap-3 mt-5">
                     @auth
                         @if ($hasPurchased)
-                            <span class="btn bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200 cursor-default">
-                                <x-heroicon-o-check-circle class="w-4 h-4" /> Satın Alındı
-                            </span>
+                            @if ($book->status === \App\Enums\ContentStatus::Yayinda)
+                                <a href="{{ route('kitaplar.oku', $book) }}" class="btn-success w-full">
+                                    <x-heroicon-o-book-open class="w-4 h-4" /> Şimdi Oku
+                                </a>
+                            @endif
+                            <a href="{{ route('panel.index') }}" class="btn-outline w-full">
+                                <x-heroicon-o-building-library class="w-4 h-4" /> Kütüphanemde Görüntüle
+                            </a>
                         @elseif ($book->status === \App\Enums\ContentStatus::Yayinda)
                             <form method="POST" action="{{ route('panel.satin-al', $book) }}">
                                 @csrf
@@ -85,9 +109,8 @@
                                 </button>
                             </form>
                             <x-add-to-cart-button :book="$book" :in-cart="$hasInCart" />
-                        @endif
 
-                        @if ($book->status === \App\Enums\ContentStatus::Yayinda)
+                            {{-- Ücretsiz kitap veya yazarın kendi kitabı: satın almadan okunabiliyor. --}}
                             @if (! $locked)
                                 <a href="{{ route('kitaplar.oku', $book) }}" class="btn-dark w-full">
                                     <x-heroicon-o-book-open class="w-4 h-4" /> Oku
@@ -139,7 +162,7 @@
                         </div>
                     @endif
                 </div>
-            @endif
+            @endunless
         </div>
     </div>
 
@@ -155,7 +178,14 @@
                         <div class="min-w-0 flex flex-col justify-center">
                             <div class="text-xs text-brand-600 font-medium uppercase tracking-wide">{{ $related->author->name }}</div>
                             <div class="font-medium text-slate-900 text-sm truncate mt-0.5 group-hover:underline">{{ $related->title }}</div>
-                            <div class="text-sm text-slate-500 mt-1">{{ number_format($related->price, 2, ',', '.') }} TL</div>
+                            <div class="text-sm mt-1">
+                                @if ($related->discount_price !== null)
+                                    <span class="text-slate-400 line-through mr-1.5">{{ number_format($related->price, 2, ',', '.') }} TL</span>
+                                    <span class="text-brand-700 font-medium">{{ number_format($related->discount_price, 2, ',', '.') }} TL</span>
+                                @else
+                                    <span class="text-slate-500">{{ number_format($related->price, 2, ',', '.') }} TL</span>
+                                @endif
+                            </div>
                         </div>
                     </a>
                 @endforeach

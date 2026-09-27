@@ -61,6 +61,21 @@ class Book extends Model
         return route('kitaplar.show', $this);
     }
 
+    /**
+     * Tanıtım sayfasını bu kullanıcı görebilir mi. "Onaylandı" + hedef tarihi olan
+     * kitaplar bir teaser (Yakında Çıkacak) olarak herkese açık; tarihsiz "Onaylandı"
+     * kitaplar hâlâ sadece yazarına görünür (henüz kamuya duyurulmaya hazır değil).
+     * Hem tanıtım sayfası hem not ekleme aynı kuralı kullansın diye tek yerde
+     * (bkz. NoteController::store).
+     */
+    public function isVisibleTo(?User $user): bool
+    {
+        return $this->status === ContentStatus::Yayinda
+            || ($this->status === ContentStatus::Onaylandi && $this->scheduled_publish_at !== null)
+            || ($user && $user->id === $this->author_id)
+            || ($user && $user->hasRole('super_admin'));
+    }
+
     public function categories(): BelongsToMany
     {
         return $this->belongsToMany(Category::class, 'category_book');

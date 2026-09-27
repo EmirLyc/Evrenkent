@@ -44,6 +44,18 @@ class Article extends Model
         return route('makaleler.show', $this);
     }
 
+    /**
+     * Makale sayfasını bu kullanıcı görebilir mi — yayındaysa herkes, değilse
+     * sadece yazarı ve Süper Admin (önizleme). Hem makale sayfası hem not ekleme
+     * aynı kuralı kullansın diye tek yerde (bkz. NoteController::store).
+     */
+    public function isVisibleTo(?User $user): bool
+    {
+        return $this->status === ContentStatus::Yayinda
+            || ($user && $user->id === $this->author_id)
+            || ($user && $user->hasRole('super_admin'));
+    }
+
     public function magazineIssue(): BelongsTo
     {
         return $this->belongsTo(MagazineIssue::class);

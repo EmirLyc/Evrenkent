@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\ContentStatus;
 use App\Models\Article;
 use Illuminate\View\View;
 
@@ -10,14 +9,7 @@ class ArticleController extends Controller
 {
     public function show(Article $article): View
     {
-        $user = auth()->user();
-
-        abort_unless(
-            $article->status === ContentStatus::Yayinda
-                || ($user && $user->id === $article->author_id)
-                || ($user && $user->hasRole('super_admin')),
-            404
-        );
+        abort_unless($article->isVisibleTo(auth()->user()), 404);
 
         $article->load(['author', 'magazineIssue']);
 

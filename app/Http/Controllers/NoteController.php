@@ -6,6 +6,7 @@ use App\Enums\NoteType;
 use App\Models\Note;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class NoteController extends Controller
@@ -46,6 +47,17 @@ class NoteController extends Controller
                 'noteable_type' => ['required', 'in:App\\Models\\Book,App\\Models\\Article'],
                 'noteable_id' => ['required', 'integer'],
             ]);
+
+            // Not, kullanıcının zaten görebildiği bir içeriğe bağlanabilir — aksi halde
+            // istek elle düzenlenerek başka bir yazarın taslağına not eklenip Notlarım
+            // listesinde o taslağın başlığı görülebiliyordu.
+            $noteable = $data['noteable_type']::find($data['noteable_id']);
+
+            if (! $noteable || ! $noteable->isVisibleTo($request->user())) {
+                throw ValidationException::withMessages([
+                    'noteable_id' => 'Not eklemek istediğiniz içerik bulunamadı.',
+                ]);
+            }
         }
 
         auth()->user()->notes()->create([

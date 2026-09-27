@@ -74,6 +74,62 @@ class NoteTest extends TestCase
         ]);
     }
 
+    public function test_note_cannot_be_attached_to_another_authors_draft(): void
+    {
+        $user = $this->okur();
+        $draft = Book::factory()->create(['status' => ContentStatus::Taslak, 'title' => 'Gizli Taslak Başlığı']);
+
+        $this->actingAs($user)
+            ->post(route('panel.notlar.ekle'), [
+                'type' => 'not',
+                'noteable_type' => Book::class,
+                'noteable_id' => $draft->id,
+                'content' => 'Taslağa sızma denemesi.',
+            ])
+            ->assertSessionHasErrors('noteable_id');
+
+        $this->assertDatabaseMissing('notes', ['user_id' => $user->id]);
+
+        // Listede taslağın başlığı hiçbir şekilde görünmemeli.
+        $this->actingAs($user)
+            ->get(route('panel.notlarim'))
+            ->assertDontSee('Gizli Taslak Başlığı');
+    }
+
+    public function test_note_cannot_be_attached_to_nonexistent_content(): void
+    {
+        $user = $this->okur();
+
+        $this->actingAs($user)
+            ->post(route('panel.notlar.ekle'), [
+                'type' => 'alinti',
+                'noteable_type' => \App\Models\Article::class,
+                'noteable_id' => 999999,
+                'content' => 'Olmayan bir makaleye alıntı.',
+            ])
+            ->assertSessionHasErrors('noteable_id');
+
+        $this->assertDatabaseMissing('notes', ['user_id' => $user->id]);
+    }
+
+    public function test_author_can_still_note_their_own_draft_while_previewing_it(): void
+    {
+        $author = User::factory()->create();
+        $author->assignRole('yazar');
+        $draft = Book::factory()->for($author, 'author')->create(['status' => ContentStatus::Taslak]);
+
+        $this->actingAs($author)
+            ->post(route('panel.notlar.ekle'), [
+                'type' => 'not',
+                'noteable_type' => Book::class,
+                'noteable_id' => $draft->id,
+                'content' => 'Kendi taslağım için not.',
+            ])
+            ->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('notes', ['user_id' => $author->id, 'noteable_id' => $draft->id]);
+    }
+
     public function test_each_type_is_listed_on_its_own_page(): void
     {
         $user = $this->okur();

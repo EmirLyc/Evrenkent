@@ -56,6 +56,10 @@
     .btn-dark {
         @apply btn bg-slate-900 text-white hover:bg-slate-800;
     }
+    /* Satın alınmış içerikte birincil aksiyon ("Şimdi Oku") — mockup 6'daki koyu yeşil. */
+    .btn-success {
+        @apply btn bg-emerald-700 text-white shadow-sm shadow-emerald-700/20 hover:bg-emerald-800;
+    }
     .btn-outline {
         @apply btn border border-slate-300 text-slate-700 bg-white hover:bg-slate-50;
     }

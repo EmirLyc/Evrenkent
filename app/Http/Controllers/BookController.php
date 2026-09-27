@@ -14,23 +14,17 @@ class BookController extends Controller
     {
         $user = auth()->user();
 
-        // "Onaylandı" + hedef tarihi olan kitaplar bir teaser (Yakında Çıkacak) olarak
-        // herkese açık — henüz satın alma/okuma yok, sadece tanıtım. Tarihsiz "Onaylandı"
-        // kitaplar hâlâ sadece yazarına görünür (henüz kamuya duyurulmaya hazır değil).
-        abort_unless(
-            $book->status === ContentStatus::Yayinda
-                || ($book->status === ContentStatus::Onaylandi && $book->scheduled_publish_at)
-                || ($user && $user->id === $book->author_id)
-                || ($user && $user->hasRole('super_admin')),
-            404
-        );
+        abort_unless($book->isVisibleTo($user), 404);
 
         $book->load(['author', 'categories']);
 
         $isUpcoming = $book->status === ContentStatus::Onaylandi && $book->scheduled_publish_at !== null;
         $hasFavorited = $user?->hasFavorited($book) ?? false;
         $readingListItem = $user?->readingListItemFor($book);
-        $hasPurchased = $user?->hasPurchased($book) ?? false;
+        // Satın alma kaydının kendisi (sadece var/yok değil) — satın alındı kartında
+        // "Bu kitabı X tarihinde satın aldınız" yazabilmek için tarihi gerekiyor.
+        $purchase = $user?->purchases()->where('book_id', $book->id)->first();
+        $hasPurchased = $purchase !== null;
         $hasInCart = $user?->hasInCart($book) ?? false;
         $chapterCount = $book->chapters()->count();
 
@@ -61,7 +55,7 @@ class BookController extends Controller
             );
         }
 
-        return view('books.show', compact('book', 'isUpcoming', 'hasFavorited', 'readingListItem', 'hasPurchased', 'hasInCart', 'chapterCount', 'relatedBooks'));
+        return view('books.show', compact('book', 'isUpcoming', 'hasFavorited', 'readingListItem', 'purchase', 'hasPurchased', 'hasInCart', 'chapterCount', 'relatedBooks'));
     }
 
     public function read(Book $book, ?int $chapterNumber = null): View|RedirectResponse

@@ -88,6 +88,64 @@ class BookShowPageTest extends TestCase
             ->assertSee('Taslak');
     }
 
+    public function test_discounted_book_shows_the_discounted_price_it_is_actually_sold_for(): void
+    {
+        $book = Book::factory()->create([
+            'status' => ContentStatus::Yayinda,
+            'price' => 120,
+            'discount_price' => 89.90,
+        ]);
+
+        // Satın alma/sepet indirimli fiyatı ücretlendiriyor — sayfa da onu göstermeli,
+        // eski fiyat sadece üstü çizili referans olarak.
+        $this->get(route('kitaplar.show', $book))
+            ->assertOk()
+            ->assertSee('89,90 TL')
+            ->assertSee('120,00 TL');
+    }
+
+    public function test_related_books_strip_shows_discounted_prices(): void
+    {
+        $category = \App\Models\Category::factory()->create();
+        $book = Book::factory()->create(['status' => ContentStatus::Yayinda]);
+        $related = Book::factory()->create([
+            'status' => ContentStatus::Yayinda,
+            'published_at' => now(),
+            'price' => 150,
+            'discount_price' => 99.50,
+        ]);
+        $book->categories()->attach($category);
+        $related->categories()->attach($category);
+
+        $this->get(route('kitaplar.show', $book))
+            ->assertOk()
+            ->assertSee('99,50 TL');
+    }
+
+    public function test_purchased_book_shows_purchase_date_and_read_and_library_actions_instead_of_buying(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole('okur');
+        $book = Book::factory()->create(['status' => ContentStatus::Yayinda, 'price' => 75]);
+        $user->purchases()->create([
+            'book_id' => $book->id,
+            'amount' => 75,
+            'purchased_at' => '2025-05-15 10:00:00',
+            'payment_status' => 'completed',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('kitaplar.show', $book))
+            ->assertOk()
+            ->assertSee('Satın alındı')
+            ->assertSee('15 Mayıs 2025')
+            ->assertSee('Şimdi Oku')
+            ->assertSee('Kütüphanemde Görüntüle')
+            ->assertSee(route('panel.index'), false)
+            ->assertDontSee(route('panel.satin-al', $book), false)
+            ->assertDontSee('75,00 TL');
+    }
+
     public function test_content_stats_only_show_the_fields_the_author_actually_filled_in(): void
     {
         $book = Book::factory()->create([
