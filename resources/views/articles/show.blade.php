@@ -12,7 +12,8 @@
             <x-status-badge :status="$article->status" />
         </x-detail-header>
 
-        <div class="text-slate-700 leading-relaxed whitespace-pre-line mt-9">{{ $article->content }}</div>
+        {{-- Faz F1: temizlenmiş HTML (RichText), dipnotlar numaralı. --}}
+        <div class="rich-content mt-9">{!! $article->renderedContent() !!}</div>
 
         @auth
             <div class="mt-10">

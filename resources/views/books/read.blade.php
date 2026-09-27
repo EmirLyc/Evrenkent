@@ -35,7 +35,8 @@
                     <span class="text-xs uppercase text-orange-700 font-medium tracking-wide">Bölüm {{ $chapter->order }}</span>
                     <h1 class="font-serif text-2xl font-semibold text-slate-900 mt-1 mb-6">{{ $chapter->title }}</h1>
 
-                    <div class="text-slate-700 leading-relaxed whitespace-pre-line">{{ $chapter->content }}</div>
+                    {{-- Faz F1: temizlenmiş HTML (RichText), dipnotlar numaralı. --}}
+                    <div class="rich-content">{!! $chapter->renderedContent() !!}</div>
 
                     <div class="flex items-center justify-between mt-10 pt-6 border-t border-slate-200">
                         @if ($prevChapter)

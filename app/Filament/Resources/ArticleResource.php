@@ -15,6 +15,7 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\HtmlString;
 
 class ArticleResource extends Resource
 {
@@ -50,8 +51,17 @@ class ArticleResource extends Resource
                     ->label('Slug')
                     ->required()
                     ->unique(ignoreRecord: true),
+                // Faz F1: içerik yazar panelindeki editörde düzenleniyor. Filament'in (Trix)
+                // editörü dipnot işaretlerini siliyor; düzenlemede sadece önizleme gösteriliyor.
                 Forms\Components\RichEditor::make('content')
                     ->label('İçerik')
+                    ->visible(fn (string $operation): bool => $operation === 'create')
+                    ->columnSpanFull(),
+                Forms\Components\Placeholder::make('content_preview')
+                    ->label('İçerik')
+                    ->hint('Yazar panelindeki editörde düzenlenir')
+                    ->content(fn (?Article $record): HtmlString => new HtmlString('<div class="prose max-w-none dark:prose-invert">'.$record?->renderedContent().'</div>'))
+                    ->visible(fn (string $operation): bool => $operation !== 'create')
                     ->columnSpanFull(),
                 Forms\Components\Select::make('status')
                     ->label('Durum')

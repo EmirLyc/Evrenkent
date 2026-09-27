@@ -5,7 +5,7 @@
 @section('content')
     <h1 class="font-serif text-xl font-semibold text-slate-900 mb-5">Makaleyi Düzenle</h1>
 
-    <form method="POST" action="{{ route('panel.yayinlarim.makale.guncelle', $article) }}" class="bg-white border border-slate-200 rounded-lg p-6 space-y-5 max-w-2xl mx-auto">
+    <form method="POST" action="{{ route('panel.yayinlarim.makale.guncelle', $article) }}" class="bg-white border border-slate-200 rounded-lg p-4 sm:p-6 space-y-5 max-w-3xl mx-auto">
         @csrf
         @method('PUT')
 
@@ -16,8 +16,12 @@
         </div>
 
         <div>
-            <label for="body" class="block text-sm font-medium text-slate-700 mb-1">İçerik</label>
-            <textarea id="body" name="body" rows="8" class="w-full rounded-md border-slate-300 text-sm focus:border-slate-500 focus:ring-slate-500">{{ old('body', $article->content) }}</textarea>
+            <x-rich-editor
+                name="body"
+                :value="old('body', $article->content)"
+                :import-url="route('panel.yayinlarim.word-aktar')"
+                title-input="title"
+            />
             @error('body') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
         </div>
 

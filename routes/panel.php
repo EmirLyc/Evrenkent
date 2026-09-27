@@ -11,6 +11,7 @@ use App\Http\Controllers\CartController;
 use App\Http\Controllers\ChapterController;
 use App\Http\Controllers\ContentApprovalController;
 use App\Http\Controllers\DergiYonetimiController;
+use App\Http\Controllers\DocxImportController;
 use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\NoteController;
 use App\Http\Controllers\NotificationController;
@@ -84,6 +85,10 @@ Route::middleware('auth')->prefix('panel')->as('panel.')->group(function () {
         Route::get('/kitap/{book}/bolumler/{chapter}/duzenle', [ChapterController::class, 'edit'])->name('kitap.bolumler.duzenle');
         Route::put('/kitap/{book}/bolumler/{chapter}', [ChapterController::class, 'update'])->name('kitap.bolumler.guncelle');
         Route::delete('/kitap/{book}/bolumler/{chapter}', [ChapterController::class, 'destroy'])->name('kitap.bolumler.sil');
+
+        // Faz F1: Word'den aktarma — editöre önizleme (kaydetmez) ve kitabı bölümlere ayırarak ekleme.
+        Route::post('/word-aktar', [DocxImportController::class, 'preview'])->name('word-aktar');
+        Route::post('/kitap/{book}/bolumler/word-aktar', [DocxImportController::class, 'chapters'])->name('kitap.bolumler.word-aktar');
     });
 
     // Dergi Yönetimi: sadece Dergi Editörü rolündeki kullanıcılar erişebilir. Sayı

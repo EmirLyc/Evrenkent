@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\ContentStatus;
+use App\Models\Concerns\HasRichContent;
 use Database\Factories\ArticleFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -15,6 +16,8 @@ class Article extends Model
 {
     /** @use HasFactory<ArticleFactory> */
     use HasFactory;
+
+    use HasRichContent;
 
     protected $fillable = [
         'author_id', 'magazine_issue_id', 'title', 'slug',

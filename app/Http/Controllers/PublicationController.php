@@ -7,6 +7,7 @@ use App\Models\Article;
 use App\Models\Book;
 use App\Models\Category;
 use App\Models\MagazineIssue;
+use App\Rules\RichTextContent;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -146,7 +147,7 @@ class PublicationController extends Controller
 
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
-            'body' => ['required', 'string'],
+            'body' => ['required', 'string', new RichTextContent],
             'magazine_issue_id' => ['required', Rule::in($allowedIssueIds)],
         ], $this->issueMessages());
 
@@ -183,7 +184,8 @@ class PublicationController extends Controller
         $data = $request->validate([
             'type' => ['required', 'in:kitap,makale'],
             'title' => ['required', 'string', 'max:255'],
-            'body' => ['required', 'string'],
+            // Kitapta düz metin açıklama, makalede zengin metin içerik (Faz F1).
+            'body' => ['required', 'string', ...($request->input('type') === 'makale' ? [new RichTextContent] : [])],
             // Sadece yazarın atandığı dergilerin açık sayıları — istek elle düzenlenip başka
             // bir derginin sayısına gönderilemesin.
             'magazine_issue_id' => ['required_if:type,makale', 'nullable', Rule::in($this->assignableMagazineIssues()->pluck('id'))],

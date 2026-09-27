@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Book;
 use App\Models\Chapter;
+use App\Rules\RichTextContent;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -39,7 +40,7 @@ class ChapterController extends Controller
 
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
-            'content' => ['required', 'string'],
+            'content' => ['required', 'string', new RichTextContent],
             'order' => [
                 'required', 'integer', 'min:1',
                 Rule::unique('chapters')->where('book_id', $book->id),
@@ -70,7 +71,7 @@ class ChapterController extends Controller
 
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
-            'content' => ['required', 'string'],
+            'content' => ['required', 'string', new RichTextContent],
             'order' => [
                 'required', 'integer', 'min:1',
                 Rule::unique('chapters')->where('book_id', $book->id)->ignore($chapter->id),

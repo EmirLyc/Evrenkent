@@ -8,7 +8,7 @@
     <form
         method="POST"
         action="{{ $chapter ? route('panel.yayinlarim.kitap.bolumler.guncelle', [$book, $chapter]) : route('panel.yayinlarim.kitap.bolumler.store', $book) }}"
-        class="bg-white border border-slate-200 rounded-lg p-6 space-y-5 max-w-2xl mx-auto"
+        class="bg-white border border-slate-200 rounded-lg p-4 sm:p-6 space-y-5 max-w-3xl mx-auto"
     >
         @csrf
         @if ($chapter)
@@ -28,8 +28,13 @@
         </div>
 
         <div>
-            <label for="content" class="block text-sm font-medium text-slate-700 mb-1">İçerik</label>
-            <textarea id="content" name="content" rows="14" class="w-full rounded-md border-slate-300 text-sm focus:border-slate-500 focus:ring-slate-500">{{ old('content', $chapter?->content) }}</textarea>
+            <x-rich-editor
+                name="content"
+                :value="old('content', $chapter?->content)"
+                :import-url="route('panel.yayinlarim.word-aktar')"
+                title-input="title"
+            />
+            <p class="text-xs text-slate-400 mt-1">Tüm kitabı tek dosyada yüklemek için bölümler sayfasındaki "Word'den Bölüm Aktar"ı kullanın.</p>
             @error('content') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
         </div>
 

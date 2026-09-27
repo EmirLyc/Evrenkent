@@ -68,6 +68,143 @@ Alpine.data('countdown', (iso) => ({
     },
 }));
 
+// Zengin metin editörü (x-rich-editor bileşeni, Faz F1) — bölüm ve makale içeriği.
+// Tiptap sadece editör olan sayfada yükleniyor (dinamik import, ayrı chunk). Editör nesnesi
+// Alpine'in reaktif verisine konmuyor (Proxy sarmalayıcısı Tiptap'i bozuyor), kapanışta
+// duruyor; `tick` sadece araç çubuğundaki aktif durumları yeniden hesaplatmak için.
+// Kaydedilecek HTML gizli input'a yazılıyor, form normal POST ile gidiyor.
+Alpine.data('richEditor', ({ importUrl = null, titleInput = null } = {}) => {
+    let editor = null;
+
+    return {
+        ready: false,
+        tick: 0,
+        panel: null,
+        panelText: '',
+        editingFootnote: false,
+        importing: false,
+        importError: '',
+        importNotice: '',
+
+        async init() {
+            const { createEditor } = await import('./rich-editor.js');
+            this.$refs.surface.innerHTML = '';
+            editor = createEditor({
+                element: this.$refs.surface,
+                content: this.$refs.input.value,
+                onUpdate: (instance) => this.sync(instance),
+                onSelection: () => this.tick++,
+            });
+            this.ready = true;
+        },
+        destroy() {
+            editor?.destroy();
+            editor = null;
+        },
+        sync(instance) {
+            this.$refs.input.value = instance.isEmpty ? '' : instance.getHTML();
+            this.tick++;
+        },
+        isActive(name, attributes = {}) {
+            this.tick;
+            return editor ? editor.isActive(name, attributes) : false;
+        },
+        can(command) {
+            this.tick;
+            return editor ? editor.can()[command]() : false;
+        },
+        run(command, ...args) {
+            editor?.chain().focus()[command](...args).run();
+        },
+
+        // Bağlantı ve dipnot için araç çubuğunun altında açılan küçük panel (prompt() yerine —
+        // mobilde de düzgün çalışsın, dipnot metni uzun olabilsin).
+        openPanel(type) {
+            if (!editor) return;
+            if (type === 'link') {
+                this.panelText = editor.getAttributes('link').href || '';
+            } else {
+                const selected = editor.state.selection.node;
+                this.editingFootnote = selected?.type.name === 'footnote';
+                this.panelText = this.editingFootnote ? selected.attrs.text : '';
+            }
+            this.panel = type;
+            this.$nextTick(() => this.$refs.panelInput?.focus());
+        },
+        savePanel() {
+            const text = this.panelText.trim();
+            const chain = editor.chain().focus();
+
+            if (this.panel === 'link') {
+                if (text) {
+                    const href = /^(https?:\/\/|mailto:)/i.test(text) ? text : `https://${text}`;
+                    chain.extendMarkRange('link').setLink({ href }).run();
+                } else {
+                    chain.extendMarkRange('link').unsetLink().run();
+                }
+            } else if (this.editingFootnote) {
+                text ? chain.updateAttributes('footnote', { text }).run() : chain.deleteSelection().run();
+            } else if (text) {
+                chain.insertContent({ type: 'footnote', attrs: { text } }).run();
+            }
+
+            this.closePanel();
+        },
+        removeFootnote() {
+            editor?.chain().focus().deleteSelection().run();
+            this.closePanel();
+        },
+        closePanel() {
+            this.panel = null;
+            this.panelText = '';
+            this.editingFootnote = false;
+        },
+
+        async importWord(event) {
+            const file = event.target.files[0];
+            event.target.value = '';
+            if (!file || !importUrl || !editor) return;
+            if (!editor.isEmpty && !confirm('Editördeki metin, Word dosyasındaki metinle değiştirilecek. Devam edilsin mi?')) return;
+
+            this.importing = true;
+            this.importError = '';
+            this.importNotice = '';
+            const body = new FormData();
+            body.append('file', file);
+
+            try {
+                const response = await fetch(importUrl, {
+                    method: 'POST',
+                    body,
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+                        Accept: 'application/json',
+                    },
+                });
+                const data = await response.json();
+
+                if (!response.ok) {
+                    this.importError = data.errors?.file?.[0] ?? 'Dosya aktarılamadı.';
+                    return;
+                }
+
+                editor.commands.setContent(data.html);
+                this.sync(editor);
+
+                const title = titleInput && document.getElementById(titleInput);
+                if (title && data.title && !title.value.trim()) {
+                    title.value = data.title;
+                }
+                this.importNotice = 'Word dosyası aktarıldı. Kontrol edip kaydetmeyi unutmayın.';
+            } catch {
+                this.importError = 'Dosya aktarılamadı. Bağlantınızı kontrol edip tekrar deneyin.';
+            } finally {
+                this.importing = false;
+            }
+        },
+    };
+});
+
 // Sidebar scroll pozisyonu — Turbo her geçişte <body>'yi (dolayısıyla <aside>'ı)
 // baştan render ediyor, bu yüzden aşağı kaydırıp bir linke tıklayınca sidebar
 // görsel olarak "sıfırlanıp" en başa dönüyordu. scroll event'i bubble etmediği

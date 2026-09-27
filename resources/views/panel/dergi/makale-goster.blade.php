@@ -21,7 +21,8 @@
             </x-detail-header>
         </div>
 
-        <div class="text-slate-700 leading-relaxed whitespace-pre-line mt-9">{{ $article->content }}</div>
+        {{-- Faz F1: temizlenmiş HTML (RichText), dipnotlar numaralı. --}}
+        <div class="rich-content mt-9">{!! $article->renderedContent() !!}</div>
 
         @can('review', $article)
             <div class="card p-6 mt-10">

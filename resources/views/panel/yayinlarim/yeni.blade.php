@@ -5,14 +5,15 @@
 @section('content')
     <h1 class="font-serif text-xl font-semibold text-slate-900 mb-5">Yeni Taslak Oluştur</h1>
 
-    <form method="POST" action="{{ route('panel.yayinlarim.taslaklarim.store') }}" x-data="{ type: 'kitap' }" class="bg-white border border-slate-200 rounded-lg p-6 space-y-5 max-w-2xl mx-auto">
+    {{-- Tür, doğrulama hatasından dönüşte korunuyor (önceden hep "Kitap"a dönüyordu). --}}
+    <form method="POST" action="{{ route('panel.yayinlarim.taslaklarim.store') }}" x-data="{ type: @js(old('type', 'kitap')) }" class="bg-white border border-slate-200 rounded-lg p-4 sm:p-6 space-y-5 max-w-3xl mx-auto">
         @csrf
 
         <div>
             <label class="block text-sm font-medium text-slate-700 mb-2">Tür</label>
             <div class="flex gap-5">
                 <label class="inline-flex items-center gap-2 text-sm text-slate-700">
-                    <input type="radio" name="type" value="kitap" x-model="type" checked class="text-slate-900 focus:ring-slate-500"> Kitap
+                    <input type="radio" name="type" value="kitap" x-model="type" class="text-slate-900 focus:ring-slate-500"> Kitap
                 </label>
                 <label class="inline-flex items-center gap-2 text-sm text-slate-700">
                     <input type="radio" name="type" value="makale" x-model="type" class="text-slate-900 focus:ring-slate-500"> Makale
@@ -56,12 +57,26 @@
             @error('magazine_issue_id') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
         </div>
 
+        {{-- Kitapta düz metin açıklama (bölümler ayrıca eklenir), makalede zengin metin içerik.
+             İkisi de "body" adıyla gidiyor; x-if sadece seçili türün alanını DOM'da tutuyor. --}}
         <div>
-            <label for="body" class="block text-sm font-medium text-slate-700 mb-1">
-                <span x-show="type === 'kitap'">Açıklama</span>
-                <span x-show="type === 'makale'">İçerik</span>
-            </label>
-            <textarea id="body" name="body" rows="8" class="w-full rounded-md border-slate-300 text-sm focus:border-slate-500 focus:ring-slate-500">{{ old('body') }}</textarea>
+            <template x-if="type === 'kitap'">
+                <div>
+                    <label for="body" class="block text-sm font-medium text-slate-700 mb-1">Açıklama</label>
+                    <textarea id="body" name="body" rows="8" class="w-full rounded-md border-slate-300 text-sm focus:border-slate-500 focus:ring-slate-500">{{ old('type', 'kitap') === 'kitap' ? old('body') : '' }}</textarea>
+                    <p class="text-xs text-slate-400 mt-1">Kitabın metnini taslağı oluşturduktan sonra "Bölümler" sayfasından ekleyebilir ya da Word dosyasından aktarabilirsiniz.</p>
+                </div>
+            </template>
+            <template x-if="type === 'makale'">
+                <div>
+                    <x-rich-editor
+                        name="body"
+                        :value="old('type') === 'makale' ? old('body') : ''"
+                        :import-url="route('panel.yayinlarim.word-aktar')"
+                        title-input="title"
+                    />
+                </div>
+            </template>
             @error('body') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
         </div>
 

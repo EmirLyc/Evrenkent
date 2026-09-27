@@ -10,9 +10,37 @@
                 &larr; Kitaba dön
             </a>
         </div>
-        <a href="{{ route('panel.yayinlarim.kitap.bolumler.yeni', $book) }}" class="text-sm px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors shrink-0">
-            Yeni Bölüm
-        </a>
+        <div class="flex items-center gap-2 shrink-0">
+            <button type="button" x-data @click="$dispatch('toggle-word-import')" class="text-sm px-4 py-2 border border-slate-300 bg-white text-slate-700 rounded-lg hover:bg-slate-50 transition-colors inline-flex items-center gap-1.5">
+                <x-heroicon-o-document-arrow-up class="w-4 h-4" /> Word'den Bölüm Aktar
+            </button>
+            <a href="{{ route('panel.yayinlarim.kitap.bolumler.yeni', $book) }}" class="text-sm px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors">
+                Yeni Bölüm
+            </a>
+        </div>
+    </div>
+
+    {{-- Faz F1: tüm kitabı tek Word dosyasından bölümlere ayırarak ekleme. --}}
+    <div
+        x-data="{ open: @js($errors->has('file')) }"
+        @toggle-word-import.window="open = !open"
+        x-show="open"
+        x-cloak
+        class="bg-white border border-slate-200 rounded-lg p-4 sm:p-5 mb-5"
+    >
+        <h2 class="font-medium text-slate-900">Word dosyasından bölüm aktar</h2>
+        <p class="text-sm text-slate-500 mt-1">
+            Dosyadaki her <strong class="font-medium text-slate-700">Başlık 1</strong> yeni bir bölüm başlatır ve bölümün adı olur; başlıktan önceki metin "Giriş" bölümü olarak eklenir.
+            Kalın, eğik, alt başlıklar, listeler ve dipnotlar korunur. Bölümler mevcut bölümlerin sonuna eklenir, sonra tek tek düzenleyebilirsiniz.
+        </p>
+        <form method="POST" action="{{ route('panel.yayinlarim.kitap.bolumler.word-aktar', $book) }}" enctype="multipart/form-data" class="mt-3 flex flex-col sm:flex-row sm:items-center gap-3">
+            @csrf
+            <input type="file" name="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" required class="block w-full text-sm text-slate-600 file:mr-3 file:rounded-md file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-medium file:text-slate-700 hover:file:bg-slate-200">
+            <button type="submit" class="text-sm px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors shrink-0">
+                Bölümleri Oluştur
+            </button>
+        </form>
+        @error('file') <p class="text-sm text-red-600 mt-2">{{ $message }}</p> @enderror
     </div>
 
     @if ($chapters->isEmpty())
