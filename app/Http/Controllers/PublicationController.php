@@ -11,6 +11,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class PublicationController extends Controller
@@ -58,17 +59,17 @@ class PublicationController extends Controller
     }
 
     /**
-     * Bir makalenin gönderilebileceği dergi sayıları — henüz yayınlanmamış
-     * (Yayında olmayan) her sayı, editörü kim olursa olsun. Yazar bir makale
-     * yazarken hangi sayıya gönderdiğini burada seçiyor; bu seçim olmadan
-     * makale hiçbir Dergi Editörü'nün Makale Havuzu'nda görünmüyordu (gerçek
-     * bir eşleştirme boşluğuydu, bkz. UI_RESTYLE_NOTES.md).
+     * Bir makalenin gönderilebileceği dergi sayıları — yazarın atandığı dergilerin
+     * (Faz E: "dergide yazarı süper admin yapacak") henüz yayınlanmamış sayıları.
+     * Önceden her yazar açık olan her sayıya gönderebiliyordu.
      *
      * @return \Illuminate\Support\Collection<int, MagazineIssue>
      */
     private function assignableMagazineIssues()
     {
         return MagazineIssue::where('status', '!=', ContentStatus::Yayinda)
+            ->whereIn('magazine_id', auth()->user()->authoredMagazines()->pluck('magazines.id'))
+            ->with('magazine')
             ->orderBy('title')
             ->get();
     }
@@ -140,11 +141,14 @@ class PublicationController extends Controller
     {
         $this->authorize('update', $article);
 
+        // Mevcut sayısı listede olmasa da (arada yayına girmiş olabilir) korunabilsin.
+        $allowedIssueIds = $this->assignableMagazineIssues()->pluck('id')->push($article->magazine_issue_id)->filter();
+
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'body' => ['required', 'string'],
-            'magazine_issue_id' => ['required', 'exists:magazine_issues,id'],
-        ]);
+            'magazine_issue_id' => ['required', Rule::in($allowedIssueIds)],
+        ], $this->issueMessages());
 
         $article->update([
             'title' => $data['title'],
@@ -153,6 +157,14 @@ class PublicationController extends Controller
         ]);
 
         return redirect()->route($this->listRouteFor($article->status))->with('status', 'Makale güncellendi.');
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function issueMessages(): array
+    {
+        return ['magazine_issue_id.in' => 'Bu sayıya makale gönderemezsiniz — sadece atandığınız dergilerin açık sayılarına gönderebilirsiniz.'];
     }
 
     /**
@@ -172,8 +184,10 @@ class PublicationController extends Controller
             'type' => ['required', 'in:kitap,makale'],
             'title' => ['required', 'string', 'max:255'],
             'body' => ['required', 'string'],
-            'magazine_issue_id' => ['required_if:type,makale', 'nullable', 'exists:magazine_issues,id'],
-        ]);
+            // Sadece yazarın atandığı dergilerin açık sayıları — istek elle düzenlenip başka
+            // bir derginin sayısına gönderilemesin.
+            'magazine_issue_id' => ['required_if:type,makale', 'nullable', Rule::in($this->assignableMagazineIssues()->pluck('id'))],
+        ], $this->issueMessages());
 
         $user = $request->user();
         $slug = Str::slug($data['title']).'-'.Str::random(6);

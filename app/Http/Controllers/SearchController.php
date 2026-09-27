@@ -38,10 +38,11 @@ class SearchController extends Controller
                 ->get();
 
             $issues = MagazineIssue::published()
-                ->with('editor')
+                ->with(['editor', 'magazine'])
                 ->where(function ($query) use ($like) {
                     $query->where('title', 'like', $like)
-                        ->orWhereHas('editor', fn ($q) => $q->where('name', 'like', $like));
+                        ->orWhereHas('editor', fn ($q) => $q->where('name', 'like', $like))
+                        ->orWhereHas('magazine', fn ($q) => $q->where('name', 'like', $like));
                 })
                 ->latest('publish_date')
                 ->take(12)

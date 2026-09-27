@@ -35,6 +35,12 @@ class MagazineIssueResource extends Resource
     {
         return $form
             ->schema([
+                // Faz E: sayı bir dergiye bağlı. Kendi panelimizde editör dergiden türetiliyor;
+                // bu yedek arayüzde editör hâlâ ayrıca seçiliyor (derginin editörüyle aynı olmalı).
+                Forms\Components\Select::make('magazine_id')
+                    ->label('Dergi')
+                    ->relationship('magazine', 'name')
+                    ->required(),
                 Forms\Components\Select::make('editor_id')
                     ->label('Dergi Editörü')
                     ->relationship('editor', 'name')

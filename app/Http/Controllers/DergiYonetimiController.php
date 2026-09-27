@@ -8,6 +8,7 @@ use App\Models\MagazineIssue;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class DergiYonetimiController extends Controller
@@ -147,14 +148,22 @@ class DergiYonetimiController extends Controller
     {
         $this->authorize('create', MagazineIssue::class);
 
-        return view('panel.dergi.sayi-form', ['magazineIssue' => null]);
+        // Faz E: sayı, editörün Süper Admin tarafından atandığı dergilerden birine açılır.
+        return view('panel.dergi.sayi-form', [
+            'magazineIssue' => null,
+            'magazines' => auth()->user()->editedMagazines()->orderBy('name')->get(),
+        ]);
     }
 
     public function storeSayi(Request $request): RedirectResponse
     {
         $this->authorize('create', MagazineIssue::class);
 
-        $data = $request->validate($this->sayiValidationRules());
+        $data = $request->validate([
+            ...$this->sayiValidationRules(),
+            // Sadece editörü olduğu dergiler — başka bir derginin sayısını açamaz.
+            'magazine_id' => ['required', Rule::in(auth()->user()->editedMagazines()->pluck('id'))],
+        ], ['magazine_id.in' => 'Sadece editörü olduğunuz bir dergiye sayı açabilirsiniz.']);
 
         if ($request->hasFile('cover_image')) {
             // Filament'in FileUpload'ıyla aynı disk/dizin — x-magazine-cover bileşeni

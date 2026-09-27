@@ -24,6 +24,29 @@
             @method('PUT')
         @endif
 
+        {{-- Faz E: sayı bir dergiye bağlı. Oluştururken editörü olduğunuz dergilerden biri
+             seçilir; sonradan değiştirilemez (Süper Admin sayı yönetiminden değiştirebilir). --}}
+        <div>
+            <div class="block text-sm font-medium text-slate-700 mb-1">Dergi</div>
+            @if ($magazineIssue)
+                <p class="text-sm text-slate-900">{{ $magazineIssue->magazine?->name ?? '—' }}</p>
+            @elseif ($magazines->isEmpty())
+                <p class="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
+                    Size henüz bir dergi atanmadı. Sayı açabilmek için Süper Admin'in sizi bir derginin editörü olarak ataması gerekiyor.
+                </p>
+            @else
+                <select id="magazine_id" name="magazine_id" class="w-full rounded-md border-slate-300 text-sm focus:border-slate-500 focus:ring-slate-500">
+                    @if ($magazines->count() > 1)
+                        <option value="">— Seçiniz —</option>
+                    @endif
+                    @foreach ($magazines as $magazine)
+                        <option value="{{ $magazine->id }}" @selected(old('magazine_id') == $magazine->id)>{{ $magazine->name }}</option>
+                    @endforeach
+                </select>
+            @endif
+            @error('magazine_id') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
+        </div>
+
         <div>
             <label for="title" class="block text-sm font-medium text-slate-700 mb-1">Başlık</label>
             <input id="title" name="title" type="text" value="{{ old('title', $magazineIssue?->title) }}" class="w-full rounded-md border-slate-300 text-sm focus:border-slate-500 focus:ring-slate-500">
@@ -59,7 +82,7 @@
         </div>
 
         <div class="flex items-center gap-4 pt-1">
-            <button type="submit" class="btn-brand">
+            <button type="submit" class="btn-brand" @disabled(! $magazineIssue && $magazines->isEmpty())>
                 {{ $magazineIssue ? 'Değişiklikleri Kaydet' : 'Sayıyı Oluştur' }}
             </button>
             <a href="{{ route('panel.dergi.sayilarim') }}" class="text-sm text-slate-500 hover:text-slate-900 transition-colors">

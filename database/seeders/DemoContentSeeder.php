@@ -9,6 +9,7 @@ use App\Models\Article;
 use App\Models\Book;
 use App\Models\Category;
 use App\Models\Chapter;
+use App\Models\Magazine;
 use App\Models\MagazineIssue;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -215,9 +216,20 @@ class DemoContentSeeder extends Seeder
 
         $issueModels = [];
         foreach ($issues as $data) {
+            // Faz E: her sayı bir dergiye bağlı — dergi adı başlıktan ("X Dergisi - Sayı N").
+            // Demo editörü tüm dergilerin editörü, iki demo yazar tüm dergilere atanmış
+            // (yazar sadece atandığı dergilere makale gönderebiliyor).
+            $magazineName = trim(explode(' - Sayı', $data['title'])[0]);
+            $magazine = Magazine::firstOrCreate(
+                ['slug' => Str::slug($magazineName)],
+                ['name' => $magazineName, 'editor_id' => $editor->id, 'description' => "{$magazineName}, Evrenkent'in dergi yayınlarından biri."]
+            );
+            $magazine->authors()->syncWithoutDetaching([$author1->id, $author2->id]);
+
             $issueModels[$data['title']] = MagazineIssue::firstOrCreate(
                 ['title' => $data['title']],
                 [
+                    'magazine_id' => $magazine->id,
                     'editor_id' => $editor->id,
                     'issue_number' => $data['number'],
                     'status' => $data['status'],

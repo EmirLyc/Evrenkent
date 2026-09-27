@@ -10,8 +10,13 @@
             <x-detail-header
                 :title="$issue->title"
                 :byline="$issue->editor->name"
-                :meta="['Sayı ' . $issue->issue_number, $issue->publish_date?->translatedFormat('d M Y')]"
+                :meta="[$issue->magazine?->name, 'Sayı ' . $issue->issue_number, $issue->publish_date?->translatedFormat('d M Y')]"
             >
+                @if ($issue->magazine)
+                    <a href="{{ route('dergi.show', $issue->magazine) }}" class="pill-tag !py-1 !px-3 !text-xs hover:border-brand-300 hover:text-brand-700 transition-colors">
+                        {{ $issue->magazine->name }} — tüm sayılar
+                    </a>
+                @endif
                 {{-- Kitap sayfasıyla tutarlı: yayındaki sayıda "Yayında" rozeti gereksiz. --}}
                 @if ($issue->status !== \App\Enums\ContentStatus::Yayinda && ! $isUpcoming)
                     <x-status-badge :status="$issue->status" />

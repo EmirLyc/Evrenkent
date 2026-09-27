@@ -5,6 +5,7 @@ use App\Http\Controllers\BookCatalogController;
 use App\Http\Controllers\BookController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\MagazineCatalogController;
+use App\Http\Controllers\MagazineController;
 use App\Http\Controllers\MagazineIssueController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SearchController;
@@ -18,6 +19,7 @@ Route::get('/kitaplar/{book:slug}', [BookController::class, 'show'])->name('kita
 Route::get('/kitaplar/{book:slug}/oku/{chapterNumber?}', [BookController::class, 'read'])->name('kitaplar.oku');
 Route::get('/dergiler', [MagazineCatalogController::class, 'index'])->name('dergiler.index');
 Route::get('/dergiler/{magazineIssue}', [MagazineIssueController::class, 'show'])->name('dergiler.show');
+Route::get('/dergi/{magazine:slug}', [MagazineController::class, 'show'])->name('dergi.show');
 Route::get('/makaleler/{article:slug}', [ArticleController::class, 'show'])->name('makaleler.show');
 Route::get('/abonelik', [SubscriptionController::class, 'index'])->name('abonelik');
 

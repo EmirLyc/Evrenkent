@@ -17,7 +17,7 @@ class MagazineIssue extends Model
     use HasFactory;
 
     protected $fillable = [
-        'editor_id', 'title', 'issue_number', 'cover_image', 'editor_note', 'status', 'publish_date',
+        'magazine_id', 'editor_id', 'title', 'issue_number', 'cover_image', 'editor_note', 'status', 'publish_date',
         'scheduled_publish_at',
     ];
 
@@ -52,6 +52,11 @@ class MagazineIssue extends Model
     public function editor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'editor_id');
+    }
+
+    public function magazine(): BelongsTo
+    {
+        return $this->belongsTo(Magazine::class);
     }
 
     public function articles(): HasMany

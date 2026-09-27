@@ -25,10 +25,16 @@
             <label for="magazine_issue_id" class="block text-sm font-medium text-slate-700 mb-1">Dergi Sayısı</label>
             <select id="magazine_issue_id" name="magazine_issue_id" class="w-full rounded-md border-slate-300 text-sm focus:border-slate-500 focus:ring-slate-500">
                 <option value="">— Seçiniz —</option>
-                @foreach ($magazineIssues as $issue)
-                    <option value="{{ $issue->id }}" @selected(old('magazine_issue_id', $article->magazine_issue_id) == $issue->id)>{{ $issue->title }}</option>
+                {{-- Faz E: sadece atandığınız dergilerin açık sayıları (+ makalenin mevcut sayısı), dergiye göre gruplu. --}}
+                @foreach ($magazineIssues->groupBy(fn ($issue) => $issue->magazine?->name ?? 'Diğer') as $magazineName => $issuesOfMagazine)
+                    <optgroup label="{{ $magazineName }}">
+                        @foreach ($issuesOfMagazine as $issue)
+                            <option value="{{ $issue->id }}" @selected(old('magazine_issue_id', $article->magazine_issue_id) == $issue->id)>{{ $issue->title }}</option>
+                        @endforeach
+                    </optgroup>
                 @endforeach
             </select>
+            <p class="text-xs text-slate-400 mt-1">Yalnızca Süper Admin'in sizi yazar olarak atadığı dergilerin sayıları listelenir.</p>
             @error('magazine_issue_id') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
         </div>
 

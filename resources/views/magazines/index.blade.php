@@ -6,6 +6,26 @@
     <h1 class="sr-only">Dergiler</h1>
     <x-content-type-switcher active="dergiler" />
 
+    {{-- Faz E: dergiler — her biri kendi sayfasına (sayıları, editörü, açıklaması). --}}
+    @if ($magazines->isNotEmpty())
+        <section class="mb-12">
+            <h2 class="font-serif text-xl font-semibold text-slate-900 mb-4">Dergiler</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                @foreach ($magazines as $magazine)
+                    <a href="{{ route('dergi.show', $magazine) }}" class="card-hover flex items-center gap-4 p-4">
+                        <span class="flex items-center justify-center w-11 h-11 rounded-lg bg-brand-50 text-brand-600 shrink-0">
+                            <x-heroicon-o-newspaper class="w-6 h-6" />
+                        </span>
+                        <span class="min-w-0">
+                            <span class="block font-medium text-slate-900 truncate">{{ $magazine->name }}</span>
+                            <span class="block text-sm text-slate-500">{{ $magazine->issues_count }} sayı</span>
+                        </span>
+                    </a>
+                @endforeach
+            </div>
+        </section>
+    @endif
+
     @if ($upcomingIssues->isNotEmpty())
         <x-home-shelf title="Yakında Çıkacak Sayılar">
             @foreach ($upcomingIssues as $upcomingIssue)

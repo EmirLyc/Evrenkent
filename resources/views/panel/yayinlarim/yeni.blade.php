@@ -36,15 +36,20 @@
              olmadan makale hiçbir Dergi Editörü'nün Makale Havuzu'nda görünmüyor. --}}
         <div x-show="type === 'makale'">
             <label for="magazine_issue_id" class="block text-sm font-medium text-slate-700 mb-1">Dergi Sayısı</label>
+            {{-- Faz E: sadece Süper Admin'in sizi atadığı dergilerin açık sayıları, dergiye göre gruplu. --}}
             @if ($magazineIssues->isEmpty())
                 <p class="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
-                    Şu an gönderilebilecek açık bir dergi sayısı yok — bir Dergi Editörü yeni bir sayı oluşturana kadar makale gönderemezsiniz.
+                    Makale gönderebileceğiniz açık bir dergi sayısı yok. Makaleler yalnızca Süper Admin'in sizi yazar olarak atadığı dergilere gönderilebilir; atandığınız dergide editör yeni bir sayı açınca burada görünür.
                 </p>
             @else
                 <select id="magazine_issue_id" name="magazine_issue_id" class="w-full rounded-md border-slate-300 text-sm focus:border-slate-500 focus:ring-slate-500">
                     <option value="">— Seçiniz —</option>
-                    @foreach ($magazineIssues as $issue)
-                        <option value="{{ $issue->id }}" @selected(old('magazine_issue_id') == $issue->id)>{{ $issue->title }}</option>
+                    @foreach ($magazineIssues->groupBy(fn ($issue) => $issue->magazine?->name ?? 'Diğer') as $magazineName => $issuesOfMagazine)
+                        <optgroup label="{{ $magazineName }}">
+                            @foreach ($issuesOfMagazine as $issue)
+                                <option value="{{ $issue->id }}" @selected(old('magazine_issue_id') == $issue->id)>{{ $issue->title }}</option>
+                            @endforeach
+                        </optgroup>
                     @endforeach
                 </select>
             @endif

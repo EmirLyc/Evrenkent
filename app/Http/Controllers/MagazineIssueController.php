@@ -19,7 +19,7 @@ class MagazineIssueController extends Controller
 
         abort_unless($magazineIssue->status === ContentStatus::Yayinda || $isUpcoming || $isOwnerOrAdmin, 404);
 
-        $magazineIssue->load('editor');
+        $magazineIssue->load(['editor', 'magazine']);
 
         // Sahibi/Süper Admin önizlerken sayının içindeki taslak makaleleri de görebilir
         // (aksi halde onay bekleyen bir sayı hep boş görünürdü) — herkes için hâlâ sadece

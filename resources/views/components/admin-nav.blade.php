@@ -16,6 +16,7 @@
         'Yayın Yönetimi' => [
             ['label' => 'Kitaplar', 'icon' => 'book-open', 'href' => route('panel.adminpanel.kitaplar.index')],
             ['label' => 'Dergiler', 'icon' => 'newspaper', 'href' => route('panel.adminpanel.dergiler.index')],
+            ['label' => 'Dergi Sayıları', 'icon' => 'document-duplicate', 'href' => route('panel.adminpanel.sayilar.index')],
             ['label' => 'Sözlükler', 'icon' => 'language', 'href' => route('panel.adminpanel.placeholder', 'sozlukler')],
             ['label' => 'Tüm Yayınlar', 'icon' => 'rectangle-stack', 'href' => route('panel.adminpanel.placeholder', 'tum-yayinlar')],
             ['label' => 'Onay Bekleyenler', 'icon' => 'clock', 'href' => route('panel.adminpanel.onaylar.index'), 'badge' => $pendingTotal],

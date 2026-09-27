@@ -30,7 +30,7 @@ class HomeController extends Controller
 
         // Yakında Çıkacaklar: zamanlanmış kitaplar ve dergi sayıları (Faz D) tarih sırasıyla karışık.
         $upcoming = BookShelf::YakindaCikacaklar->query()->take(6)->get()
-            ->concat(MagazineIssue::upcoming()->take(6)->get())
+            ->concat(MagazineIssue::upcoming()->with('magazine')->take(6)->get())
             ->sortBy('scheduled_publish_at')
             ->take(6)
             ->values();
@@ -39,7 +39,7 @@ class HomeController extends Controller
             'newBooks' => BookShelf::YeniCikanlar->query()->take(6)->get(),
             'upcoming' => $upcoming,
             'editorsPicks' => BookShelf::EditorunSeckisi->query()->take(6)->get(),
-            'newIssues' => MagazineIssue::published()->latest('publish_date')->take(6)->get(),
+            'newIssues' => MagazineIssue::published()->with('magazine')->latest('publish_date')->take(6)->get(),
             // Sadece en az bir yayındaki kitabı olan kategoriler — boş bir etikete tıklayıp
             // "bu kategoride kitap yok" sayfasına düşmek anlamsız olurdu.
             'categories' => Category::whereHas('books', fn ($query) => $query->published())

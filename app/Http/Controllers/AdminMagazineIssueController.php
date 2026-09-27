@@ -3,11 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Enums\ContentStatus;
+use App\Models\Magazine;
 use App\Models\MagazineIssue;
-use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 /**
@@ -25,12 +26,12 @@ class AdminMagazineIssueController extends Controller
         $issues = MagazineIssue::query()
             ->when($request->filled('q'), fn ($query) => $query->where('title', 'like', '%'.addcslashes($request->string('q'), '%_\\').'%'))
             ->when($request->filled('durum'), fn ($query) => $query->where('status', $request->string('durum')))
-            ->with('editor')
+            ->with(['editor', 'magazine'])
             ->latest('updated_at')
             ->paginate(20)
             ->withQueryString();
 
-        return view('panel.admin.dergiler.index', [
+        return view('panel.admin.sayilar.index', [
             'issues' => $issues,
             'q' => $request->string('q')->toString(),
             'durum' => $request->string('durum')->toString(),
@@ -41,9 +42,9 @@ class AdminMagazineIssueController extends Controller
     {
         $this->authorize('create', MagazineIssue::class);
 
-        return view('panel.admin.dergiler.form', [
+        return view('panel.admin.sayilar.form', [
             'issue' => null,
-            'editors' => User::role('dergi_editoru')->orderBy('name')->get(),
+            'magazines' => Magazine::with('editor')->orderBy('name')->get(),
         ]);
     }
 
@@ -51,7 +52,7 @@ class AdminMagazineIssueController extends Controller
     {
         $this->authorize('create', MagazineIssue::class);
 
-        $data = $request->validate($this->validationRules(create: true));
+        $data = $this->withMagazineEditor($request->validate($this->validationRules(create: true)));
 
         if ($request->hasFile('cover_image')) {
             // Filament'in FileUpload'ıyla aynı disk/dizin — x-magazine-cover bileşeni
@@ -63,16 +64,16 @@ class AdminMagazineIssueController extends Controller
 
         $issue = MagazineIssue::create($data);
 
-        return redirect()->route('panel.adminpanel.dergiler.duzenle', $issue)->with('status', 'Sayı oluşturuldu.');
+        return redirect()->route('panel.adminpanel.sayilar.duzenle', $issue)->with('status', 'Sayı oluşturuldu.');
     }
 
     public function edit(MagazineIssue $magazineIssue): View
     {
         $this->authorize('update', $magazineIssue);
 
-        return view('panel.admin.dergiler.form', [
+        return view('panel.admin.sayilar.form', [
             'issue' => $magazineIssue,
-            'editors' => User::role('dergi_editoru')->orderBy('name')->get(),
+            'magazines' => Magazine::with('editor')->orderBy('name')->get(),
         ]);
     }
 
@@ -80,7 +81,7 @@ class AdminMagazineIssueController extends Controller
     {
         $this->authorize('update', $magazineIssue);
 
-        $data = $request->validate($this->validationRules(create: false));
+        $data = $this->withMagazineEditor($request->validate($this->validationRules(create: false)));
 
         if ($request->hasFile('cover_image')) {
             $data['cover_image'] = $request->file('cover_image')->store('covers/magazine-issues', config('filesystems.covers_disk'));
@@ -93,7 +94,7 @@ class AdminMagazineIssueController extends Controller
 
         $magazineIssue->update($data);
 
-        return redirect()->route('panel.adminpanel.dergiler.duzenle', $magazineIssue)->with('status', 'Sayı güncellendi.');
+        return redirect()->route('panel.adminpanel.sayilar.duzenle', $magazineIssue)->with('status', 'Sayı güncellendi.');
     }
 
     public function destroy(MagazineIssue $magazineIssue): RedirectResponse
@@ -106,7 +107,27 @@ class AdminMagazineIssueController extends Controller
 
         $magazineIssue->delete();
 
-        return redirect()->route('panel.adminpanel.dergiler.index')->with('status', 'Sayı silindi.');
+        return redirect()->route('panel.adminpanel.sayilar.index')->with('status', 'Sayı silindi.');
+    }
+
+    /**
+     * Sayının editörü, seçilen derginin editörü (Faz E) — ayrıca seçilmiyor. Editörü
+     * atanmamış dergiye sayı açılamaz (sayının editor_id'si zorunlu, editör yetkileri ona bağlı).
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function withMagazineEditor(array $data): array
+    {
+        $magazine = Magazine::findOrFail($data['magazine_id']);
+
+        if ($magazine->editor_id === null) {
+            throw ValidationException::withMessages([
+                'magazine_id' => "\"{$magazine->name}\" dergisine henüz editör atanmamış — önce Dergiler sayfasından editör atayın.",
+            ]);
+        }
+
+        return array_merge($data, ['editor_id' => $magazine->editor_id]);
     }
 
     /**
@@ -115,7 +136,7 @@ class AdminMagazineIssueController extends Controller
     private function validationRules(bool $create): array
     {
         return [
-            'editor_id' => ['required', 'exists:users,id'],
+            'magazine_id' => ['required', 'exists:magazines,id'],
             'title' => ['required', 'string', 'max:255'],
             'issue_number' => ['required', 'integer', 'min:1'],
             'cover_image' => ['nullable', 'image', 'max:5120'],

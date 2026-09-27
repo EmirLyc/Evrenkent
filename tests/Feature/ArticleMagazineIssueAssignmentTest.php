@@ -28,15 +28,42 @@ class ArticleMagazineIssueAssignmentTest extends TestCase
         return $user;
     }
 
-    public function test_new_draft_form_lists_only_unpublished_magazine_issues(): void
+    /** Faz E: yazar sadece Süper Admin'in kendisini atadığı dergilerin sayılarına gönderebilir. */
+    private function assignTo(User $author, MagazineIssue ...$issues): void
+    {
+        foreach ($issues as $issue) {
+            $issue->magazine->authors()->syncWithoutDetaching([$author->id]);
+        }
+    }
+
+    public function test_new_draft_form_lists_only_unpublished_issues_of_assigned_magazines(): void
     {
         $author = $this->yazar();
         $open = MagazineIssue::factory()->create(['title' => 'Açık Sayı', 'status' => ContentStatus::Taslak]);
         $published = MagazineIssue::factory()->create(['title' => 'Yayında Sayı', 'status' => ContentStatus::Yayinda]);
+        MagazineIssue::factory()->create(['title' => 'Atanmadığı Dergi Sayısı', 'status' => ContentStatus::Taslak]);
+        $this->assignTo($author, $open, $published);
 
         $response = $this->actingAs($author)->get(route('panel.yayinlarim.taslaklarim.yeni'))->assertOk();
 
-        $response->assertSee('Açık Sayı')->assertDontSee('Yayında Sayı');
+        $response->assertSee('Açık Sayı')
+            ->assertDontSee('Yayında Sayı')
+            ->assertDontSee('Atanmadığı Dergi Sayısı');
+    }
+
+    public function test_author_cannot_submit_to_an_issue_of_a_magazine_they_are_not_assigned_to(): void
+    {
+        $author = $this->yazar();
+        $foreignIssue = MagazineIssue::factory()->create(['status' => ContentStatus::Taslak]);
+
+        $this->actingAs($author)->post(route('panel.yayinlarim.taslaklarim.store'), [
+            'type' => 'makale',
+            'title' => 'Sızma Makalesi',
+            'body' => 'İçerik.',
+            'magazine_issue_id' => $foreignIssue->id,
+        ])->assertSessionHasErrors('magazine_issue_id');
+
+        $this->assertDatabaseMissing('articles', ['title' => 'Sızma Makalesi']);
     }
 
     public function test_magazine_issue_is_required_when_creating_an_article(): void
@@ -58,6 +85,7 @@ class ArticleMagazineIssueAssignmentTest extends TestCase
     {
         $author = $this->yazar();
         $issue = MagazineIssue::factory()->create();
+        $this->assignTo($author, $issue);
 
         $this->actingAs($author)->post(route('panel.yayinlarim.taslaklarim.store'), [
             'type' => 'makale',
@@ -111,6 +139,7 @@ class ArticleMagazineIssueAssignmentTest extends TestCase
         $author = $this->yazar();
         $originalIssue = MagazineIssue::factory()->create();
         $newIssue = MagazineIssue::factory()->create();
+        $this->assignTo($author, $originalIssue, $newIssue);
         $article = Article::factory()->for($author, 'author')->create([
             'status' => ContentStatus::Taslak,
             'magazine_issue_id' => $originalIssue->id,

@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\ContentStatus;
 use App\Models\Article;
+use App\Models\Magazine;
 use App\Models\MagazineIssue;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -173,8 +174,11 @@ class DergiYonetimiTest extends TestCase
     {
         Storage::fake('public');
         $editor = $this->dergiEditoru();
+        // Faz E: sayı, editörün atandığı bir dergiye açılır.
+        $magazine = Magazine::factory()->create(['editor_id' => $editor->id]);
 
         $response = $this->actingAs($editor)->post(route('panel.dergi.sayilarim.store'), [
+            'magazine_id' => $magazine->id,
             'title' => 'Yeni Sayım',
             'issue_number' => 99,
             'editor_note' => 'Bu sayının yazısı.',
@@ -185,6 +189,7 @@ class DergiYonetimiTest extends TestCase
         $this->assertDatabaseHas('magazine_issues', [
             'title' => 'Yeni Sayım',
             'issue_number' => 99,
+            'magazine_id' => $magazine->id,
             'editor_id' => $editor->id,
             'status' => ContentStatus::Taslak->value,
         ]);
@@ -192,6 +197,28 @@ class DergiYonetimiTest extends TestCase
         $issue = MagazineIssue::where('title', 'Yeni Sayım')->firstOrFail();
         $response->assertRedirect(route('panel.dergi.sayilarim.duzenle', $issue));
         Storage::disk('public')->assertExists($issue->cover_image);
+    }
+
+    public function test_editor_cannot_open_an_issue_in_a_magazine_they_do_not_edit(): void
+    {
+        $editor = $this->dergiEditoru();
+        $foreignMagazine = Magazine::factory()->create(['editor_id' => $this->dergiEditoru()->id]);
+
+        $this->actingAs($editor)->post(route('panel.dergi.sayilarim.store'), [
+            'magazine_id' => $foreignMagazine->id,
+            'title' => 'Başkasının Sayısı',
+            'issue_number' => 1,
+        ])->assertSessionHasErrors('magazine_id');
+
+        $this->assertDatabaseMissing('magazine_issues', ['title' => 'Başkasının Sayısı']);
+    }
+
+    public function test_editor_without_an_assigned_magazine_sees_why_they_cannot_open_an_issue(): void
+    {
+        $this->actingAs($this->dergiEditoru())
+            ->get(route('panel.dergi.sayilarim.yeni'))
+            ->assertOk()
+            ->assertSee('Size henüz bir dergi atanmadı');
     }
 
     public function test_editor_can_only_edit_own_issue_while_it_is_taslak_or_revizyon_istendi(): void

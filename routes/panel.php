@@ -3,6 +3,7 @@
 use App\Http\Controllers\AdminBookController;
 use App\Http\Controllers\AdminCategoryController;
 use App\Http\Controllers\AdminDiscountController;
+use App\Http\Controllers\AdminMagazineController;
 use App\Http\Controllers\AdminPremiumController;
 use App\Http\Controllers\AdminMagazineIssueController;
 use App\Http\Controllers\AdminUserController;
@@ -150,9 +151,20 @@ Route::middleware('auth')->prefix('panel')->as('panel.')->group(function () {
             Route::delete('/{book}', [AdminBookController::class, 'destroy'])->name('sil');
         });
 
-        // Dergi Sayıları: Filament'teki MagazineIssueResource'un list/create/edit/
-        // delete'inin birebir aynısı (Faz 3 — bkz. UI_RESTYLE_NOTES.md).
+        // Dergiler (Faz E): dergi tanımı + Süper Admin'in atadığı editör ve yazarlar.
         Route::prefix('dergiler')->as('dergiler.')->group(function () {
+            Route::get('/', [AdminMagazineController::class, 'index'])->name('index');
+            Route::get('/yeni', [AdminMagazineController::class, 'create'])->name('yeni');
+            Route::post('/', [AdminMagazineController::class, 'store'])->name('store');
+            Route::get('/{magazine}/duzenle', [AdminMagazineController::class, 'edit'])->name('duzenle');
+            Route::put('/{magazine}', [AdminMagazineController::class, 'update'])->name('guncelle');
+            Route::delete('/{magazine}', [AdminMagazineController::class, 'destroy'])->name('sil');
+        });
+
+        // Dergi Sayıları: Filament'teki MagazineIssueResource'un list/create/edit/delete'inin
+        // karşılığı (Faz 3). Faz E'de "dergiler"den "sayilar"a taşındı — "Dergiler" artık dergi
+        // tanımlarını yönetiyor, sayılar ayrı bir menüde.
+        Route::prefix('sayilar')->as('sayilar.')->group(function () {
             Route::get('/', [AdminMagazineIssueController::class, 'index'])->name('index');
             Route::get('/yeni', [AdminMagazineIssueController::class, 'create'])->name('yeni');
             Route::post('/', [AdminMagazineIssueController::class, 'store'])->name('store');
