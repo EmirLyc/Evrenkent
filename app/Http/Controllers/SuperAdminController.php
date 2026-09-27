@@ -37,7 +37,8 @@ class SuperAdminController extends Controller
             ['label' => 'Toplam Kitap', 'value' => Book::count(), 'icon' => 'book-open'],
             ['label' => 'Toplam Dergi Sayısı', 'value' => MagazineIssue::count(), 'icon' => 'newspaper'],
             ['label' => 'Toplam Kullanıcı', 'value' => User::count(), 'icon' => 'users'],
-            ['label' => 'Premium Üye', 'value' => User::where('is_premium', true)->count(), 'icon' => 'sparkles'],
+            // Sadece şu an geçerli üyelik (bitiş tarihi geçmiş olanlar sayılmıyor — bkz. User::isPremium).
+            ['label' => 'Premium Üye', 'value' => User::premium()->count(), 'icon' => 'sparkles'],
             ['label' => 'Bugünkü Satış', 'value' => $todaySales, 'icon' => 'shopping-cart'],
             ['label' => 'Bugünkü Gelir', 'value' => number_format((float) $todayRevenue, 2, ',', '.').' TL', 'icon' => 'banknotes'],
         ];
@@ -106,7 +107,6 @@ class SuperAdminController extends Controller
             'odemeler' => 'Ödemeler',
             'faturalar' => 'Faturalar',
             'ana-sayfa-yonetimi' => 'Ana Sayfa Yönetimi',
-            'premium-sistemi' => 'Premium Sistemi',
             'bildirimler-sistemi' => 'Bildirimler (Sistem)',
             'sistem-ayarlari' => 'Sistem Ayarları',
             'islem-gecmisi' => 'İşlem Geçmişi',

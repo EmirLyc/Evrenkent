@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\ContentStatus;
+use App\Support\PlatformSettings;
 use Database\Factories\BookFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -85,12 +86,37 @@ class Book extends Model
      * Kullanıcının bu kitap için ödeyeceği fiyat — kart, kitap sayfası, sepet ve
      * satın alma hepsi buradan okur, fiyat mantığı tek yerde kalsın diye.
      *
-     * $user şimdilik kullanılmıyor: Faz C'de premium üyenin indirimi (kampanya
-     * indirimiyle toplanmaz, ikisinden avantajlı olan uygulanır) burada devreye girecek.
+     * Premium üyede premium indirimi (varsayılan %30, Süper Admin ayarlar) kampanya
+     * indirimiyle toplanmaz: ikisinden hangisi daha ucuzsa o uygulanır (toplantı kararı).
      */
     public function priceFor(?User $user = null): string
     {
-        return $this->activeDiscountPrice() ?? $this->price;
+        $price = $this->activeDiscountPrice() ?? $this->price;
+
+        if ($user?->isPremium()) {
+            $premium = $this->premiumPrice();
+
+            if ((float) $premium < (float) $price) {
+                return $premium;
+            }
+        }
+
+        return $price;
+    }
+
+    /** Premium indirimi uygulanmış fiyat (kampanyadan bağımsız) — "Premium ile X TL" için. */
+    public function premiumPrice(): string
+    {
+        $percent = PlatformSettings::get('premium_discount_percent');
+
+        return number_format(round((float) $this->price * (100 - $percent) / 100, 2), 2, '.', '');
+    }
+
+    /** priceFor() sonucu premium indiriminden mi geliyor (kartta "Premium" etiketi için). */
+    public function isPremiumPriceFor(?User $user): bool
+    {
+        return $user?->isPremium()
+            && (float) $this->premiumPrice() < (float) ($this->activeDiscountPrice() ?? $this->price);
     }
 
     /**

@@ -2,6 +2,7 @@
 
 namespace Tests;
 
+use App\Support\PlatformSettings;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 
@@ -15,4 +16,13 @@ abstract class TestCase extends BaseTestCase
     protected $seed = true;
 
     protected $seeder = RoleSeeder::class;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // PlatformSettings değerleri istek boyunca statik olarak önbellekleniyor — testler
+        // aynı PHP sürecinde çalıştığı için bir testin ayarı diğerine sızmasın.
+        PlatformSettings::flush();
+    }
 }

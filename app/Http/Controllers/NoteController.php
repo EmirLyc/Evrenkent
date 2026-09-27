@@ -60,6 +60,15 @@ class NoteController extends Controller
             }
         }
 
+        // Çalışma alanı kotası (2026-09-27 kararı): ücretsiz hesapta her alan (Defter/Not/
+        // Alıntı) ayrı sınırlı, premiumda sınırsız. Sadece yeni ekleme engellenir — mevcut
+        // kayıtlar okunur/düzenlenir/silinir, abonelik bitince de silinmez.
+        if (! $request->user()->canCreateNote($type)) {
+            return back()->withInput()->withErrors([
+                'quota' => "Ücretsiz hesapta {$type->label()} alanında en fazla {$request->user()->noteQuota($type)} kayıt tutabilirsiniz. Sınırsız kullanım için Premium'a geçebilirsiniz.",
+            ]);
+        }
+
         auth()->user()->notes()->create([
             'type' => $type,
             'noteable_type' => $data['noteable_type'] ?? null,

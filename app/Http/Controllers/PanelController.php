@@ -8,7 +8,7 @@ use Illuminate\View\View;
 class PanelController extends Controller
 {
     /**
-     * Bu alanların (Aboneliğim, Yardım, İletişim) henüz gerçek bir veri modeli yok —
+     * Bu alanların (Yardım, İletişim) henüz gerçek bir veri modeli yok —
      * sadece sayfa iskeleti/boş-durum olarak kuruluyor.
      */
     private function placeholder(string $title, string $message): View
@@ -40,13 +40,6 @@ class PanelController extends Controller
             ->sortByDesc(fn ($item) => optional($item->readingItem)->updated_at ?? $item->book->updated_at);
 
         return view('panel.kitapligim', compact('items'));
-    }
-
-    public function aboneligim(): View
-    {
-        return $this->placeholder('Aboneliğim', auth()->user()->is_premium
-            ? 'Premium aboneliğiniz aktif.'
-            : 'Şu an ücretsiz hesap kullanıyorsunuz.');
     }
 
     public function yardim(): View

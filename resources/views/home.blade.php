@@ -53,6 +53,20 @@
         </x-home-shelf>
     @endif
 
+    {{-- Premium tanıtımı — sadece abone olmayana (ziyaretçi dahil). Oran Süper Admin ayarından. --}}
+    @unless (auth()->user()?->isPremium())
+        <a href="{{ route('abonelik') }}" class="group flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl bg-navy text-white px-6 py-6 sm:px-8 mb-12">
+            <div class="flex items-center gap-4">
+                <x-heroicon-o-sparkles class="w-9 h-9 text-brand-300 shrink-0" />
+                <div>
+                    <div class="font-serif text-lg font-semibold">Evrenkent Premium</div>
+                    <p class="text-sm text-slate-300 mt-0.5">Tüm kitaplarda %{{ \App\Support\PlatformSettings::get('premium_discount_percent') }} indirim ve sınırsız çalışma alanı.</p>
+                </div>
+            </div>
+            <span class="btn-brand btn-sm self-start sm:self-auto shrink-0 group-hover:bg-brand-600">Planları Gör</span>
+        </a>
+    @endunless
+
     @if ($categories->isNotEmpty())
         <section class="mb-12">
             <h2 class="font-serif text-xl font-semibold text-slate-900 mb-4">Kategoriler</h2>

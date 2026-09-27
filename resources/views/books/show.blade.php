@@ -80,17 +80,32 @@
             @else
                 {{-- Fiyat Book::priceFor()'dan — sepet ve satın alma da aynı metodu kullanıyor.
                      Geçerli bir kampanya varsa eski fiyat üstü çizili, süreliyse bitiş tarihiyle. --}}
-                @php $finalPrice = $book->priceFor(auth()->user()); @endphp
+                @php
+                    $finalPrice = $book->priceFor(auth()->user());
+                    $isPremiumPrice = $book->isPremiumPriceFor(auth()->user());
+                    // Abone olmayana (ziyaretçi dahil) premium fiyatı şu anki fiyatından ucuzsa teşvik.
+                    $showPremiumTeaser = ! auth()->user()?->isPremium() && (float) $book->premiumPrice() < (float) $finalPrice;
+                @endphp
                 @if ((float) $finalPrice < (float) $book->price)
                     <div class="text-sm text-slate-400 line-through">{{ number_format($book->price, 2, ',', '.') }} TL</div>
                     <div class="text-2xl font-serif font-semibold text-brand-700">{{ number_format($finalPrice, 2, ',', '.') }} TL</div>
-                    @if ($book->discount_ends_at)
+                    @if ($isPremiumPrice)
+                        <div class="inline-flex items-center gap-1 text-xs font-medium text-amber-700 mt-1">
+                            <x-heroicon-s-sparkles class="w-3.5 h-3.5" /> Premium fiyatınız
+                        </div>
+                    @elseif ($book->discount_ends_at)
                         <div class="text-xs text-brand-700 mt-1">Kampanya {{ $book->discount_ends_at->translatedFormat('j F Y') }} tarihine kadar</div>
                     @endif
                 @else
                     <div class="text-2xl font-serif font-semibold text-slate-900">{{ number_format($book->price, 2, ',', '.') }} TL</div>
                 @endif
                 <div class="text-xs text-slate-400 mt-1">KDV dahil</div>
+                @if ($showPremiumTeaser)
+                    <a href="{{ route('abonelik') }}" class="mt-3 flex items-center gap-2 rounded-lg bg-amber-50 ring-1 ring-inset ring-amber-200 px-3 py-2 text-xs text-amber-800 hover:bg-amber-100 transition-colors">
+                        <x-heroicon-s-sparkles class="w-4 h-4 shrink-0" />
+                        <span>Premium üyelere <strong>{{ number_format($book->premiumPrice(), 2, ',', '.') }} TL</strong> →</span>
+                    </a>
+                @endif
             @endif
 
             @unless ($isUpcoming)

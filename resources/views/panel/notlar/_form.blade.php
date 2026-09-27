@@ -1,4 +1,5 @@
 <form method="POST" action="{{ route('panel.notlar.ekle') }}" class="card p-6 space-y-5 max-w-2xl mx-auto mb-8">
+    <x-note-quota-notice :type="$type" />
     @csrf
     <input type="hidden" name="type" value="{{ $type->value }}">
 

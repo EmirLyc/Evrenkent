@@ -3,11 +3,15 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\NoteType;
+use App\Enums\SubscriptionPlan;
+use App\Support\PlatformSettings;
 use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -75,6 +79,69 @@ class User extends Authenticatable implements FilamentUser
     public function cartItems(): HasMany
     {
         return $this->hasMany(CartItem::class);
+    }
+
+    public function subscriptions(): HasMany
+    {
+        return $this->hasMany(Subscription::class);
+    }
+
+    /**
+     * Premium şu an geçerli mi — is_premium tek başına yetmez, bitiş tarihi de geçmemiş
+     * olmalı (önceden premium_until hiçbir yerde kontrol edilmiyordu, süresi dolan üye
+     * premium sayılmaya devam ediyordu). premium_until boşsa süresiz premium (Süper Admin
+     * elle verebiliyor).
+     */
+    public function isPremium(): bool
+    {
+        return $this->is_premium
+            && ($this->premium_until === null || $this->premium_until->isFuture());
+    }
+
+    /** Şu an geçerli premium üyeler (isPremium ile aynı koşul, sorgu olarak). */
+    public function scopePremium(Builder $query): Builder
+    {
+        return $query->where('is_premium', true)
+            ->where(fn (Builder $q) => $q->whereNull('premium_until')->orWhere('premium_until', '>', now()));
+    }
+
+    /**
+     * Premium abonelik satın alır (mock ödeme — gerçek gateway gelene kadar purchase() ile
+     * aynı yaklaşım). Zaten premium olan üyenin süresi bitiş tarihinin üzerine eklenir,
+     * yani erken yenileme kalan günleri yakmaz.
+     */
+    public function subscribe(SubscriptionPlan $plan): Subscription
+    {
+        $startsAt = $this->isPremium() && $this->premium_until !== null ? $this->premium_until : now();
+        $endsAt = $plan->endsAt($startsAt);
+
+        $subscription = $this->subscriptions()->create([
+            'plan' => $plan,
+            'amount' => $plan->price(),
+            'starts_at' => $startsAt,
+            'ends_at' => $endsAt,
+            'payment_status' => 'completed',
+        ]);
+
+        $this->update(['is_premium' => true, 'premium_until' => $endsAt]);
+
+        return $subscription;
+    }
+
+    /**
+     * Çalışma alanındaki (Defter/Not/Alıntı) kayıt sınırı — premium üyede sınırsız (null),
+     * ücretsiz hesapta Süper Admin'in ayarladığı kota (her alan ayrı, varsayılan 10).
+     */
+    public function noteQuota(NoteType $type): ?int
+    {
+        return $this->isPremium() ? null : PlatformSettings::noteQuota($type);
+    }
+
+    public function canCreateNote(NoteType $type): bool
+    {
+        $quota = $this->noteQuota($type);
+
+        return $quota === null || $this->notes()->where('type', $type)->count() < $quota;
     }
 
     public function hasFavorited(Model $favoritable): bool

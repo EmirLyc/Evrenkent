@@ -56,7 +56,7 @@
                                 @endforelse
                             </td>
                             <td class="px-5 py-3 whitespace-nowrap">
-                                @if ($user->is_premium)
+                                @if ($user->isPremium())
                                     <x-heroicon-o-check-circle class="w-4 h-4 text-emerald-600" />
                                 @else
                                     <x-heroicon-o-x-mark class="w-4 h-4 text-slate-300" />

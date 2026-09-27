@@ -3,6 +3,7 @@
 use App\Http\Controllers\AdminBookController;
 use App\Http\Controllers\AdminCategoryController;
 use App\Http\Controllers\AdminDiscountController;
+use App\Http\Controllers\AdminPremiumController;
 use App\Http\Controllers\AdminMagazineIssueController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\CartController;
@@ -16,12 +17,14 @@ use App\Http\Controllers\PanelController;
 use App\Http\Controllers\PublicationController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\ReadingListController;
+use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\SuperAdminController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth')->prefix('panel')->as('panel.')->group(function () {
     Route::get('/', [PanelController::class, 'index'])->name('index');
-    Route::get('/aboneligim', [PanelController::class, 'aboneligim'])->name('aboneligim');
+    Route::get('/aboneligim', [SubscriptionController::class, 'mine'])->name('aboneligim');
+    Route::post('/abonelik', [SubscriptionController::class, 'store'])->name('abonelik.satin-al');
     Route::get('/yardim', [PanelController::class, 'yardim'])->name('yardim');
     Route::get('/iletisim', [PanelController::class, 'iletisim'])->name('iletisim');
 
@@ -174,6 +177,11 @@ Route::middleware('auth')->prefix('panel')->as('panel.')->group(function () {
             Route::post('/toplu', [AdminDiscountController::class, 'applyBulk'])->name('toplu');
             Route::delete('/{book}', [AdminDiscountController::class, 'destroy'])->name('kaldir');
         });
+
+        // Premium Sistemi: plan fiyatları, premium indirim oranı, çalışma alanı kotaları
+        // (2026-09-27 revizesi, Faz C).
+        Route::get('/premium', [AdminPremiumController::class, 'edit'])->name('premium.edit');
+        Route::put('/premium', [AdminPremiumController::class, 'update'])->name('premium.guncelle');
 
         // Kullanıcılar/Yazarlar/Dergi Editörleri (?rol= filtresiyle aynı liste) + Roller
         // ve Yetkiler: Filament'teki UserResource'un list/create/edit/delete'inin

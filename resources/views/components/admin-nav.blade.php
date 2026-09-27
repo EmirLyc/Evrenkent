@@ -43,7 +43,7 @@
         'Platform' => [
             ['label' => 'Ana Sayfa Yönetimi', 'icon' => 'home-modern', 'href' => route('panel.adminpanel.placeholder', 'ana-sayfa-yonetimi')],
             ['label' => 'Kategoriler', 'icon' => 'tag', 'href' => route('panel.adminpanel.kategoriler.index')],
-            ['label' => 'Premium Sistemi', 'icon' => 'sparkles', 'href' => route('panel.adminpanel.placeholder', 'premium-sistemi')],
+            ['label' => 'Premium Sistemi', 'icon' => 'sparkles', 'href' => route('panel.adminpanel.premium.edit')],
             ['label' => 'İndirimler', 'icon' => 'receipt-percent', 'href' => route('panel.adminpanel.indirimler.index')],
             ['label' => 'Bildirimler', 'icon' => 'bell', 'href' => route('panel.adminpanel.placeholder', 'bildirimler-sistemi')],
             ['label' => 'Sistem Ayarları', 'icon' => 'cog-6-tooth', 'href' => route('panel.adminpanel.placeholder', 'sistem-ayarlari')],

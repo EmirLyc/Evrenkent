@@ -24,6 +24,14 @@
         @error('content') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
     </div>
 
+    {{-- Okuma sayfasından eklerken de kota aşılırsa neden kaydedilmediği görünsün. --}}
+    @error('quota')
+        <div class="flex items-start gap-2 rounded-lg bg-amber-50 ring-1 ring-inset ring-amber-200 px-3 py-2.5 text-sm text-amber-800">
+            <x-heroicon-o-exclamation-triangle class="w-4 h-4 mt-0.5 shrink-0" />
+            <span>{{ $message }} <a href="{{ route('abonelik') }}" class="font-medium underline">Premium'a göz at</a></span>
+        </div>
+    @enderror
+
     <button type="submit" class="text-sm px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors">
         Kaydet
     </button>
