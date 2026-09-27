@@ -32,7 +32,7 @@ class UpcomingBooksTest extends TestCase
             'title' => 'Taslak Kitap',
         ]);
 
-        $response = $this->get(route('home', ['tur' => 'kitaplar', 'raf' => 'yakinda']))->assertOk();
+        $response = $this->get(route('kitaplar.index', ['raf' => 'yakinda']))->assertOk();
 
         $response->assertSee('Yakında Kitabı')
             ->assertDontSee('Tarihsiz Onaylı')

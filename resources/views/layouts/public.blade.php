@@ -23,13 +23,11 @@
                     <div class="grid grid-cols-[auto_1fr_auto] h-16 items-center gap-6">
                         <div class="flex items-center gap-4 shrink-0">
                             {{-- Hamburger: YouTube tarzı — sayfayı örtmez, içerik alanını daraltarak yandan panel
-                                 menüsünü açar/kapatır. Ziyaretçide gösterilecek bir menü içeriği (mega-menü) henüz
-                                 yok, o yüzden ziyaretçide hiç render edilmiyor. --}}
-                            @auth
-                                <button type="button" title="Menü" @click="$store.ui.sidebarOpen = !$store.ui.sidebarOpen" class="text-slate-700 hover:text-slate-900 transition-colors">
-                                    <x-heroicon-o-bars-3 class="w-6 h-6" />
-                                </button>
-                            @endauth
+                                 menüsünü açar/kapatır. Ziyaretçide de var (2026-09-27 revizesi): ziyaretçi aynı
+                                 sidebar'ı görür, kişisel bir menüye tıklayınca giriş ekranına düşer. --}}
+                            <button type="button" title="Menü" @click="$store.ui.sidebarOpen = !$store.ui.sidebarOpen" class="text-slate-700 hover:text-slate-900 transition-colors">
+                                <x-heroicon-o-bars-3 class="w-6 h-6" />
+                            </button>
 
                             <a href="{{ url('/') }}" class="flex items-center gap-2.5 group">
                                 <span class="flex items-center justify-center w-8 h-8 rounded-full bg-slate-900 text-white">
@@ -87,10 +85,12 @@
                                      hesap işlemleri diğer linklerle karışmasın diye. --}}
                                 <x-notifications-bell />
                             @else
-                                <a href="{{ route('login') }}" class="text-sm text-slate-600 hover:text-slate-900 transition-colors">
+                                <a href="{{ route('login') }}" class="text-sm text-slate-600 hover:text-slate-900 transition-colors whitespace-nowrap">
                                     Giriş Yap
                                 </a>
-                                <a href="{{ route('register') }}" class="btn-dark btn-sm">
+                                {{-- Mobilde gizli: ziyaretçide hamburger de görününce 375px'te sağ grup
+                                     taşıyordu. Kayıt Ol zaten sidebar'ın altında ve giriş sayfasında var. --}}
+                                <a href="{{ route('register') }}" class="btn-dark btn-sm hidden sm:inline-flex">
                                     Kayıt Ol
                                 </a>
                             @endauth
@@ -100,36 +100,39 @@
             </header>
 
             <div class="flex-1 flex">
-                @auth
-                    {{-- Mobilde (< lg) overlay drawer: fixed konumlanır, sidebarOpen'a göre kayar
-                         (translate), içerik alanını etkilemez — arkasında bir backdrop var, ona
-                         tıklayınca ya da bir menü linkine tıklayınca kapanır. lg ve üstünde eskisi
-                         gibi normal akışta, içerik alanını daraltan bir "push" paneli (YouTube'daki
-                         gibi) — içteki w-72'lik sabit genişlik, dıştaki genişlik animasyonu sırasında
-                         metnin kırılmasını önler. --}}
-                    <div
-                        x-show="$store.ui.sidebarOpen"
-                        x-cloak
-                        x-transition.opacity
-                        @click="$store.ui.sidebarOpen = false"
-                        class="fixed inset-0 top-16 z-30 bg-slate-900/40 lg:hidden"
-                    ></div>
+                {{-- Sidebar ziyaretçi dahil herkese gösteriliyor. Kişisel menü linkleri (Kitaplığım,
+                     Favorilerim, Notlarım...) auth middleware'li route'lara gidiyor — ziyaretçi tıklayınca
+                     giriş ekranına yönleniyor, giriş sonrası redirect()->intended() ile tıkladığı sayfaya
+                     dönüyor (bkz. AuthenticatedSessionController::store).
 
-                    <aside
-                        @click="if (window.innerWidth < 1024) $store.ui.sidebarOpen = false"
-                        :class="$store.ui.sidebarOpen
-                            ? 'translate-x-0 lg:w-72 lg:border-r lg:border-slate-200'
-                            : '-translate-x-full lg:translate-x-0 lg:w-0 lg:border-r-0'"
-                        class="sidebar-scroll fixed top-16 bottom-0 left-0 z-40 w-72 shadow-xl bg-paper transition-transform duration-200 overflow-x-hidden overflow-y-auto lg:shadow-none lg:z-auto lg:static lg:sticky lg:bottom-auto lg:h-[calc(100vh-4rem)] lg:self-start lg:shrink-0 lg:transition-[width]"
-                    >
-                        {{-- Yatayda bilerek padding yok: aktif menü öğesinin sol vurgu çizgisi
-                             sidebar'ın gerçek kenarına yapışsın istiyoruz (bkz. x-panel-nav içindeki
-                             border-l-4 + mr-5 deseni), o yüzden boşluk her linkin kendi içinde. --}}
-                        <div class="w-72 py-5">
-                            <x-panel-nav />
-                        </div>
-                    </aside>
-                @endauth
+                     Mobilde (< lg) overlay drawer: fixed konumlanır, sidebarOpen'a göre kayar
+                     (translate), içerik alanını etkilemez — arkasında bir backdrop var, ona
+                     tıklayınca ya da bir menü linkine tıklayınca kapanır. lg ve üstünde eskisi
+                     gibi normal akışta, içerik alanını daraltan bir "push" paneli (YouTube'daki
+                     gibi) — içteki w-72'lik sabit genişlik, dıştaki genişlik animasyonu sırasında
+                     metnin kırılmasını önler. --}}
+                <div
+                    x-show="$store.ui.sidebarOpen"
+                    x-cloak
+                    x-transition.opacity
+                    @click="$store.ui.sidebarOpen = false"
+                    class="fixed inset-0 top-16 z-30 bg-slate-900/40 lg:hidden"
+                ></div>
+
+                <aside
+                    @click="if (window.innerWidth < 1024) $store.ui.sidebarOpen = false"
+                    :class="$store.ui.sidebarOpen
+                        ? 'translate-x-0 lg:w-72 lg:border-r lg:border-slate-200'
+                        : '-translate-x-full lg:translate-x-0 lg:w-0 lg:border-r-0'"
+                    class="sidebar-scroll fixed top-16 bottom-0 left-0 z-40 w-72 shadow-xl bg-paper transition-transform duration-200 overflow-x-hidden overflow-y-auto lg:shadow-none lg:z-auto lg:static lg:sticky lg:bottom-auto lg:h-[calc(100vh-4rem)] lg:self-start lg:shrink-0 lg:transition-[width]"
+                >
+                    {{-- Yatayda bilerek padding yok: aktif menü öğesinin sol vurgu çizgisi
+                         sidebar'ın gerçek kenarına yapışsın istiyoruz (bkz. x-panel-nav içindeki
+                         border-l-4 + mr-5 deseni), o yüzden boşluk her linkin kendi içinde. --}}
+                    <div class="w-72 py-5">
+                        <x-panel-nav />
+                    </div>
+                </aside>
 
                 <div class="flex-1 min-w-0 flex flex-col">
                     <main class="flex-1 max-w-6xl mx-auto px-6 py-10 w-full">

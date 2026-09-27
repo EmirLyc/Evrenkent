@@ -43,7 +43,9 @@
     $groupHeading = 'text-xs font-semibold uppercase tracking-wider mb-2.5 pl-4';
 @endphp
 
-@if (auth()->user()->hasRole('yazar'))
+{{-- Ziyaretçide (auth()->user() null) rol grupları hiç görünmez, sadece okur grupları görünür —
+     linkleri auth korumalı olduğu için tıklanınca giriş ekranına yönlenir. --}}
+@if (auth()->user()?->hasRole('yazar'))
     <div class="mb-7">
         <div class="{{ $groupHeading }} text-brand-700">Yayın Yönetimi</div>
         <div class="space-y-0.5">
@@ -64,7 +66,7 @@
     </div>
 @endif
 
-@if (auth()->user()->hasRole('dergi_editoru'))
+@if (auth()->user()?->hasRole('dergi_editoru'))
     <div class="mb-7">
         <div class="{{ $groupHeading }} text-brand-700">Dergi Yönetimi</div>
         <div class="space-y-0.5">
@@ -99,13 +101,21 @@
 
 {{-- Çıkış Yap — bilerek diğer linklerden ayrı ve kırmızı: hem header'ı
      kalabalıklaştırmasın (mobilde daha da sıkışıktı) hem de yanlışlıkla
-     tıklanmasın diye görsel olarak ayrışıyor. --}}
+     tıklanmasın diye görsel olarak ayrışıyor. Ziyaretçide aynı yerde Giriş Yap /
+     Kayıt Ol var (header'da da var ama mobilde sidebar açıkken el altında olsun). --}}
 <div class="pt-3 mt-1 mr-5 border-t border-slate-200">
-    <form method="POST" action="{{ route('logout') }}">
-        @csrf
-        <button type="submit" class="w-full flex items-center gap-2 pl-4 pr-3 py-1.5 rounded-lg text-sm text-red-600 hover:bg-red-50 transition-colors">
-            <x-heroicon-o-arrow-right-on-rectangle class="w-4 h-4" />
-            Çıkış Yap
-        </button>
-    </form>
+    @auth
+        <form method="POST" action="{{ route('logout') }}">
+            @csrf
+            <button type="submit" class="w-full flex items-center gap-2 pl-4 pr-3 py-1.5 rounded-lg text-sm text-red-600 hover:bg-red-50 transition-colors">
+                <x-heroicon-o-arrow-right-on-rectangle class="w-4 h-4" />
+                Çıkış Yap
+            </button>
+        </form>
+    @else
+        <div class="flex gap-2 pl-4">
+            <a href="{{ route('login') }}" class="btn-dark btn-sm flex-1">Giriş Yap</a>
+            <a href="{{ route('register') }}" class="btn-outline btn-sm flex-1">Kayıt Ol</a>
+        </div>
+    @endauth
 </div>

@@ -43,6 +43,52 @@ class BookCatalogControllerTest extends TestCase
             ->assertDontSee('Diğer Kitap');
     }
 
+    public function test_catalog_shows_the_type_switcher_with_kitaplar_selected(): void
+    {
+        $this->get(route('kitaplar.index'))
+            ->assertOk()
+            ->assertSee(route('dergiler.index'), false)
+            ->assertSee('Sözlükler');
+    }
+
+    public function test_cok_satanlar_raf_orders_books_by_purchase_count(): void
+    {
+        $lessPopular = Book::factory()->create(['status' => ContentStatus::Yayinda, 'title' => 'Az Satan']);
+        $bestseller = Book::factory()->create(['status' => ContentStatus::Yayinda, 'title' => 'Çok Satan']);
+
+        \App\Models\Purchase::factory()->for($bestseller)->create();
+        \App\Models\Purchase::factory()->for($bestseller)->create();
+        \App\Models\Purchase::factory()->for($lessPopular)->create();
+
+        $this->get(route('kitaplar.index', ['raf' => 'cok-satanlar']))
+            ->assertOk()
+            ->assertSeeInOrder([$bestseller->title, $lessPopular->title]);
+    }
+
+    public function test_firsatlar_raf_only_shows_discounted_books_with_struck_through_price(): void
+    {
+        Book::factory()->create([
+            'status' => ContentStatus::Yayinda,
+            'price' => 100,
+            'discount_price' => 75,
+            'title' => 'İndirimli Kitap',
+        ]);
+        Book::factory()->create(['status' => ContentStatus::Yayinda, 'discount_price' => null, 'title' => 'Normal Kitap']);
+
+        $this->get(route('kitaplar.index', ['raf' => 'firsatlar']))
+            ->assertOk()
+            ->assertSee('İndirimli Kitap')
+            ->assertDontSee('Normal Kitap')
+            ->assertSee('75,00 TL');
+    }
+
+    public function test_empty_shelf_shows_its_own_empty_message_instead_of_an_error(): void
+    {
+        $this->get(route('kitaplar.index', ['raf' => 'firsatlar']))
+            ->assertOk()
+            ->assertSee('Şu an indirimde bir kitap yok.');
+    }
+
     public function test_invalid_raf_falls_back_to_yeni_cikanlar_instead_of_erroring(): void
     {
         Book::factory()->create(['status' => ContentStatus::Yayinda, 'title' => 'Görünen Kitap']);

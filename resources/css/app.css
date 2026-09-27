@@ -29,6 +29,15 @@
     background-color: theme('colors.slate.300');
 }
 
+/* Yatay kaydırılan kart satırları (anasayfa rafları, mobil) — kaydırma çubuğu gizli,
+   kartların ekran kenarından taşması zaten kaydırılabilir olduğunu gösteriyor. */
+.scrollbar-none {
+    scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+    display: none;
+}
+
 /* Turbo, bir sayfa geçişinde yeni <body>'yi takmadan önce ve sonra tarayıcıya
    en az bir kere boyama (repaint) fırsatı veriyor (kendi render() döngüsünde
    nextRepaint() ile bekliyor) — bu yüzden sadece scrollTop'u turbo:render'da

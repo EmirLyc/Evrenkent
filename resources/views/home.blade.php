@@ -3,114 +3,74 @@
 @section('title', 'Ana Sayfa')
 
 @section('content')
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
-        <a href="{{ route('home', ['tur' => 'kitaplar']) }}" class="flex items-center gap-4 rounded-lg border p-4 transition-colors {{ $tur === 'kitaplar' ? 'border-brand-300 bg-white' : 'border-slate-200 bg-white hover:border-slate-300' }}">
-            <x-heroicon-o-book-open class="w-7 h-7 text-brand-500 shrink-0" />
-            <div>
-                <div class="font-medium text-slate-900">Kitaplar</div>
-                <div class="text-sm text-slate-500">{{ $totalBooks }} eser listeleniyor</div>
-            </div>
-        </a>
-        <a href="{{ route('home', ['tur' => 'dergiler']) }}" class="flex items-center gap-4 rounded-lg border p-4 transition-colors {{ $tur === 'dergiler' ? 'border-brand-300 bg-white' : 'border-slate-200 bg-white hover:border-slate-300' }}">
-            <x-heroicon-o-newspaper class="w-7 h-7 {{ $tur === 'dergiler' ? 'text-brand-500' : 'text-slate-400' }} shrink-0" />
-            <div>
-                <div class="font-medium text-slate-900">Dergiler</div>
-                <div class="text-sm text-slate-500">{{ $totalIssues }} sayı listeleniyor</div>
-            </div>
-        </a>
-        <div title="Yakında" class="flex items-center gap-4 rounded-lg border border-slate-200 bg-white p-4 text-slate-400 cursor-not-allowed">
-            <x-heroicon-o-language class="w-7 h-7 shrink-0" />
-            <div>
-                <div class="font-medium">Sözlükler</div>
-                <div class="text-sm">Yakında</div>
-            </div>
-        </div>
-    </div>
+    {{-- Karşılama bandı — mockup 1'in altındaki "Okumanın yeni bir evreni var" bandının
+         anasayfanın başına alınmış hâli. Görsel yerine hafif bir marka gradyanı + dekoratif
+         ikon (mockup'taki illüstrasyon için elimizde bir görsel yok). --}}
+    <section class="relative overflow-hidden rounded-xl border border-brand-100 bg-gradient-to-br from-brand-50 via-amber-50 to-orange-100 px-6 py-8 sm:px-10 sm:py-12 mb-8">
+        <h1 class="relative font-serif text-2xl sm:text-4xl font-semibold leading-tight text-slate-900 max-w-md">
+            Okumanın yeni bir evreni var.
+        </h1>
+        <p class="relative mt-3 text-slate-600 max-w-md">
+            Kitaplara, dergilere ve sözlüklere tek bir yerden ulaşın.
+        </p>
+        <a href="{{ route('kitaplar.index') }}" class="relative btn-brand mt-6">Keşfet</a>
+        <x-heroicon-o-book-open class="hidden sm:block absolute -right-8 -bottom-10 w-64 h-64 text-brand-200/70" />
+    </section>
 
-    @if ($tur === 'kitaplar')
-        <div class="flex flex-wrap gap-2.5 mb-10">
-            @foreach (\App\Enums\BookShelf::cases() as $tab)
-                <a href="{{ route('home', ['tur' => 'kitaplar', 'raf' => $tab->value]) }}" class="{{ $shelf === $tab ? 'pill-active' : 'pill-idle' }}">
-                    <x-dynamic-component :component="match ($tab) {
-                        \App\Enums\BookShelf::YeniCikanlar => $shelf === $tab ? 'heroicon-s-star' : 'heroicon-o-star',
-                        \App\Enums\BookShelf::CokSatanlar => 'heroicon-o-fire',
-                        \App\Enums\BookShelf::EditorunSeckisi => 'heroicon-o-sparkles',
-                        \App\Enums\BookShelf::Firsatlar => 'heroicon-o-tag',
-                        \App\Enums\BookShelf::YakindaCikacaklar => 'heroicon-o-clock',
-                    }" class="w-4 h-4" />
-                    {{ $tab->label() }}
-                </a>
+    <x-content-type-switcher />
+
+    @php $cardClass = 'w-36 shrink-0 snap-start sm:w-auto'; @endphp
+
+    @if ($newBooks->isNotEmpty())
+        <x-home-shelf title="Yeni Çıkanlar" :href="route('kitaplar.index', ['raf' => \App\Enums\BookShelf::YeniCikanlar->value])">
+            @foreach ($newBooks as $book)
+                <x-book-card :book="$book" :class="$cardClass" />
             @endforeach
-        </div>
+        </x-home-shelf>
+    @endif
 
-        <div class="flex items-baseline justify-between mb-5">
-            <h2 class="font-serif text-xl font-semibold text-slate-900">{{ $shelf->label() }}</h2>
-            <a href="{{ route('kitaplar.index', ['raf' => $shelf->value]) }}" class="text-sm font-medium text-brand-600 hover:text-brand-700">
-                Tümünü Gör →
-            </a>
-        </div>
+    @if ($upcomingBooks->isNotEmpty())
+        <x-home-shelf title="Yakında Çıkacaklar" :href="route('kitaplar.index', ['raf' => \App\Enums\BookShelf::YakindaCikacaklar->value])">
+            @foreach ($upcomingBooks as $book)
+                <x-book-card :book="$book" show-scheduled-date :class="$cardClass" />
+            @endforeach
+        </x-home-shelf>
+    @endif
 
-        @if ($books->isEmpty())
-            <div class="card p-12 text-center text-slate-400">
-                <x-heroicon-o-book-open class="w-8 h-8 mx-auto mb-3 text-slate-300" />
-                {{ $shelf->emptyMessage() }}
-            </div>
-        @else
-            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-5">
-                @foreach ($books as $book)
-                    <a href="{{ route('kitaplar.show', $book) }}" class="group block card-hover overflow-hidden">
-                        <x-book-cover :book="$book" class="aspect-[3/4]" />
-                        <div class="p-3">
-                            <div class="text-xs text-brand-600 font-medium uppercase tracking-wide">{{ $book->author->name }}</div>
-                            <div class="font-medium text-slate-900 text-sm truncate mt-0.5">{{ $book->title }}</div>
-                            <div class="text-sm mt-1">
-                                @if ($shelf === \App\Enums\BookShelf::YakindaCikacaklar)
-                                    <span class="text-brand-700 font-medium">{{ $book->scheduled_publish_at->format('d.m.Y') }}</span>
-                                @elseif ($book->discount_price !== null)
-                                    <span class="text-slate-400 line-through mr-1.5">{{ number_format($book->price, 2, ',', '.') }} TL</span>
-                                    <span class="text-brand-700 font-medium">{{ number_format($book->discount_price, 2, ',', '.') }} TL</span>
-                                @else
-                                    <span class="text-slate-500">{{ number_format($book->price, 2, ',', '.') }} TL</span>
-                                @endif
-                            </div>
-                        </div>
+    @if ($editorsPicks->isNotEmpty())
+        <x-home-shelf title="Editörün Seçkisi" :href="route('kitaplar.index', ['raf' => \App\Enums\BookShelf::EditorunSeckisi->value])">
+            @foreach ($editorsPicks as $book)
+                <x-book-card :book="$book" :class="$cardClass" />
+            @endforeach
+        </x-home-shelf>
+    @endif
+
+    @if ($newIssues->isNotEmpty())
+        <x-home-shelf title="Yeni Dergi Sayıları" :href="route('dergiler.index')">
+            @foreach ($newIssues as $issue)
+                <x-magazine-card :issue="$issue" :class="$cardClass" />
+            @endforeach
+        </x-home-shelf>
+    @endif
+
+    @if ($categories->isNotEmpty())
+        <section class="mb-12">
+            <h2 class="font-serif text-xl font-semibold text-slate-900 mb-4">Kategoriler</h2>
+            <div class="flex flex-wrap gap-2.5">
+                @foreach ($categories as $category)
+                    <a href="{{ route('kitaplar.index', ['kategori' => $category->slug]) }}" class="pill-tag hover:border-brand-300 hover:text-brand-700">
+                        {{ $category->name }}
+                        <span class="text-slate-400 font-normal">{{ $category->books_count }}</span>
                     </a>
                 @endforeach
             </div>
-        @endif
-    @else
-        {{-- Dergilerin kitaplar gibi çok satan/indirim gibi facet'leri yok, tek pil yeterli. --}}
-        <div class="flex flex-wrap gap-2.5 mb-10">
-            <span class="pill-active">
-                <x-heroicon-s-star class="w-4 h-4" />
-                Yeni Sayılar
-            </span>
-        </div>
+        </section>
+    @endif
 
-        <div class="flex items-baseline justify-between mb-5">
-            <h2 class="font-serif text-xl font-semibold text-slate-900">Yeni Sayılar</h2>
-            <a href="{{ route('dergiler.index') }}" class="text-sm font-medium text-brand-600 hover:text-brand-700">
-                Tümünü Gör →
-            </a>
+    @if ($newBooks->isEmpty() && $upcomingBooks->isEmpty() && $newIssues->isEmpty())
+        <div class="card p-12 text-center text-slate-400">
+            <x-heroicon-o-book-open class="w-8 h-8 mx-auto mb-3 text-slate-300" />
+            Henüz yayınlanmış bir içerik yok.
         </div>
-
-        @if ($issues->isEmpty())
-            <div class="card p-12 text-center text-slate-400">
-                <x-heroicon-o-newspaper class="w-8 h-8 mx-auto mb-3 text-slate-300" />
-                Henüz yayınlanmış bir dergi sayısı yok.
-            </div>
-        @else
-            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-5">
-                @foreach ($issues as $issue)
-                    <a href="{{ route('dergiler.show', $issue) }}" class="group block card-hover overflow-hidden">
-                        <x-magazine-cover :issue="$issue" class="aspect-[3/4]" />
-                        <div class="p-3">
-                            <div class="text-xs text-brand-600 font-medium uppercase tracking-wide">Sayı {{ $issue->issue_number }}</div>
-                            <div class="font-medium text-slate-900 text-sm truncate mt-0.5">{{ $issue->title }}</div>
-                        </div>
-                    </a>
-                @endforeach
-            </div>
-        @endif
     @endif
 @endsection

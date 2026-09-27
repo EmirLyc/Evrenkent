@@ -3,33 +3,42 @@
 namespace App\Http\Controllers;
 
 use App\Enums\BookShelf;
-use App\Models\Book;
+use App\Models\Category;
 use App\Models\MagazineIssue;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class HomeController extends Controller
 {
     /**
-     * Anasayfa mockup'ındaki gibi bir "tip anahtarı" (Kitaplar/Dergiler/Sözlükler):
-     * her zaman görünür, biri seçili, seçime göre altındaki pil grubu + içerik değişir.
+     * Anasayfa: her tür içeriği tanıtan bir keşif sayfası (2026-09-27 toplantı revizesi —
+     * önceden doğrudan Kitaplar sekmesi seçili açılıyordu). Mockup 1'deki tip anahtarı +
+     * raf pilleri görünümü /kitaplar'a taşındı (bkz. BookCatalogController).
      */
-    public function index(Request $request): View
+    public function index(Request $request): View|RedirectResponse
     {
-        $tur = $request->query('tur') === 'dergiler' ? 'dergiler' : 'kitaplar';
-
-        $totalBooks = Book::published()->count();
-        $totalIssues = MagazineIssue::published()->count();
-
-        if ($tur === 'dergiler') {
-            $issues = MagazineIssue::published()->with('editor')->latest('publish_date')->take(6)->get();
-
-            return view('home', compact('tur', 'issues', 'totalBooks', 'totalIssues'));
+        // Eski tip anahtarı adresleri (/?tur=dergiler, /?raf=cok-satanlar) paylaşılmış ya da
+        // yer imine eklenmiş olabilir — kırılmasınlar diye yeni yerlerine yönlendiriliyor.
+        if ($request->query('tur') === 'dergiler') {
+            return redirect()->route('dergiler.index');
         }
 
-        $shelf = BookShelf::tryFrom((string) $request->query('raf')) ?? BookShelf::YeniCikanlar;
-        $books = $shelf->query()->take(6)->get();
+        if ($request->has('tur') || $request->has('raf')) {
+            return redirect()->route('kitaplar.index', array_filter(['raf' => $request->query('raf')]));
+        }
 
-        return view('home', compact('tur', 'shelf', 'books', 'totalBooks', 'totalIssues'));
+        return view('home', [
+            'newBooks' => BookShelf::YeniCikanlar->query()->take(6)->get(),
+            'upcomingBooks' => BookShelf::YakindaCikacaklar->query()->take(6)->get(),
+            'editorsPicks' => BookShelf::EditorunSeckisi->query()->take(6)->get(),
+            'newIssues' => MagazineIssue::published()->latest('publish_date')->take(6)->get(),
+            // Sadece en az bir yayındaki kitabı olan kategoriler — boş bir etikete tıklayıp
+            // "bu kategoride kitap yok" sayfasına düşmek anlamsız olurdu.
+            'categories' => Category::whereHas('books', fn ($query) => $query->published())
+                ->withCount(['books' => fn ($query) => $query->published()])
+                ->orderBy('name')
+                ->get(),
+        ]);
     }
 }
