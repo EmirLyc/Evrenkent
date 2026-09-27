@@ -96,6 +96,20 @@ class BookApprovalFlowTest extends TestCase
         $this->assertSame('Kapak görseli eksik.', $book->reviews()->latest()->first()->note);
     }
 
+    /** Filament (yedek panel) de kalıcı reddedebiliyor — kendi panelimizle aynı yol (ContentReviewer). */
+    public function test_super_admin_can_reject_a_book_permanently_from_the_backup_panel(): void
+    {
+        $book = Book::factory()->for($this->yazar(), 'author')->create(['status' => ContentStatus::Gonderildi]);
+
+        Livewire::actingAs($this->superAdmin())
+            ->test(ListBooks::class)
+            ->callTableAction('reject', $book, data: ['decision' => 'ret', 'note' => 'Kapsam dışı.'])
+            ->assertHasNoTableActionErrors();
+
+        $this->assertSame(ContentStatus::Reddedildi, $book->refresh()->status);
+        $this->assertSame('reddedildi', $book->reviews()->latest('id')->first()->action);
+    }
+
     public function test_super_admin_can_publish_an_approved_book(): void
     {
         $admin = $this->superAdmin();

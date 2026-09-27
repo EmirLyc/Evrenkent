@@ -7,11 +7,18 @@ use App\Models\Article;
 use App\Models\Book;
 use App\Models\MagazineIssue;
 use App\Models\User;
+use App\Notifications\ContentApproved;
 use App\Notifications\ContentRejected;
 use App\Notifications\ContentRevisionRequested;
+use Illuminate\Support\Carbon;
 
 /**
- * Onay ekranındaki olumsuz kararların tek adresi (2026-09-27, "Reddedilen" sekmesi kararı A):
+ * Onay ekranındaki kararların tek adresi — kendi panelimiz (ContentApprovalController) ve
+ * Filament (acil durum paneli) aynı yoldan geçer, kurallar tek yerde değişir:
+ *
+ *  - approve() / approveAndPublish(): onay (yayın ve zamanlama ContentPublisher'da).
+ *
+ * Olumsuz kararlar (2026-09-27, "Reddedilen" sekmesi kararı A):
  *
  *  - requestRevision(): "Revizyon iste" — içerik sahibine geri döner, düzeltip tekrar gönderebilir.
  *  - reject(): "Kalıcı olarak reddet" — içerik kapanır; sahibi görür ve silebilir, düzenleyip
@@ -24,6 +31,38 @@ use App\Notifications\ContentRevisionRequested;
  */
 class ContentReviewer
 {
+    /**
+     * Onayla, yayına almadan: sayısı yayında olmayan makale (sayıyla birlikte yayınlanır) ya
+     * da Filament'teki tarihsiz onay (sonra "Yayınla" ile yayınlanır).
+     */
+    public static function approve(Book|Article|MagazineIssue $content, ?User $by, ?string $note = null): void
+    {
+        $content->update(['status' => ContentStatus::Onaylandi]);
+        self::record($content, 'onaylandi', $by, $note);
+        self::owner($content)?->notify(new ContentApproved($content));
+    }
+
+    /**
+     * Onayla ve yayınla: $at verilirse o tarihe zamanlanır (Yakında Çıkacaklar'da geri sayım),
+     * verilmezse hemen yayına girer (sayı onaylı makaleleriyle birlikte). Kendi onay ekranımız
+     * ve Filament aynı yoldan (ContentPublisher).
+     */
+    public static function approveAndPublish(Book|Article|MagazineIssue $content, ?User $by, ?Carbon $at = null): void
+    {
+        if ($at) {
+            ContentPublisher::schedule($content, $at, $by);
+
+            return;
+        }
+
+        self::record($content, 'onaylandi', $by, null);
+        match (true) {
+            $content instanceof Book => ContentPublisher::publishBook($content, $by),
+            $content instanceof MagazineIssue => ContentPublisher::publishIssue($content, $by),
+            $content instanceof Article => ContentPublisher::publishArticle($content, $by),
+        };
+    }
+
     public static function requestRevision(Book|Article|MagazineIssue $content, ?User $by, string $note): void
     {
         $content->update(['status' => ContentStatus::RevizyonIstendi]);

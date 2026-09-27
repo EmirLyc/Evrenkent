@@ -6,11 +6,14 @@ use App\Enums\ContentStatus;
 use App\Models\Article;
 use App\Models\Book;
 use App\Models\Chapter;
+use App\Models\Document;
 use App\Models\MagazineIssue;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\Support\FakeDocx;
+use Tests\Support\FakeEpub;
 use Tests\TestCase;
 
 /**
@@ -162,6 +165,9 @@ class RichContentTest extends TestCase
             ->assertExactJson([
                 'title' => 'Makalenin Adı',
                 'html' => '<p>Metin<span data-footnote="Dipnot metni"></span></p>',
+                // Kitap/makale verilmedi: görsellerin eklenecek bir içerik yok.
+                'documents' => null,
+                'images' => ['imported' => 0, 'skipped' => 0],
             ]);
 
         $this->assertSame(0, Chapter::count() + Article::count());
@@ -235,5 +241,106 @@ class RichContentTest extends TestCase
             ->assertForbidden();
 
         $this->assertSame(0, $book->chapters()->count());
+    }
+
+    /** EPUB (DOCX'in ikinci seçeneği): her okuma dosyası bir bölüm, görseller belge. */
+    public function test_epub_book_is_imported_as_chapters_with_images_as_documents(): void
+    {
+        Storage::fake(config('filesystems.documents_disk'));
+        $author = $this->user('yazar');
+        $book = $this->draftBook($author);
+
+        $this->actingAs($author)->post(route('panel.yayinlarim.kitap.bolumler.word-aktar', $book), [
+            'file' => FakeEpub::upload(
+                [
+                    'bolum1.xhtml' => '<h1>Liman</h1><p>Kadırga yanaştı.</p><p><img src="../Images/harita.png" alt="Liman haritası"/></p>',
+                    'bolum2.xhtml' => '<h1>Fener</h1><p>Fenerci merdivenleri çıktı.</p>',
+                ],
+                ['Images/harita.png' => FakeDocx::png(), 'Images/kapak.png' => FakeDocx::png()]
+            ),
+        ])->assertRedirect(route('panel.yayinlarim.kitap.bolumler', $book))
+            ->assertSessionHas('status', fn (string $status) => str_contains($status, '2 bölüm EPUB dosyasından eklendi') && str_contains($status, '1 görsel'));
+
+        $this->assertSame(['Liman', 'Fener'], $book->chapters()->orderBy('order')->pluck('title')->all());
+        $this->assertSame(['Liman haritası'], $book->documents()->pluck('title')->all());
+    }
+
+    public function test_other_file_types_are_rejected_for_book_import(): void
+    {
+        $author = $this->user('yazar');
+        $book = $this->draftBook($author);
+
+        $this->actingAs($author)->post(route('panel.yayinlarim.kitap.bolumler.word-aktar', $book), [
+            'file' => UploadedFile::fake()->createWithContent('kitap.pdf', '%PDF-1.4'),
+        ])->assertSessionHasErrors('file');
+    }
+
+    // --- Word görselleri → gömülü belge ------------------------------------------------
+
+    public function test_word_images_become_documents_of_the_book_with_snowflake_markers(): void
+    {
+        Storage::fake(config('filesystems.documents_disk'));
+        $author = $this->user('yazar');
+        $book = $this->draftBook($author);
+
+        $file = FakeDocx::upload(
+            FakeDocx::p('Rapor aşağıda.').FakeDocx::imageParagraph('rIdImg1', 'Londra Raporu').FakeDocx::imageParagraph('rIdImg2'),
+            images: ['rIdImg1' => ['media/image1.png', FakeDocx::png()], 'rIdImg2' => ['media/image2.gif', 'GIF89a sahte']]
+        );
+
+        $response = $this->actingAs($author)
+            ->postJson(route('panel.yayinlarim.word-aktar', ['kitap' => $book->id]), ['file' => $file])
+            ->assertOk()
+            ->assertJsonPath('images.imported', 1)
+            ->assertJsonPath('images.skipped', 1);
+
+        $document = $book->documents()->sole();
+        $this->assertSame('Londra Raporu', $document->title);
+        $this->assertSame('image/png', $document->mime_type);
+        Storage::disk(config('filesystems.documents_disk'))->assertExists($document->file_path);
+        $this->assertSame([['id' => $document->id, 'caption' => 'Londra Raporu']], $response->json('documents'));
+        $this->assertStringContainsString('<span data-document="'.$document->id.'"></span>', $response->json('html'));
+    }
+
+    public function test_word_images_are_skipped_without_an_owner_and_for_other_peoples_content(): void
+    {
+        Storage::fake(config('filesystems.documents_disk'));
+        $author = $this->user('yazar');
+        $images = ['rIdImg1' => ['media/image1.png', FakeDocx::png()]];
+
+        // Yeni makale taslağı: henüz içerik yok, görsel atlanır.
+        $this->actingAs($author)
+            ->postJson(route('panel.yayinlarim.word-aktar'), ['file' => FakeDocx::upload(FakeDocx::p('Metin').FakeDocx::imageParagraph('rIdImg1'), images: $images)])
+            ->assertOk()
+            ->assertJsonPath('documents', null)
+            ->assertJsonPath('images.skipped', 1);
+
+        // Başkasının kitabına belge eklenemez.
+        $othersBook = $this->draftBook($this->user('yazar'));
+        $this->actingAs($author)
+            ->postJson(route('panel.yayinlarim.word-aktar', ['kitap' => $othersBook->id]), ['file' => FakeDocx::upload(FakeDocx::p('Metin'), images: $images)])
+            ->assertForbidden();
+
+        $this->assertSame(0, Document::count());
+    }
+
+    public function test_book_import_turns_images_into_documents_and_reports_them(): void
+    {
+        Storage::fake(config('filesystems.documents_disk'));
+        $author = $this->user('yazar');
+        $book = $this->draftBook($author);
+
+        $this->actingAs($author)->post(route('panel.yayinlarim.kitap.bolumler.word-aktar', $book), [
+            'file' => FakeDocx::upload(
+                FakeDocx::p('Birinci', 'Balk1').FakeDocx::p('Metin').FakeDocx::imageParagraph('rIdImg1', 'Harita'),
+                name: 'kitap.docx',
+                images: ['rIdImg1' => ['media/image1.png', FakeDocx::png()]],
+            ),
+        ])->assertSessionHas('status', fn (string $status) => str_contains($status, '1 görsel belge olarak eklendi'));
+
+        $document = $book->documents()->sole();
+        $this->assertSame('Harita', $document->title);
+        $this->assertStringContainsString('data-document="'.$document->id.'"', $book->chapters()->first()->content);
+        $this->assertSame(1, $book->refresh()->document_count);
     }
 }

@@ -233,6 +233,12 @@ Alpine.data('richEditor', ({ importUrl = null, titleInput = null, documents = []
                     return;
                 }
 
+                // Word'deki görseller belge olarak kaydedildi (Faz F2): kar tanesi işaretleri
+                // doğru açıklamayla çizilsin diye önce editörün belge listesine ekleniyor.
+                if (data.documents?.length) {
+                    documents.push(...data.documents);
+                    this.documents = [...documents];
+                }
                 editor.commands.setContent(data.html);
                 this.sync(editor);
 
@@ -240,7 +246,11 @@ Alpine.data('richEditor', ({ importUrl = null, titleInput = null, documents = []
                 if (title && data.title && !title.value.trim()) {
                     title.value = data.title;
                 }
-                this.importNotice = 'Word dosyası aktarıldı. Kontrol edip kaydetmeyi unutmayın.';
+                const imported = data.images?.imported ?? 0;
+                const skipped = data.images?.skipped ?? 0;
+                this.importNotice = 'Word dosyası aktarıldı. Kontrol edip kaydetmeyi unutmayın.'
+                    + (imported ? ` ${imported} görsel belge olarak eklendi (kar tanesi); adlarını Belgeler sayfasından düzenleyebilirsiniz.` : '')
+                    + (skipped ? ` ${skipped} görsel aktarılamadı: ${data.documents ? 'sadece PNG/JPG desteklenir' : 'görseller içerik kaydedildikten sonra aktarılabilir'}.` : '');
             } catch {
                 this.importError = 'Dosya aktarılamadı. Bağlantınızı kontrol edip tekrar deneyin.';
             } finally {

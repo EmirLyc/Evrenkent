@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 /**
@@ -152,7 +153,7 @@ class AdminBookController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'slug' => [
                 'required', 'string', 'max:255', 'alpha_dash',
-                \Illuminate\Validation\Rule::unique('books', 'slug')->ignore($book),
+                Rule::unique('books', 'slug')->ignore($book),
             ],
             'description' => ['nullable', 'string'],
             'cover_image' => ['nullable', 'image', 'max:5120'],
@@ -169,8 +170,7 @@ class AdminBookController extends Controller
             'average_rating' => ['nullable', 'numeric', 'min:0', 'max:5'],
             'review_count' => ['nullable', 'integer', 'min:0'],
             'page_count' => ['nullable', 'integer', 'min:0'],
-            'document_count' => ['nullable', 'integer', 'min:0'],
-            'video_count' => ['nullable', 'integer', 'min:0'],
+            // document_count / video_count bilerek yok: metinden otomatik (Book::refreshContentCounts).
             'map_count' => ['nullable', 'integer', 'min:0'],
             'author_note_count' => ['nullable', 'integer', 'min:0'],
             'source_count' => ['nullable', 'integer', 'min:0'],

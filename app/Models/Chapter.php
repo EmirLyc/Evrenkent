@@ -20,6 +20,13 @@ class Chapter extends Model
         'book_id', 'title', 'content', 'order',
     ];
 
+    /** Kitabın belge/video sayısı metinden hesaplanıyor (Book::refreshContentCounts). */
+    protected static function booted(): void
+    {
+        static::saved(fn (Chapter $chapter) => $chapter->book?->refreshContentCounts());
+        static::deleted(fn (Chapter $chapter) => $chapter->book?->refreshContentCounts());
+    }
+
     protected function footnotePrefix(): string
     {
         return 'dn-bolum-'.$this->order;

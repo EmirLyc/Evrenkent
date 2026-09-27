@@ -64,8 +64,6 @@
             <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 @foreach ([
                     'page_count' => 'Sayfa',
-                    'document_count' => 'Belge',
-                    'video_count' => 'Video',
                     'map_count' => 'Harita',
                     'author_note_count' => 'Yazar Notu',
                     'source_count' => 'Kaynak',
@@ -77,6 +75,7 @@
                     </div>
                 @endforeach
             </div>
+            <p class="text-xs text-slate-500 mt-3">Belge ve video sayısı metinden otomatik hesaplanır{{ $book->document_count || $book->video_count ? ': '.collect([$book->document_count ? $book->document_count.' belge' : null, $book->video_count ? $book->video_count.' video' : null])->filter()->implode(', ') : '' }}.</p>
         </div>
 
         <div class="flex items-center gap-4 pt-1">

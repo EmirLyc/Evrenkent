@@ -20,6 +20,7 @@ class Article extends Model
 
     /** @use HasFactory<ArticleFactory> */
     use HasFactory;
+
     use HasRichContent;
 
     protected function contentDocuments(): Collection

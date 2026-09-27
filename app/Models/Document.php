@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 /**
  * Metne gömülü belge (Faz F2) — kitaba ya da makaleye ait PDF veya görsel. Dosya herkese
@@ -36,7 +37,35 @@ class Document extends Model
 
     protected static function booted(): void
     {
-        static::deleted(fn (Document $document) => Storage::disk(config('filesystems.documents_disk'))->delete($document->file_path));
+        static::deleted(function (Document $document) {
+            Storage::disk(config('filesystems.documents_disk'))->delete($document->file_path);
+
+            // Silinen belge metinde kullanılıyorsa kitabın belge sayısı düşer.
+            if ($document->documentable instanceof Book) {
+                $document->documentable->refreshContentCounts();
+            }
+        });
+    }
+
+    /**
+     * Dosya içeriğinden belge oluşturur — Word'den aktarılan görseller (DocxImporter::withImages).
+     * İçerik türü çağıran tarafta doğrulanmış olmalı (MIME_TYPES).
+     */
+    public static function storeContents(Model $owner, string $contents, string $mime, string $originalName, string $title, ?User $by): self
+    {
+        $extension = ['image/png' => 'png', 'image/jpeg' => 'jpg', 'application/pdf' => 'pdf'][$mime];
+        $path = 'documents/'.Str::uuid().'.'.$extension;
+
+        Storage::disk(config('filesystems.documents_disk'))->put($path, $contents);
+
+        return $owner->documents()->create([
+            'uploaded_by' => $by?->id,
+            'title' => $title,
+            'file_path' => $path,
+            'mime_type' => $mime,
+            'size' => strlen($contents),
+            'original_name' => mb_substr($originalName, 0, 255),
+        ]);
     }
 
     public function documentable(): MorphTo

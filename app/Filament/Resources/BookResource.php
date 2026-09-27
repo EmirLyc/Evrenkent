@@ -6,7 +6,6 @@ use App\Enums\ContentStatus;
 use App\Filament\Concerns\RecordsContentReview;
 use App\Filament\Resources\BookResource\Pages;
 use App\Models\Book;
-use App\Notifications\ContentApproved;
 use App\Support\ContentPublisher;
 use App\Support\ContentReviewer;
 use Filament\Forms;
@@ -15,6 +14,7 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Carbon;
 
 class BookResource extends Resource
 {
@@ -110,8 +110,8 @@ class BookResource extends Resource
                     ->columns(3)
                     ->schema([
                         Forms\Components\TextInput::make('page_count')->label('Sayfa')->numeric()->minValue(0),
-                        Forms\Components\TextInput::make('document_count')->label('Belge')->numeric()->minValue(0),
-                        Forms\Components\TextInput::make('video_count')->label('Video')->numeric()->minValue(0),
+                        Forms\Components\TextInput::make('document_count')->label('Belge (otomatik)')->disabled()->dehydrated(false),
+                        Forms\Components\TextInput::make('video_count')->label('Video (otomatik)')->disabled()->dehydrated(false),
                         Forms\Components\TextInput::make('map_count')->label('Harita')->numeric()->minValue(0),
                         Forms\Components\TextInput::make('author_note_count')->label('Yazar Notu')->numeric()->minValue(0),
                         Forms\Components\TextInput::make('source_count')->label('Kaynak')->numeric()->minValue(0),
@@ -204,12 +204,17 @@ class BookResource extends Resource
                         $isFree = (bool) ($data['is_free'] ?? false);
 
                         $record->update(array_merge([
-                            'status' => ContentStatus::Onaylandi,
-                            'scheduled_publish_at' => $data['scheduled_publish_at'] ?? null,
                             'price' => $isFree ? 0 : $data['price'],
                         ], $isFree ? ['discount_price' => null, 'discount_ends_at' => null] : []));
-                        static::recordReview($record, 'onaylandi');
-                        $record->author->notify(new ContentApproved($record));
+
+                        // Onay kendi panelimizle aynı yoldan (ContentReviewer): tarih verildiyse
+                        // zamanlanır, verilmediyse "Onaylandı"da kalıp Yayınla aksiyonunu bekler.
+                        if (! empty($data['scheduled_publish_at'])) {
+                            ContentReviewer::approveAndPublish($record, auth()->user(), Carbon::parse($data['scheduled_publish_at']));
+                        } else {
+                            $record->update(['scheduled_publish_at' => null]);
+                            ContentReviewer::approve($record, auth()->user());
+                        }
 
                         Notification::make()->title('Kitap onaylandı')->success()->send();
                     }),

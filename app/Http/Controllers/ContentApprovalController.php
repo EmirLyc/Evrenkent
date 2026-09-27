@@ -6,7 +6,6 @@ use App\Enums\ContentStatus;
 use App\Models\Article;
 use App\Models\Book;
 use App\Models\MagazineIssue;
-use App\Notifications\ContentApproved;
 use App\Support\ContentPublisher;
 use App\Support\ContentReviewer;
 use Illuminate\Http\RedirectResponse;
@@ -211,9 +210,7 @@ class ContentApprovalController extends Controller
             return $this->publishOrSchedule($article, $request->validate($this->publishModeRules()), 'makaleler', 'Makale');
         }
 
-        $article->update(['status' => ContentStatus::Onaylandi]);
-        $this->recordReview($article, 'onaylandi', 'Sayıyla birlikte yayınlanacak.');
-        $article->author->notify(new ContentApproved($article));
+        ContentReviewer::approve($article, auth()->user(), 'Sayıyla birlikte yayınlanacak.');
 
         return redirect()->route('panel.adminpanel.onaylar.index', ['tur' => 'makaleler'])
             ->with('status', 'Makale onaylandı — sayısı yayınlandığında birlikte yayına girecek.');
@@ -267,15 +264,10 @@ class ContentApprovalController extends Controller
     {
         if ($data['publish_mode'] === 'ileri') {
             $at = Carbon::parse($data['scheduled_publish_at']);
-            ContentPublisher::schedule($record, $at, auth()->user());
+            ContentReviewer::approveAndPublish($record, auth()->user(), $at);
             $message = "{$label} onaylandı — {$at->translatedFormat('j F Y H:i')} tarihinde yayına girecek ve o zamana kadar Yakında Çıkacaklar'da görünecek.";
         } else {
-            $this->recordReview($record, 'onaylandi');
-            match (true) {
-                $record instanceof Book => ContentPublisher::publishBook($record, auth()->user()),
-                $record instanceof MagazineIssue => ContentPublisher::publishIssue($record, auth()->user()),
-                $record instanceof Article => ContentPublisher::publishArticle($record, auth()->user()),
-            };
+            ContentReviewer::approveAndPublish($record, auth()->user());
             $message = $record instanceof MagazineIssue
                 ? 'Sayı onaylandı ve onaylı makaleleriyle birlikte yayınlandı.'
                 : "{$label} onaylandı ve yayınlandı.";
@@ -308,14 +300,5 @@ class ContentApprovalController extends Controller
         }
 
         return redirect()->route('panel.adminpanel.onaylar.index', ['tur' => $tab])->with('status', $message);
-    }
-
-    private function recordReview(Book|Article|MagazineIssue $record, string $action, ?string $note = null): void
-    {
-        $record->reviews()->create([
-            'reviewer_id' => auth()->id(),
-            'action' => $action,
-            'note' => $note,
-        ]);
     }
 }

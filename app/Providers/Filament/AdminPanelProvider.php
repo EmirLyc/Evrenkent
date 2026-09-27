@@ -10,6 +10,7 @@ use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\View\PanelsRenderHook;
 use Filament\Widgets;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
@@ -27,6 +28,12 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
+            // 2026-09-27: Filament yedek (acil durum) paneli — günlük işler Süper Admin panelinde
+            // (/panel/admin-panel). Onay/ret/yayın kuralları ikisinde de aynı sınıflardan
+            // (ContentReviewer, ContentPublisher) geçiyor. Belge, video, dergi ataması, indirimler
+            // ve premium ayarları sadece yeni panelde.
+            ->brandName('Evrenkent · Yedek Panel')
+            ->renderHook(PanelsRenderHook::CONTENT_START, fn () => view('filament.backup-panel-notice'))
             ->colors([
                 'primary' => Color::Orange,
             ])

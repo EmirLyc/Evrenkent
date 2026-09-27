@@ -17,8 +17,9 @@ class FakeDocx
     /**
      * @param  array<string, string>  $footnotes  id → metin
      * @param  array<string, string>  $links  rel id → URL
+     * @param  array<string, array{0: string, 1: string}>  $images  rel id → [media yolu (ör. "media/image1.png"), içerik]
      */
-    public static function make(string $bodyXml, array $footnotes = [], array $links = []): string
+    public static function make(string $bodyXml, array $footnotes = [], array $links = [], array $images = []): string
     {
         $path = tempnam(sys_get_temp_dir(), 'docx').'.docx';
 
@@ -47,15 +48,34 @@ class FakeDocx
 
         $zip->addFromString('word/_rels/document.xml.rels', '<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
             .collect($links)->map(fn ($url, $id) => '<Relationship Id="'.$id.'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="'.htmlspecialchars($url).'" TargetMode="External"/>')->implode('')
+            .collect($images)->map(fn ($image, $id) => '<Relationship Id="'.$id.'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="'.$image[0].'"/>')->implode('')
             .'</Relationships>');
+        foreach ($images as [$target, $contents]) {
+            $zip->addFromString('word/'.$target, $contents);
+        }
         $zip->close();
 
         return $path;
     }
 
-    public static function upload(string $bodyXml, array $footnotes = [], string $name = 'metin.docx'): UploadedFile
+    public static function upload(string $bodyXml, array $footnotes = [], string $name = 'metin.docx', array $images = []): UploadedFile
     {
-        return new UploadedFile(self::make($bodyXml, $footnotes), $name, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', null, true);
+        return new UploadedFile(self::make($bodyXml, $footnotes, [], $images), $name, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', null, true);
+    }
+
+    /** Word'ün satır içi görsel paragrafı (w:drawing → a:blip r:embed); $alt alternatif metin. */
+    public static function imageParagraph(string $relId, string $alt = ''): string
+    {
+        return '<w:p><w:r><w:drawing><wp:inline xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing">'
+            .'<wp:docPr id="1" name="Resim 1" descr="'.htmlspecialchars($alt).'"/>'
+            .'<a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData><a:blip r:embed="'.$relId.'"/></a:graphicData></a:graphic>'
+            .'</wp:inline></w:drawing></w:r></w:p>';
+    }
+
+    /** 1×1 geçerli PNG. */
+    public static function png(): string
+    {
+        return base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=');
     }
 
     /** <w:p> kısayolu: $style verilirse paragraf stili, $runs ham w:r içeriği ya da düz metin. */

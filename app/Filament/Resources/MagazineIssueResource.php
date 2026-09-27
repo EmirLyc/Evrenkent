@@ -6,7 +6,6 @@ use App\Enums\ContentStatus;
 use App\Filament\Concerns\RecordsContentReview;
 use App\Filament\Resources\MagazineIssueResource\Pages;
 use App\Models\MagazineIssue;
-use App\Notifications\ContentApproved;
 use App\Support\ContentPublisher;
 use App\Support\ContentReviewer;
 use Filament\Forms;
@@ -139,9 +138,7 @@ class MagazineIssueResource extends Resource
                     ->action(function (MagazineIssue $record): void {
                         abort_unless(auth()->user()->can('approve', $record), 403);
 
-                        $record->update(['status' => ContentStatus::Onaylandi]);
-                        static::recordReview($record, 'onaylandi');
-                        $record->editor->notify(new ContentApproved($record));
+                        ContentReviewer::approve($record, auth()->user());
 
                         Notification::make()->title('Sayı onaylandı')->success()->send();
                     }),

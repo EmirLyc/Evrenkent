@@ -159,7 +159,8 @@ class DemoContentSeeder extends Seeder
         // girilmemiş (o kitapta bu bölüm hiç görünmemeli, sahte veri değil).
         $bookModels['Sislerin Ardındaki Fener']->update([
             'average_rating' => 4.8, 'review_count' => 128,
-            'page_count' => 248, 'document_count' => 17, 'video_count' => 6,
+            // Belge / video sayısı elle girilmiyor, bölüm metninden hesaplanıyor.
+            'page_count' => 248,
             'map_count' => 4, 'author_note_count' => 12, 'source_count' => 38,
         ]);
         $bookModels['Zamansız Yolculuk']->update([

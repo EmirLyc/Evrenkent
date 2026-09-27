@@ -25,7 +25,7 @@
             <x-rich-editor
                 name="body"
                 :value="old('body', $article->content)"
-                :import-url="route('panel.yayinlarim.word-aktar')"
+                :import-url="route('panel.yayinlarim.word-aktar', ['makale' => $article->id])"
                 title-input="title"
                 :documents="$article->documents"
                 :documents-url="route('panel.yayinlarim.makale.belgeler', $article)"

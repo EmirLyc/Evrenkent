@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use Closure;
 use DOMDocument;
 use DOMElement;
 use DOMNode;
@@ -19,13 +20,23 @@ use ZipArchive;
  *
  * Taşınanlar: paragraf, başlık, kalın/eğik/altı çizili/üstü çizili, üst/alt simge, dipnot ve
  * sonnot, madde işaretli/numaralı liste, alıntı stili, dış bağlantı, tablo hücreleri (paragraf
- * olarak). Görseller taşınmıyor — gömülü belgeler ayrı bir özellik (Faz F2).
+ * olarak). Görseller: withImages() ile bir kaydedici verilirse her PNG/JPG görsel gömülü belge
+ * (Faz F2) olarak kaydedilir ve yerine kar tanesi işareti konur; verilmezse atlanır.
  */
 class DocxImporter
 {
     private const W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
 
     private const R = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+
+    private const A = 'http://schemas.openxmlformats.org/drawingml/2006/main';
+
+    private const WP = 'http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing';
+
+    private const VML = 'urn:schemas-microsoft-com:vml';
+
+    /** Tek bir görsel için üst sınır (sıkıştırılmamış). */
+    private const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
 
     /** Sıkıştırılmamış document.xml için üst sınır — zip bombasına karşı. */
     private const MAX_XML_BYTES = 60 * 1024 * 1024;
@@ -44,6 +55,35 @@ class DocxImporter
 
     /** @var array<string, string> rel id → dış URL */
     private array $links = [];
+
+    /** @var array<string, string> rel id → zip içindeki görsel yolu */
+    private array $images = [];
+
+    /** @var (Closure(string, string, string, string): ?int)|null */
+    private ?Closure $imageHandler = null;
+
+    private ?ZipArchive $zip = null;
+
+    private int $importedImages = 0;
+
+    private int $skippedImages = 0;
+
+    /**
+     * Görselleri gömülü belge yapacak kaydedici: içerik, MIME, dosya adı ve başlık alır,
+     * oluşturulan belgenin kimliğini döner (null → görsel atlanır).
+     */
+    public function withImages(callable $handler): static
+    {
+        $this->imageHandler = Closure::fromCallable($handler);
+
+        return $this;
+    }
+
+    /** @return array{imported: int, skipped: int} */
+    public function imageStats(): array
+    {
+        return ['imported' => $this->importedImages, 'skipped' => $this->skippedImages];
+    }
 
     /**
      * Tek içerik olarak (bir bölüm ya da makale). Dosya tek bir üst düzey başlıkla
@@ -113,6 +153,9 @@ class DocxImporter
             throw new InvalidArgumentException('Dosya okunamadı. Geçerli bir Word (.docx) dosyası yükleyin.');
         }
 
+        $this->zip = $zip;
+        $this->importedImages = $this->skippedImages = 0;
+
         try {
             $document = $this->readXml($zip, 'word/document.xml');
             if (! $document) {
@@ -124,13 +167,15 @@ class DocxImporter
             $this->endnotes = $this->readNotes($this->readXml($zip, 'word/endnotes.xml'), 'endnote');
             $this->readNumbering($this->readXml($zip, 'word/numbering.xml'));
             $this->readLinks($this->readXml($zip, 'word/_rels/document.xml.rels'));
+
+            $body = $document->getElementsByTagNameNS(self::W, 'body')->item(0);
+
+            // Zip, görseller okunabilsin diye blokların sonuna kadar açık kalıyor.
+            return $body ? $this->blockChildren($body) : [];
         } finally {
             $zip->close();
+            $this->zip = null;
         }
-
-        $body = $document->getElementsByTagNameNS(self::W, 'body')->item(0);
-
-        return $body ? $this->blockChildren($body) : [];
     }
 
     private function readXml(ZipArchive $zip, string $name): ?DOMDocument
@@ -185,7 +230,7 @@ class DocxImporter
         $html = trim($this->inline($p));
         $text = trim(html_entity_decode(strip_tags($html), ENT_QUOTES | ENT_HTML5));
 
-        if ($text === '' && ! str_contains($html, 'data-footnote')) {
+        if ($text === '' && ! str_contains($html, 'data-footnote') && ! str_contains($html, 'data-document')) {
             return null;
         }
 
@@ -266,6 +311,8 @@ class DocxImporter
                 'br', 'cr' => $text .= $this->attr($node, 'type') === 'page' ? '' : '<br>',
                 'footnoteReference' => $footnotes .= $this->footnoteMarker($this->footnotes[$this->attr($node, 'id')] ?? null),
                 'endnoteReference' => $footnotes .= $this->footnoteMarker($this->endnotes[$this->attr($node, 'id')] ?? null),
+                // Görsel: modern çizim (w:drawing) ya da eski VML (w:pict).
+                'drawing', 'pict' => $footnotes .= $this->image($node),
                 default => null,
             };
         }
@@ -290,6 +337,54 @@ class DocxImporter
         }
 
         return $text.$footnotes;
+    }
+
+    /**
+     * Word görselini gömülü belgeye çevirip yerine kar tanesi işareti koyar. Sadece içeriği
+     * gerçekten PNG/JPG olanlar (getimagesizefromstring); EMF/WMF/GIF vb. atlanır.
+     */
+    private function image(DOMElement $node): string
+    {
+        $blip = $node->getElementsByTagNameNS(self::A, 'blip')->item(0);
+        $relId = $blip?->getAttributeNS(self::R, 'embed')
+            ?: $node->getElementsByTagNameNS(self::VML, 'imagedata')->item(0)?->getAttributeNS(self::R, 'id');
+
+        $path = $relId ? ($this->images[$relId] ?? null) : null;
+        if (! $path) {
+            return '';
+        }
+
+        if (! $this->imageHandler || ! $this->zip) {
+            $this->skippedImages++;
+
+            return '';
+        }
+
+        $stat = $this->zip->statName($path);
+        $contents = $stat && $stat['size'] <= self::MAX_IMAGE_BYTES ? $this->zip->getFromName($path) : false;
+        $info = $contents !== false ? @getimagesizefromstring($contents) : false;
+        $mime = $info['mime'] ?? null;
+
+        if (! in_array($mime, ['image/png', 'image/jpeg'], true)) {
+            $this->skippedImages++;
+
+            return '';
+        }
+
+        $properties = $node->getElementsByTagNameNS(self::WP, 'docPr')->item(0);
+        $title = trim((string) ($properties?->getAttribute('descr') ?: $properties?->getAttribute('title')));
+        $title = mb_substr($title !== '' ? $title : 'Görsel '.($this->importedImages + 1), 0, 200);
+
+        $id = ($this->imageHandler)($contents, $mime, basename($path), $title);
+        if (! $id) {
+            $this->skippedImages++;
+
+            return '';
+        }
+
+        $this->importedImages++;
+
+        return '<span data-document="'.(int) $id.'"></span>';
     }
 
     private function footnoteMarker(?string $text): string
@@ -399,13 +494,28 @@ class DocxImporter
     private function readLinks(?DOMDocument $dom): void
     {
         $this->links = [];
+        $this->images = [];
         if (! $dom) {
             return;
         }
 
         foreach ($dom->getElementsByTagName('Relationship') as $relationship) {
-            if ($relationship->getAttribute('TargetMode') === 'External' && str_ends_with($relationship->getAttribute('Type'), '/hyperlink')) {
-                $this->links[$relationship->getAttribute('Id')] = $relationship->getAttribute('Target');
+            $type = $relationship->getAttribute('Type');
+            $target = $relationship->getAttribute('Target');
+
+            if ($relationship->getAttribute('TargetMode') === 'External') {
+                if (str_ends_with($type, '/hyperlink')) {
+                    $this->links[$relationship->getAttribute('Id')] = $target;
+                }
+
+                continue;
+            }
+
+            // Görsel yolu document.xml'e göre ("media/image1.png") ya da köke göre ("/word/media/...").
+            if (str_ends_with($type, '/image')) {
+                $this->images[$relationship->getAttribute('Id')] = str_starts_with($target, '/')
+                    ? ltrim($target, '/')
+                    : 'word/'.ltrim($target, './');
             }
         }
     }

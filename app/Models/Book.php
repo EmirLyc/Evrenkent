@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\ContentStatus;
 use App\Models\Concerns\HasDocuments;
 use App\Support\PlatformSettings;
+use App\Support\VideoEmbed;
 use Database\Factories\BookFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -216,6 +217,33 @@ class Book extends Model
             ->whereNotNull('scheduled_publish_at')
             ->where('scheduled_publish_at', '>', now())
             ->orderBy('scheduled_publish_at');
+    }
+
+    /**
+     * Belge ve video sayısını metinden yeniden hesaplar (2026-09-27): önceden yazar elle
+     * giriyordu ve gerçek içerikle tutarsız kalabiliyordu. Belge = bölümlerde kar tanesiyle
+     * kullanılan (bu kitaba ait) farklı belgeler, video = geçerli YouTube/Vimeo satırları.
+     * 0 ise null — tanıtım sayfasındaki istatistik şeridinde görünmez. Bölüm kaydedilince /
+     * silinince ve belge silinince çağrılıyor (Chapter, Document modelleri).
+     */
+    public function refreshContentCounts(): void
+    {
+        $html = $this->chapters()->pluck('content')->implode('');
+
+        preg_match_all('/data-document="(\d+)"/', $html, $documents);
+        $documentIds = array_unique($documents[1]);
+        $documentCount = $documentIds ? $this->documents()->whereIn('id', $documentIds)->count() : 0;
+
+        preg_match_all('/<figure\b[^>]*\bdata-video="([^"]*)"/', $html, $videos);
+        $videoCount = collect($videos[1])
+            ->filter(fn (string $url) => VideoEmbed::parse(html_entity_decode($url, ENT_QUOTES | ENT_HTML5)) !== null)
+            ->count();
+
+        $counts = ['document_count' => $documentCount ?: null, 'video_count' => $videoCount ?: null];
+
+        // updated_at'e dokunmadan (kitabın "güncellenme" tarihi yazarın düzenlemesini göstersin).
+        static::whereKey($this->getKey())->toBase()->update($counts);
+        $this->forceFill($counts)->syncOriginalAttributes(array_keys($counts));
     }
 
     /**

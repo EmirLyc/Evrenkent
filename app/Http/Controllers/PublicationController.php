@@ -10,6 +10,7 @@ use App\Models\MagazineIssue;
 use App\Rules\RichTextContent;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -65,7 +66,7 @@ class PublicationController extends Controller
      * (Faz E: "dergide yazarı süper admin yapacak") henüz yayınlanmamış sayıları.
      * Önceden her yazar açık olan her sayıya gönderebiliyordu.
      *
-     * @return \Illuminate\Support\Collection<int, MagazineIssue>
+     * @return Collection<int, MagazineIssue>
      */
     private function assignableMagazineIssues()
     {
@@ -98,8 +99,7 @@ class PublicationController extends Controller
             'categories' => ['nullable', 'array'],
             'categories.*' => ['integer', 'exists:categories,id'],
             'page_count' => ['nullable', 'integer', 'min:0'],
-            'document_count' => ['nullable', 'integer', 'min:0'],
-            'video_count' => ['nullable', 'integer', 'min:0'],
+            // document_count / video_count bilerek yok: metinden otomatik (Book::refreshContentCounts).
             'map_count' => ['nullable', 'integer', 'min:0'],
             'author_note_count' => ['nullable', 'integer', 'min:0'],
             'source_count' => ['nullable', 'integer', 'min:0'],
@@ -114,8 +114,6 @@ class PublicationController extends Controller
             'title' => $data['title'],
             'description' => $data['body'],
             'page_count' => $data['page_count'] ?? null,
-            'document_count' => $data['document_count'] ?? null,
-            'video_count' => $data['video_count'] ?? null,
             'map_count' => $data['map_count'] ?? null,
             'author_note_count' => $data['author_note_count'] ?? null,
             'source_count' => $data['source_count'] ?? null,
