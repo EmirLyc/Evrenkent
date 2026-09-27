@@ -74,7 +74,7 @@ class BookPricingTest extends TestCase
         $book = Book::factory()->create(['status' => ContentStatus::Gonderildi, 'price' => 0]);
 
         $this->actingAs($admin)
-            ->post(route('panel.adminpanel.onaylar.kitap.onayla', $book), ['price' => 0])
+            ->post(route('panel.adminpanel.onaylar.kitap.onayla', $book), ['price' => 0, 'publish_mode' => 'simdi'])
             ->assertSessionHasErrors('price');
 
         $this->assertSame(ContentStatus::Gonderildi, $book->refresh()->status);
@@ -86,11 +86,11 @@ class BookPricingTest extends TestCase
         $book = Book::factory()->create(['status' => ContentStatus::Gonderildi, 'price' => 0]);
 
         $this->actingAs($admin)
-            ->post(route('panel.adminpanel.onaylar.kitap.onayla', $book), ['is_free' => 1])
+            ->post(route('panel.adminpanel.onaylar.kitap.onayla', $book), ['is_free' => 1, 'publish_mode' => 'simdi'])
             ->assertSessionHasNoErrors();
 
         $book->refresh();
-        $this->assertSame(ContentStatus::Onaylandi, $book->status);
+        $this->assertSame(ContentStatus::Yayinda, $book->status);
         $this->assertSame('0.00', $book->price);
     }
 

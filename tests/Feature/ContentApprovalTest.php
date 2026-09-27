@@ -52,12 +52,17 @@ class ContentApprovalTest extends TestCase
         $book = Book::factory()->create(['status' => ContentStatus::Gonderildi]);
 
         $this->actingAs($admin)
-            ->post(route('panel.adminpanel.onaylar.kitap.onayla', $book), ['price' => 120])
+            ->post(route('panel.adminpanel.onaylar.kitap.onayla', $book), [
+                'price' => 120,
+                'publish_mode' => 'ileri',
+                'scheduled_publish_at' => now()->addWeek()->format('Y-m-d\TH:i'),
+            ])
             ->assertRedirect(route('panel.adminpanel.onaylar.index', ['tur' => 'kitaplar']));
 
         $book->refresh();
         $this->assertSame(ContentStatus::Onaylandi, $book->status);
         $this->assertSame('120.00', $book->price);
+        $this->assertNotNull($book->scheduled_publish_at);
         $this->assertSame(1, $book->reviews()->count());
         $this->assertSame('onaylandi', $book->reviews()->first()->action);
         Notification::assertSentTo($book->author, \App\Notifications\ContentApproved::class);
@@ -117,8 +122,13 @@ class ContentApprovalTest extends TestCase
         Notification::fake();
         $admin = $this->superAdmin();
 
+        // Sayı en az bir onaylı makale olmadan onaylanamaz (Faz D kuralı 2).
         $issue = MagazineIssue::factory()->create(['status' => ContentStatus::Gonderildi]);
-        $this->actingAs($admin)->post(route('panel.adminpanel.onaylar.dergi.onayla', $issue));
+        Article::factory()->for($issue, 'magazineIssue')->create(['status' => ContentStatus::Onaylandi]);
+        $this->actingAs($admin)->post(route('panel.adminpanel.onaylar.dergi.onayla', $issue), [
+            'publish_mode' => 'ileri',
+            'scheduled_publish_at' => now()->addDays(3)->format('Y-m-d\TH:i'),
+        ]);
         $this->assertSame(ContentStatus::Onaylandi, $issue->refresh()->status);
 
         $this->actingAs($admin)->post(route('panel.adminpanel.onaylar.dergi.yayinla', $issue));
@@ -134,10 +144,17 @@ class ContentApprovalTest extends TestCase
         Notification::fake();
         $admin = $this->superAdmin();
 
-        $article = Article::factory()->create(['status' => ContentStatus::Incelemede]);
+        $issue = MagazineIssue::factory()->create(['status' => ContentStatus::Gonderildi]);
+        $article = Article::factory()->for($issue, 'magazineIssue')->create(['status' => ContentStatus::Incelemede]);
         $this->actingAs($admin)->post(route('panel.adminpanel.onaylar.makale.onayla', $article));
         $this->assertSame(ContentStatus::Onaylandi, $article->refresh()->status);
 
+        // Kural 3: sayısı yayında değilken makale tek başına yayınlanamaz.
+        $this->actingAs($admin)->post(route('panel.adminpanel.onaylar.makale.yayinla', $article))->assertForbidden();
+        $this->assertSame(ContentStatus::Onaylandi, $article->refresh()->status);
+
+        // Kural 4: sayı yayındaysa yayınlanabilir.
+        $issue->update(['status' => ContentStatus::Yayinda]);
         $this->actingAs($admin)->post(route('panel.adminpanel.onaylar.makale.yayinla', $article));
         $this->assertSame(ContentStatus::Yayinda, $article->refresh()->status);
 

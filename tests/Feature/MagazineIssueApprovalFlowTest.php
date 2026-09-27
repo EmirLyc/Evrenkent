@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\ContentStatus;
 use App\Filament\Resources\MagazineIssueResource\Pages\ListMagazineIssues;
+use App\Models\Article;
 use App\Models\MagazineIssue;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -77,6 +78,10 @@ class MagazineIssueApprovalFlowTest extends TestCase
         // her adımdan sonra veritabanından tazelenmesi gerekiyor.
         $issue->refresh();
 
+        // Sayı en az bir onaylı makale olmadan onaylanamaz/yayınlanamaz (Faz D kuralı 2);
+        // yayınlanınca o makale de sayıyla birlikte yayına girmeli (kural 1).
+        $article = Article::factory()->for($issue, 'magazineIssue')->create(['status' => ContentStatus::Onaylandi]);
+
         Livewire::actingAs($admin)
             ->test(ListMagazineIssues::class)
             ->callTableAction('approve', $issue)
@@ -93,6 +98,17 @@ class MagazineIssueApprovalFlowTest extends TestCase
         $this->assertSame(ContentStatus::Yayinda, $issue->status);
         $this->assertNotNull($issue->publish_date);
         $this->assertSame(3, $issue->reviews()->count());
+        $this->assertSame(ContentStatus::Yayinda, $article->refresh()->status);
+    }
+
+    public function test_issue_without_an_approved_article_cannot_be_approved(): void
+    {
+        $issue = MagazineIssue::factory()->create(['status' => ContentStatus::Gonderildi]);
+        Article::factory()->for($issue, 'magazineIssue')->create(['status' => ContentStatus::Incelemede]);
+
+        Livewire::actingAs($this->superAdmin())
+            ->test(ListMagazineIssues::class)
+            ->assertTableActionHidden('approve', $issue);
     }
 
     public function test_super_admin_reject_sends_issue_back_to_revizyon_istendi(): void

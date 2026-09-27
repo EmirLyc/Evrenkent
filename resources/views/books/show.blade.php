@@ -64,6 +64,7 @@
                 <div class="text-lg font-serif font-semibold text-slate-900 mt-2">
                     {{ $book->scheduled_publish_at->format('d.m.Y') }} tarihinde yayınlanacak
                 </div>
+                <x-countdown :at="$book->scheduled_publish_at" class="block text-2xl font-serif font-semibold text-brand-700 mt-1" />
                 <p class="text-sm text-slate-500 mt-2">
                     Bu kitap şu an tanıtım aşamasında — satın alma ve okuma, yayın tarihinde açılacak.
                 </p>

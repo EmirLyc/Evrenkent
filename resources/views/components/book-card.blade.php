@@ -13,6 +13,7 @@
         <div class="text-sm mt-1">
             @if ($showScheduledDate && $book->scheduled_publish_at)
                 <span class="text-brand-700 font-medium whitespace-nowrap">{{ $book->scheduled_publish_at->format('d.m.Y') }}</span>
+                <x-countdown :at="$book->scheduled_publish_at" class="block text-xs text-slate-500 mt-0.5" />
             @else
                 <x-book-price :book="$book" />
             @endif

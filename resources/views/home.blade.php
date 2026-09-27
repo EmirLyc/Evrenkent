@@ -29,10 +29,15 @@
         </x-home-shelf>
     @endif
 
-    @if ($upcomingBooks->isNotEmpty())
+    {{-- Zamanlanmış kitaplar ve dergi sayıları, yayın tarihine göre karışık — geri sayımla. --}}
+    @if ($upcoming->isNotEmpty())
         <x-home-shelf title="Yakında Çıkacaklar" :href="route('kitaplar.index', ['raf' => \App\Enums\BookShelf::YakindaCikacaklar->value])">
-            @foreach ($upcomingBooks as $book)
-                <x-book-card :book="$book" show-scheduled-date :class="$cardClass" />
+            @foreach ($upcoming as $item)
+                @if ($item instanceof \App\Models\Book)
+                    <x-book-card :book="$item" show-scheduled-date :class="$cardClass" />
+                @else
+                    <x-magazine-card :issue="$item" show-scheduled-date :class="$cardClass" />
+                @endif
             @endforeach
         </x-home-shelf>
     @endif
@@ -81,7 +86,7 @@
         </section>
     @endif
 
-    @if ($newBooks->isEmpty() && $upcomingBooks->isEmpty() && $newIssues->isEmpty())
+    @if ($newBooks->isEmpty() && $upcoming->isEmpty() && $newIssues->isEmpty())
         <div class="card p-12 text-center text-slate-400">
             <x-heroicon-o-book-open class="w-8 h-8 mx-auto mb-3 text-slate-300" />
             Henüz yayınlanmış bir içerik yok.

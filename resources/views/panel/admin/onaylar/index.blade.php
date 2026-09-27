@@ -32,7 +32,12 @@
                     <tbody class="divide-y divide-slate-100">
                         @forelse ($books as $book)
                             <tr class="hover:bg-slate-50/60 transition-colors">
-                                <td class="px-5 py-3 max-w-xs"><div class="text-slate-900 truncate">{{ $book->title }}</div></td>
+                                <td class="px-5 py-3 max-w-xs">
+                                    <div class="text-slate-900 truncate">{{ $book->title }}</div>
+                                    @if ($book->status === \App\Enums\ContentStatus::Onaylandi && $book->scheduled_publish_at)
+                                        <div class="text-xs text-brand-700">{{ $book->scheduled_publish_at->format('d.m.Y H:i') }} tarihinde yayınlanacak</div>
+                                    @endif
+                                </td>
                                 <td class="px-5 py-3 text-slate-500 whitespace-nowrap">{{ $book->author->name }}</td>
                                 <td class="px-5 py-3 whitespace-nowrap"><x-status-badge :status="$book->status" /></td>
                                 <td class="px-5 py-3 text-slate-500 whitespace-nowrap">{{ $book->updated_at->format('d.m.Y H:i') }}</td>
@@ -87,7 +92,12 @@
                     <tbody class="divide-y divide-slate-100">
                         @forelse ($issues as $issue)
                             <tr class="hover:bg-slate-50/60 transition-colors">
-                                <td class="px-5 py-3 max-w-xs"><div class="text-slate-900 truncate">{{ $issue->title }}</div></td>
+                                <td class="px-5 py-3 max-w-xs">
+                                    <div class="text-slate-900 truncate">{{ $issue->title }}</div>
+                                    @if ($issue->status === \App\Enums\ContentStatus::Onaylandi && $issue->scheduled_publish_at)
+                                        <div class="text-xs text-brand-700">{{ $issue->scheduled_publish_at->format('d.m.Y H:i') }} tarihinde yayınlanacak</div>
+                                    @endif
+                                </td>
                                 <td class="px-5 py-3 text-slate-500 whitespace-nowrap">{{ $issue->editor->name }}</td>
                                 <td class="px-5 py-3 whitespace-nowrap"><x-status-badge :status="$issue->status" /></td>
                                 <td class="px-5 py-3 text-slate-500 whitespace-nowrap">{{ $issue->updated_at->format('d.m.Y H:i') }}</td>
@@ -97,12 +107,12 @@
                                             <x-heroicon-o-eye class="w-4 h-4" /> Görüntüle
                                         </a>
                                         @can('approve', $issue)
-                                            <form method="POST" action="{{ route('panel.adminpanel.onaylar.dergi.onayla', $issue) }}">
-                                                @csrf
-                                                <button type="submit" class="inline-flex items-center gap-1.5 text-sm text-emerald-700 hover:text-emerald-800 transition-colors">
-                                                    <x-heroicon-o-check-circle class="w-4 h-4" /> Onayla
-                                                </button>
-                                            </form>
+                                            <a href="{{ route('panel.adminpanel.onaylar.dergi.onayla-form', $issue) }}" class="inline-flex items-center gap-1.5 text-sm text-emerald-700 hover:text-emerald-800 transition-colors">
+                                                <x-heroicon-o-check-circle class="w-4 h-4" /> Onayla
+                                            </a>
+                                        @elseif (in_array($issue->status, [\App\Enums\ContentStatus::Gonderildi, \App\Enums\ContentStatus::Onaylandi], true) && ! $issue->hasApprovedArticles())
+                                            {{-- Kural 2: boş sayı yayınlanamaz/zamanlanamaz — buton sessizce kaybolmasın, nedeni görünsün. --}}
+                                            <span class="text-xs text-slate-400" title="Sayı, en az bir onaylı makale olmadan yayınlanamaz. Önce Makaleler sekmesinden makaleleri onaylayın.">Onaylı makale yok</span>
                                         @endcan
                                         @can('reject', $issue)
                                             <a href="{{ route('panel.adminpanel.onaylar.dergi.reddet-form', $issue) }}" class="inline-flex items-center gap-1.5 text-sm text-red-600 hover:text-red-700 transition-colors">
@@ -145,7 +155,13 @@
                     <tbody class="divide-y divide-slate-100">
                         @forelse ($articles as $article)
                             <tr class="hover:bg-slate-50/60 transition-colors">
-                                <td class="px-5 py-3 max-w-xs"><div class="text-slate-900 truncate">{{ $article->title }}</div></td>
+                                <td class="px-5 py-3 max-w-xs">
+                                    <div class="text-slate-900 truncate">{{ $article->title }}</div>
+                                    <div class="text-xs text-slate-400 truncate">{{ $article->magazineIssue?->title ?? 'Sayısız' }}</div>
+                                    @if ($article->status === \App\Enums\ContentStatus::Onaylandi && $article->scheduled_publish_at)
+                                        <div class="text-xs text-brand-700">{{ $article->scheduled_publish_at->format('d.m.Y H:i') }} tarihinde yayınlanacak</div>
+                                    @endif
+                                </td>
                                 <td class="px-5 py-3 text-slate-500 whitespace-nowrap">{{ $article->author->name }}</td>
                                 <td class="px-5 py-3 whitespace-nowrap"><x-status-badge :status="$article->status" /></td>
                                 <td class="px-5 py-3 text-slate-500 whitespace-nowrap">{{ $article->updated_at->format('d.m.Y H:i') }}</td>
@@ -155,12 +171,9 @@
                                             <x-heroicon-o-eye class="w-4 h-4" /> Görüntüle
                                         </a>
                                         @can('approve', $article)
-                                            <form method="POST" action="{{ route('panel.adminpanel.onaylar.makale.onayla', $article) }}">
-                                                @csrf
-                                                <button type="submit" class="inline-flex items-center gap-1.5 text-sm text-emerald-700 hover:text-emerald-800 transition-colors">
-                                                    <x-heroicon-o-check-circle class="w-4 h-4" /> Onayla
-                                                </button>
-                                            </form>
+                                            <a href="{{ route('panel.adminpanel.onaylar.makale.onayla-form', $article) }}" class="inline-flex items-center gap-1.5 text-sm text-emerald-700 hover:text-emerald-800 transition-colors">
+                                                <x-heroicon-o-check-circle class="w-4 h-4" /> Onayla
+                                            </a>
                                         @endcan
                                         @can('reject', $article)
                                             <a href="{{ route('panel.adminpanel.onaylar.makale.reddet-form', $article) }}" class="inline-flex items-center gap-1.5 text-sm text-red-600 hover:text-red-700 transition-colors">
@@ -174,6 +187,9 @@
                                                     <x-heroicon-o-globe-alt class="w-4 h-4" /> Yayınla
                                                 </button>
                                             </form>
+                                        @elseif ($article->status === \App\Enums\ContentStatus::Onaylandi)
+                                            {{-- Kural 3: sayısı yayında değilse makale tek başına yayınlanamaz. --}}
+                                            <span class="text-xs text-slate-400" title="Makale, sayısı yayınlandığında onunla birlikte yayına girer.">Sayıyla yayınlanacak</span>
                                         @endcan
                                     </div>
                                 </td>

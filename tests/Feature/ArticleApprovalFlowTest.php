@@ -74,8 +74,10 @@ class ArticleApprovalFlowTest extends TestCase
     public function test_super_admin_can_approve_and_publish_a_reviewed_article(): void
     {
         $admin = $this->superAdmin();
+        // Makale tek başına ancak sayısı yayındayken yayınlanabilir (Faz D kuralı 3/4).
         $article = Article::factory()
             ->for($this->yazar(), 'author')
+            ->for(MagazineIssue::factory()->create(['status' => ContentStatus::Yayinda]), 'magazineIssue')
             ->create(['status' => ContentStatus::Incelemede]);
 
         Livewire::actingAs($admin)

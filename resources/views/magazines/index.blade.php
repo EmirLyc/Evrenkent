@@ -6,6 +6,14 @@
     <h1 class="sr-only">Dergiler</h1>
     <x-content-type-switcher active="dergiler" />
 
+    @if ($upcomingIssues->isNotEmpty())
+        <x-home-shelf title="Yakında Çıkacak Sayılar">
+            @foreach ($upcomingIssues as $upcomingIssue)
+                <x-magazine-card :issue="$upcomingIssue" show-scheduled-date class="w-36 shrink-0 snap-start sm:w-auto" />
+            @endforeach
+        </x-home-shelf>
+    @endif
+
     <h2 class="font-serif text-xl font-semibold text-slate-900 mb-5">Yeni Sayılar</h2>
 
     @if ($issues->isEmpty())

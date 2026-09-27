@@ -59,11 +59,16 @@ class MagazineIssuePolicy
     }
 
     /**
-     * Onaylama/reddetme/zamanlama sadece Süper Admin yetkisindedir.
+     * Onaylama/reddetme/zamanlama sadece Süper Admin yetkisindedir. Onay artık "şimdi yayınla"
+     * ya da "ileri tarihte yayınla" demek — bu yüzden sayı, içinde en az bir onaylı makale
+     * olmadan onaylanamaz (2026-09-27 kararı: boş sayı yayınlanamaz/zamanlanamaz).
+     * Hem kendi panelimiz hem Filament bu policy'den geçtiği için kural ikisinde de geçerli.
      */
     public function approve(User $user, MagazineIssue $magazineIssue): bool
     {
-        return $user->hasRole('super_admin') && $magazineIssue->status === ContentStatus::Gonderildi;
+        return $user->hasRole('super_admin')
+            && $magazineIssue->status === ContentStatus::Gonderildi
+            && $magazineIssue->hasApprovedArticles();
     }
 
     public function reject(User $user, MagazineIssue $magazineIssue): bool
@@ -73,6 +78,8 @@ class MagazineIssuePolicy
 
     public function publish(User $user, MagazineIssue $magazineIssue): bool
     {
-        return $user->hasRole('super_admin') && $magazineIssue->status === ContentStatus::Onaylandi;
+        return $user->hasRole('super_admin')
+            && $magazineIssue->status === ContentStatus::Onaylandi
+            && $magazineIssue->hasApprovedArticles();
     }
 }

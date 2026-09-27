@@ -117,6 +117,8 @@ class ContentNotificationTest extends TestCase
         $admin = $this->superAdmin();
         $editor = $this->dergiEditoru();
         $issue = MagazineIssue::factory()->for($editor, 'editor')->create(['status' => ContentStatus::Gonderildi]);
+        // Onaylı makalesi olmayan sayı onaylanamıyor (Faz D kuralı 2).
+        Article::factory()->for($issue, 'magazineIssue')->create(['status' => ContentStatus::Onaylandi]);
 
         Livewire::actingAs($admin)->test(ListMagazineIssues::class)->callTableAction('approve', $issue);
 

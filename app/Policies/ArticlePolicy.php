@@ -92,8 +92,15 @@ class ArticlePolicy
         return $user->hasRole('super_admin') && $article->status === ContentStatus::Incelemede;
     }
 
+    /**
+     * Makale, sayısı yayında değilse tek başına yayınlanamaz — sayıyla birlikte yayına girer
+     * (ContentPublisher::publishIssue). Sayı yayındayken sonradan onaylanan makale ise tek
+     * başına yayınlanabilir (2026-09-27 kararı).
+     */
     public function publish(User $user, Article $article): bool
     {
-        return $user->hasRole('super_admin') && $article->status === ContentStatus::Onaylandi;
+        return $user->hasRole('super_admin')
+            && $article->status === ContentStatus::Onaylandi
+            && $article->magazineIssue?->status === ContentStatus::Yayinda;
     }
 }

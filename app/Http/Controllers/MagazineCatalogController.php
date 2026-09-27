@@ -15,6 +15,10 @@ class MagazineCatalogController extends Controller
             ->latest('publish_date')
             ->paginate(18);
 
-        return view('magazines.index', ['issues' => $issues]);
+        return view('magazines.index', [
+            'issues' => $issues,
+            // Zamanlanmış sayılar (Faz D) — geri sayımla ayrı bir satırda.
+            'upcomingIssues' => MagazineIssue::upcoming()->get(),
+        ]);
     }
 }

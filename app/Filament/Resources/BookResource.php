@@ -7,7 +7,7 @@ use App\Filament\Concerns\RecordsContentReview;
 use App\Filament\Resources\BookResource\Pages;
 use App\Models\Book;
 use App\Notifications\ContentApproved;
-use App\Notifications\ContentPublished;
+use App\Support\ContentPublisher;
 use App\Notifications\ContentRevisionRequested;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -243,9 +243,7 @@ class BookResource extends Resource
                     ->action(function (Book $record): void {
                         abort_unless(auth()->user()->can('publish', $record), 403);
 
-                        $record->update(['status' => ContentStatus::Yayinda, 'published_at' => now()]);
-                        static::recordReview($record, 'yayinda');
-                        $record->author->notify(new ContentPublished($record));
+                        ContentPublisher::publishBook($record, auth()->user());
 
                         Notification::make()->title('Kitap yayınlandı')->success()->send();
                     }),

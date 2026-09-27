@@ -12,13 +12,34 @@
                 :byline="$issue->editor->name"
                 :meta="['Sayı ' . $issue->issue_number, $issue->publish_date?->translatedFormat('d M Y')]"
             >
-                <x-status-badge :status="$issue->status" />
+                {{-- Kitap sayfasıyla tutarlı: yayındaki sayıda "Yayında" rozeti gereksiz. --}}
+                @if ($issue->status !== \App\Enums\ContentStatus::Yayinda && ! $isUpcoming)
+                    <x-status-badge :status="$issue->status" />
+                @endif
             </x-detail-header>
+
+            @if ($isUpcoming)
+                {{-- Zamanlanmış sayı: tanıtım (Yakında Çıkacak) — makaleler yayın anında açılır. --}}
+                <div class="card p-5 mt-8 max-w-md">
+                    <div class="flex items-center gap-2 text-brand-700 text-sm font-medium">
+                        <x-heroicon-o-clock class="w-4 h-4" /> Yakında Çıkacak
+                    </div>
+                    <div class="text-lg font-serif font-semibold text-slate-900 mt-2">
+                        {{ $issue->scheduled_publish_at->format('d.m.Y H:i') }} tarihinde yayınlanacak
+                    </div>
+                    <x-countdown :at="$issue->scheduled_publish_at" class="block text-2xl font-serif font-semibold text-brand-700 mt-1" />
+                </div>
+            @endif
 
             <div class="mt-9">
                 <h2 class="font-serif text-base font-semibold text-slate-900 mb-3">Bu Sayıdaki Makaleler</h2>
 
-                @if ($articles->isEmpty())
+                @if ($isUpcoming && $articles->isEmpty())
+                    <div class="card p-8 text-center text-slate-400">
+                        <x-heroicon-o-document-text class="w-8 h-8 mx-auto mb-3 text-slate-300" />
+                        Makaleler sayının yayın tarihinde açılacak.
+                    </div>
+                @elseif ($articles->isEmpty())
                     <div class="card p-8 text-center text-slate-400">
                         <x-heroicon-o-document-text class="w-8 h-8 mx-auto mb-3 text-slate-300" />
                         Bu sayıda henüz yayınlanmış bir makale yok.

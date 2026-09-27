@@ -28,9 +28,16 @@ class HomeController extends Controller
             return redirect()->route('kitaplar.index', array_filter(['raf' => $request->query('raf')]));
         }
 
+        // Yakında Çıkacaklar: zamanlanmış kitaplar ve dergi sayıları (Faz D) tarih sırasıyla karışık.
+        $upcoming = BookShelf::YakindaCikacaklar->query()->take(6)->get()
+            ->concat(MagazineIssue::upcoming()->take(6)->get())
+            ->sortBy('scheduled_publish_at')
+            ->take(6)
+            ->values();
+
         return view('home', [
             'newBooks' => BookShelf::YeniCikanlar->query()->take(6)->get(),
-            'upcomingBooks' => BookShelf::YakindaCikacaklar->query()->take(6)->get(),
+            'upcoming' => $upcoming,
             'editorsPicks' => BookShelf::EditorunSeckisi->query()->take(6)->get(),
             'newIssues' => MagazineIssue::published()->latest('publish_date')->take(6)->get(),
             // Sadece en az bir yayındaki kitabı olan kategoriler — boş bir etikete tıklayıp

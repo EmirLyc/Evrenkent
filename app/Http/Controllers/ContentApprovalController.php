@@ -7,19 +7,23 @@ use App\Models\Article;
 use App\Models\Book;
 use App\Models\MagazineIssue;
 use App\Notifications\ContentApproved;
-use App\Notifications\ContentPublished;
 use App\Notifications\ContentRevisionRequested;
+use App\Support\ContentPublisher;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 /**
- * Süper Admin'in içerik onay akışı (Kitap/Dergi Sayısı/Makale onayla/reddet/yayınla) —
- * Filament'teki BookResource/ArticleResource/MagazineIssueResource'daki approve/reject/
- * publish action'larının birebir aynısı (aynı policy'ler, aynı 3 adım: durum güncelle +
- * ContentReview kaydı + bildirim), sadece kendi panelimizde. Filament resource'ları
- * silinmedi/değişmedi — bu, onlarla paralel çalışan ikinci bir arayüz.
+ * Süper Admin'in içerik onay akışı (Kitap/Dergi Sayısı/Makale onayla/reddet/yayınla),
+ * kendi panelimizde. Yayınlama ve zamanlama ContentPublisher'dan geçiyor (Filament ve
+ * zamanlayıcı da aynı sınıfı kullanıyor).
+ *
+ * Faz D (2026-09-27 revizesi — "süper admin yayınla dediğinde vakit seçebilmeli"): onay
+ * ekranında iki seçenek var — "Şimdi Yayınla" ya da "İleri Tarihte Yayınla" (Yakında
+ * Çıkacaklar'da geri sayımla görünür). Önceki "önce Onayla, sonra ayrıca Yayınla" iki
+ * adımı sadeleşti; "Yayınla" butonu sadece zaten Onaylandı durumunda bekleyenler için duruyor.
  */
 class ContentApprovalController extends Controller
 {
@@ -37,7 +41,7 @@ class ContentApprovalController extends Controller
 
         $books = Book::whereIn('status', self::ACTIONABLE_STATUSES)->with('author')->latest('updated_at')->get();
         $issues = MagazineIssue::whereIn('status', self::ACTIONABLE_STATUSES)->with('editor')->latest('updated_at')->get();
-        $articles = Article::whereIn('status', self::ACTIONABLE_STATUSES)->with('author')->latest('updated_at')->get();
+        $articles = Article::whereIn('status', self::ACTIONABLE_STATUSES)->with(['author', 'magazineIssue'])->latest('updated_at')->get();
 
         return view('panel.admin.onaylar.index', [
             'tab' => in_array($tab, ['kitaplar', 'dergiler', 'makaleler'], true) ? $tab : 'kitaplar',
@@ -57,10 +61,11 @@ class ContentApprovalController extends Controller
             'title' => $book->title,
             'backRoute' => route('panel.adminpanel.onaylar.index', ['tur' => 'kitaplar']),
             'submitRoute' => route('panel.adminpanel.onaylar.kitap.onayla', $book),
-            'showScheduledPublishAt' => true,
-            'scheduledPublishAt' => $book->scheduled_publish_at,
-            // Fiyatı sadece Süper Admin belirler (2026-09-27 revizesi) — yazar girmediği için
-            // yeni kitaplarda 0 gelir, form o durumda boş açılır ki bilinçli doldurulsun.
+            'showPublishMode' => true,
+            // Yazarın önerdiği hedef tarih varsa "İleri tarihte" seçeneği onunla dolu gelir.
+            'scheduledPublishAt' => $book->scheduled_publish_at?->isFuture() ? $book->scheduled_publish_at : null,
+            // Fiyatı sadece Süper Admin belirler (Faz B) — yazar girmediği için yeni kitaplarda
+            // 0 gelir, form o durumda boş açılır ki bilinçli doldurulsun.
             'showPrice' => true,
             'price' => (float) $book->price > 0 ? $book->price : null,
             'discountPrice' => $book->discount_price,
@@ -71,11 +76,10 @@ class ContentApprovalController extends Controller
     {
         $this->authorize('approve', $book);
 
-        $data = $request->validate([
-            'scheduled_publish_at' => ['nullable', 'date'],
+        $data = $request->validate(array_merge($this->publishModeRules(), [
             'price' => ['nullable', 'numeric', 'min:0'],
             'is_free' => ['nullable', 'boolean'],
-        ]);
+        ]));
         $data = $this->resolveBookPrice($request, $data);
 
         // Kitabın zaten bir kampanya indirimi varsa yeni fiyat ondan yüksek olmalı.
@@ -85,15 +89,9 @@ class ContentApprovalController extends Controller
             ]);
         }
 
-        $book->update(array_merge(
-            ['status' => ContentStatus::Onaylandi, 'scheduled_publish_at' => $data['scheduled_publish_at'] ?? null],
-            array_intersect_key($data, array_flip(['price', 'discount_price', 'discount_ends_at'])),
-        ));
-        $this->recordReview($book, 'onaylandi');
-        $book->author->notify(new ContentApproved($book));
+        $book->update(array_intersect_key($data, array_flip(['price', 'discount_price', 'discount_ends_at'])));
 
-        return redirect()->route('panel.adminpanel.onaylar.index', ['tur' => 'kitaplar'])
-            ->with('status', 'Kitap onaylandı.');
+        return $this->publishOrSchedule($book, $data, 'kitaplar', 'Kitap');
     }
 
     public function rejectBookForm(Book $book): View
@@ -121,13 +119,12 @@ class ContentApprovalController extends Controller
             ->with('status', 'Kitap revizyona gönderildi.');
     }
 
+    /** Zaten "Onaylandı" durumunda bekleyen (ör. zamanlanmış) bir kitabı hemen yayına alır. */
     public function publishBook(Book $book): RedirectResponse
     {
         $this->authorize('publish', $book);
 
-        $book->update(['status' => ContentStatus::Yayinda, 'published_at' => now()]);
-        $this->recordReview($book, 'yayinda');
-        $book->author->notify(new ContentPublished($book));
+        ContentPublisher::publishBook($book, auth()->user());
 
         return redirect()->route('panel.adminpanel.onaylar.index', ['tur' => 'kitaplar'])
             ->with('status', 'Kitap yayınlandı.');
@@ -135,16 +132,29 @@ class ContentApprovalController extends Controller
 
     // --- Dergi Sayısı ----------------------------------------------------
 
-    public function approveIssue(MagazineIssue $magazineIssue): RedirectResponse
+    public function approveIssueForm(MagazineIssue $magazineIssue): View
     {
         $this->authorize('approve', $magazineIssue);
 
-        $magazineIssue->update(['status' => ContentStatus::Onaylandi]);
-        $this->recordReview($magazineIssue, 'onaylandi');
-        $magazineIssue->editor->notify(new ContentApproved($magazineIssue));
+        $approvedCount = $magazineIssue->articles()->where('status', ContentStatus::Onaylandi)->count();
 
-        return redirect()->route('panel.adminpanel.onaylar.index', ['tur' => 'dergiler'])
-            ->with('status', 'Sayı onaylandı.');
+        return view('panel.admin.onaylar.onayla', [
+            'title' => $magazineIssue->title,
+            'backRoute' => route('panel.adminpanel.onaylar.index', ['tur' => 'dergiler']),
+            'submitRoute' => route('panel.adminpanel.onaylar.dergi.onayla', $magazineIssue),
+            'showPublishMode' => true,
+            'scheduledPublishAt' => null,
+            'publishNote' => "Sayıdaki {$approvedCount} onaylı makale de sayıyla aynı anda yayına girecek. Henüz onaylanmamış makaleler bu sayıyla yayınlanmaz; sonradan onaylanırsa tek başına yayınlanabilir.",
+        ]);
+    }
+
+    public function approveIssue(Request $request, MagazineIssue $magazineIssue): RedirectResponse
+    {
+        $this->authorize('approve', $magazineIssue);
+
+        $data = $request->validate($this->publishModeRules());
+
+        return $this->publishOrSchedule($magazineIssue, $data, 'dergiler', 'Sayı');
     }
 
     public function rejectIssueForm(MagazineIssue $magazineIssue): View
@@ -176,29 +186,48 @@ class ContentApprovalController extends Controller
     {
         $this->authorize('publish', $magazineIssue);
 
-        $magazineIssue->update([
-            'status' => ContentStatus::Yayinda,
-            'publish_date' => $magazineIssue->publish_date ?? now()->toDateString(),
-        ]);
-        $this->recordReview($magazineIssue, 'yayinda');
-        $magazineIssue->editor->notify(new ContentPublished($magazineIssue));
+        ContentPublisher::publishIssue($magazineIssue, auth()->user());
 
         return redirect()->route('panel.adminpanel.onaylar.index', ['tur' => 'dergiler'])
-            ->with('status', 'Sayı yayınlandı.');
+            ->with('status', 'Sayı, onaylı makaleleriyle birlikte yayınlandı.');
     }
 
     // --- Makale ----------------------------------------------------------
 
-    public function approveArticle(Article $article): RedirectResponse
+    public function approveArticleForm(Article $article): View
     {
         $this->authorize('approve', $article);
 
+        $issueIsLive = $article->magazineIssue?->status === ContentStatus::Yayinda;
+
+        return view('panel.admin.onaylar.onayla', [
+            'title' => $article->title,
+            'backRoute' => route('panel.adminpanel.onaylar.index', ['tur' => 'makaleler']),
+            'submitRoute' => route('panel.adminpanel.onaylar.makale.onayla', $article),
+            // Kural 3/4: sayısı yayında değilse makale tek başına yayınlanamaz, sadece onaylanır
+            // ve sayıyla birlikte yayına girer; sayı zaten yayındaysa şimdi/ileri tarih seçilir.
+            'showPublishMode' => $issueIsLive,
+            'scheduledPublishAt' => null,
+            'publishNote' => $issueIsLive
+                ? null
+                : 'Bu makalenin sayısı ("'.($article->magazineIssue?->title ?? '—').'") henüz yayında değil. Makale onaylanır ve sayı yayınlandığında onunla birlikte yayına girer.',
+        ]);
+    }
+
+    public function approveArticle(Request $request, Article $article): RedirectResponse
+    {
+        $this->authorize('approve', $article);
+
+        if ($article->magazineIssue?->status === ContentStatus::Yayinda) {
+            return $this->publishOrSchedule($article, $request->validate($this->publishModeRules()), 'makaleler', 'Makale');
+        }
+
         $article->update(['status' => ContentStatus::Onaylandi]);
-        $this->recordReview($article, 'onaylandi');
+        $this->recordReview($article, 'onaylandi', 'Sayıyla birlikte yayınlanacak.');
         $article->author->notify(new ContentApproved($article));
 
         return redirect()->route('panel.adminpanel.onaylar.index', ['tur' => 'makaleler'])
-            ->with('status', 'Makale onaylandı.');
+            ->with('status', 'Makale onaylandı — sayısı yayınlandığında birlikte yayına girecek.');
     }
 
     public function rejectArticleForm(Article $article): View
@@ -230,12 +259,47 @@ class ContentApprovalController extends Controller
     {
         $this->authorize('publish', $article);
 
-        $article->update(['status' => ContentStatus::Yayinda, 'published_at' => now()]);
-        $this->recordReview($article, 'yayinda');
-        $article->author->notify(new ContentPublished($article));
+        ContentPublisher::publishArticle($article, auth()->user());
 
         return redirect()->route('panel.adminpanel.onaylar.index', ['tur' => 'makaleler'])
             ->with('status', 'Makale yayınlandı.');
+    }
+
+    // --- Ortak ---------------------------------------------------------------
+
+    /**
+     * @return array<string, array<mixed>>
+     */
+    private function publishModeRules(): array
+    {
+        return [
+            'publish_mode' => ['required', 'in:simdi,ileri'],
+            'scheduled_publish_at' => ['nullable', 'required_if:publish_mode,ileri', 'date', 'after:now'],
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function publishOrSchedule(Book|MagazineIssue|Article $record, array $data, string $tab, string $label): RedirectResponse
+    {
+        if ($data['publish_mode'] === 'ileri') {
+            $at = Carbon::parse($data['scheduled_publish_at']);
+            ContentPublisher::schedule($record, $at, auth()->user());
+            $message = "{$label} onaylandı — {$at->translatedFormat('j F Y H:i')} tarihinde yayına girecek ve o zamana kadar Yakında Çıkacaklar'da görünecek.";
+        } else {
+            $this->recordReview($record, 'onaylandi');
+            match (true) {
+                $record instanceof Book => ContentPublisher::publishBook($record, auth()->user()),
+                $record instanceof MagazineIssue => ContentPublisher::publishIssue($record, auth()->user()),
+                $record instanceof Article => ContentPublisher::publishArticle($record, auth()->user()),
+            };
+            $message = $record instanceof MagazineIssue
+                ? 'Sayı onaylandı ve onaylı makaleleriyle birlikte yayınlandı.'
+                : "{$label} onaylandı ve yayınlandı.";
+        }
+
+        return redirect()->route('panel.adminpanel.onaylar.index', ['tur' => $tab])->with('status', $message);
     }
 
     private function recordReview(Book|Article|MagazineIssue $record, string $action, ?string $note = null): void

@@ -18,7 +18,7 @@ class Article extends Model
 
     protected $fillable = [
         'author_id', 'magazine_issue_id', 'title', 'slug',
-        'content', 'status', 'published_at',
+        'content', 'status', 'published_at', 'scheduled_publish_at',
     ];
 
     protected function casts(): array
@@ -26,6 +26,7 @@ class Article extends Model
         return [
             'status' => ContentStatus::class,
             'published_at' => 'datetime',
+            'scheduled_publish_at' => 'datetime',
         ];
     }
 

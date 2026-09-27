@@ -32,6 +32,42 @@ Alpine.store('cart', {
     },
 });
 
+// Yayın geri sayımı (x-countdown bileşeni) — Yakında Çıkacaklar kartları ve tanıtım
+// sayfaları. Metin sunucuda da üretiliyor; burada sadece canlı güncelleniyor. Turbo bir
+// sayfadan çıkarken elementi DOM'dan kaldırınca Alpine destroy()'u çağırıyor, interval sızmıyor.
+Alpine.data('countdown', (iso) => ({
+    label: '',
+    timer: null,
+    init() {
+        this.tick();
+        this.timer = setInterval(() => this.tick(), 1000);
+    },
+    destroy() {
+        clearInterval(this.timer);
+    },
+    tick() {
+        const seconds = Math.floor((new Date(iso) - new Date()) / 1000);
+
+        if (seconds <= 0) {
+            this.label = 'Yayına giriyor';
+            clearInterval(this.timer);
+            return;
+        }
+
+        const days = Math.floor(seconds / 86400);
+        const hours = Math.floor((seconds % 86400) / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+
+        if (days > 0) {
+            this.label = `${days} gün ${hours} saat kaldı`;
+        } else if (hours > 0) {
+            this.label = `${hours} saat ${minutes} dk kaldı`;
+        } else {
+            this.label = `${minutes} dk ${seconds % 60} sn kaldı`;
+        }
+    },
+}));
+
 // Sidebar scroll pozisyonu — Turbo her geçişte <body>'yi (dolayısıyla <aside>'ı)
 // baştan render ediyor, bu yüzden aşağı kaydırıp bir linke tıklayınca sidebar
 // görsel olarak "sıfırlanıp" en başa dönüyordu. scroll event'i bubble etmediği

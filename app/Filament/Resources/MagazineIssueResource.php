@@ -8,7 +8,7 @@ use App\Filament\Resources\MagazineIssueResource\Pages;
 use App\Filament\Resources\MagazineIssueResource\RelationManagers;
 use App\Models\MagazineIssue;
 use App\Notifications\ContentApproved;
-use App\Notifications\ContentPublished;
+use App\Support\ContentPublisher;
 use App\Notifications\ContentRevisionRequested;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -170,14 +170,10 @@ class MagazineIssueResource extends Resource
                     ->action(function (MagazineIssue $record): void {
                         abort_unless(auth()->user()->can('publish', $record), 403);
 
-                        $record->update([
-                            'status' => ContentStatus::Yayinda,
-                            'publish_date' => $record->publish_date ?? now()->toDateString(),
-                        ]);
-                        static::recordReview($record, 'yayinda');
-                        $record->editor->notify(new ContentPublished($record));
+                        // Kendi panelimiz ve zamanlayıcıyla aynı yol: sayının onaylı makaleleri de yayına girer.
+                        ContentPublisher::publishIssue($record, auth()->user());
 
-                        Notification::make()->title('Sayı yayınlandı')->success()->send();
+                        Notification::make()->title('Sayı, onaylı makaleleriyle birlikte yayınlandı')->success()->send();
                     }),
             ])
             ->bulkActions([

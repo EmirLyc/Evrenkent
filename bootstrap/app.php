@@ -34,9 +34,9 @@ return Application::configure(basePath: dirname(__DIR__))
         );
     })
     ->withSchedule(function (Schedule $schedule): void {
-        // "Yakında Çıkacaklar" — planlanan yayın tarihi gelmiş kitapları otomatik
-        // yayına alır. Sunucuda gerçekten çalışması için cron'a `php artisan
-        // schedule:run` eklenmesi gerekiyor (bkz. DEPLOYMENT.md).
-        $schedule->command('books:publish-scheduled')->everyMinute();
+        // "Yakında Çıkacaklar" — planlanan yayın tarihi gelmiş kitap, dergi sayısı
+        // (makaleleriyle) ve makaleleri otomatik yayına alır. Sunucuda gerçekten
+        // çalışması için cron'a `php artisan schedule:run` eklenmesi gerekiyor (bkz. DEPLOYMENT.md).
+        $schedule->command('content:publish-scheduled')->everyMinute();
     })
     ->create();

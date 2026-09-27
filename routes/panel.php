@@ -126,11 +126,13 @@ Route::middleware('auth')->prefix('panel')->as('panel.')->group(function () {
             Route::post('/kitap/{book}/reddet', [ContentApprovalController::class, 'rejectBook'])->name('kitap.reddet');
             Route::post('/kitap/{book}/yayinla', [ContentApprovalController::class, 'publishBook'])->name('kitap.yayinla');
 
+            Route::get('/dergi/{magazineIssue}/onayla', [ContentApprovalController::class, 'approveIssueForm'])->name('dergi.onayla-form');
             Route::post('/dergi/{magazineIssue}/onayla', [ContentApprovalController::class, 'approveIssue'])->name('dergi.onayla');
             Route::get('/dergi/{magazineIssue}/reddet', [ContentApprovalController::class, 'rejectIssueForm'])->name('dergi.reddet-form');
             Route::post('/dergi/{magazineIssue}/reddet', [ContentApprovalController::class, 'rejectIssue'])->name('dergi.reddet');
             Route::post('/dergi/{magazineIssue}/yayinla', [ContentApprovalController::class, 'publishIssue'])->name('dergi.yayinla');
 
+            Route::get('/makale/{article}/onayla', [ContentApprovalController::class, 'approveArticleForm'])->name('makale.onayla-form');
             Route::post('/makale/{article}/onayla', [ContentApprovalController::class, 'approveArticle'])->name('makale.onayla');
             Route::get('/makale/{article}/reddet', [ContentApprovalController::class, 'rejectArticleForm'])->name('makale.reddet-form');
             Route::post('/makale/{article}/reddet', [ContentApprovalController::class, 'rejectArticle'])->name('makale.reddet');

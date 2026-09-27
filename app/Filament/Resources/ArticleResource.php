@@ -7,7 +7,7 @@ use App\Filament\Concerns\RecordsContentReview;
 use App\Filament\Resources\ArticleResource\Pages;
 use App\Models\Article;
 use App\Notifications\ContentApproved;
-use App\Notifications\ContentPublished;
+use App\Support\ContentPublisher;
 use App\Notifications\ContentRevisionRequested;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -169,9 +169,7 @@ class ArticleResource extends Resource
                     ->action(function (Article $record): void {
                         abort_unless(auth()->user()->can('publish', $record), 403);
 
-                        $record->update(['status' => ContentStatus::Yayinda, 'published_at' => now()]);
-                        static::recordReview($record, 'yayinda');
-                        $record->author->notify(new ContentPublished($record));
+                        ContentPublisher::publishArticle($record, auth()->user());
 
                         Notification::make()->title('Makale yayınlandı')->success()->send();
                     }),

@@ -48,7 +48,7 @@ Bu proje şu an **yerel geliştirme ortamı** için yapılandırılmıştır. Ge
 - [ ] **Gerçek bir veritabanına geç** (şu an SQLite kullanılıyor — MySQL/PostgreSQL gibi bir üretim veritabanına geçiş `.env`'de `DB_CONNECTION` değiştirilerek yapılabilir).
 - [ ] **`php artisan config:cache`, `route:cache`, `view:cache` çalıştır** (performans için).
 - [ ] **Kuyruk çalıştırıcısını (queue worker) kur** — `QUEUE_CONNECTION=database` kullanılıyor, ileride e-posta/bildirim gibi kuyruklu işler eklenirse `php artisan queue:work` bir process manager (Supervisor vb.) ile sürekli çalışır durumda olmalı.
-- [ ] **Cron kur (`php artisan schedule:run`).** "Yakında Çıkacaklar" özelliği için eklenen `books:publish-scheduled` komutu planlanan yayın tarihi gelmiş kitapları otomatik yayınlıyor (`bootstrap/app.php` → `withSchedule()`, her dakika çalışacak şekilde kayıtlı) — sunucuda `* * * * * php artisan schedule:run >> /dev/null 2>&1` cron girdisi olmadan bu hiç çalışmaz, kitaplar "Onaylandı" durumunda takılı kalır.
+- [ ] **Cron kur (`php artisan schedule:run`).** "Yakında Çıkacaklar" için `content:publish-scheduled` komutu (eski adı `books:publish-scheduled`, takma ad olarak hâlâ çalışıyor) planlanan yayın tarihi gelmiş kitapları, dergi sayılarını (onaylı makaleleriyle birlikte) ve makaleleri otomatik yayınlıyor (`bootstrap/app.php` → `withSchedule()`, her dakika) — sunucuda `* * * * * php artisan schedule:run >> /dev/null 2>&1` cron girdisi olmadan bu hiç çalışmaz, zamanlanmış içerikler "Onaylandı" durumunda takılı kalır, sitede geri sayım "Yayına giriyor"da bekler.
 
 ## 🟡 Küçük / Gözden Geçirilmeli
 
