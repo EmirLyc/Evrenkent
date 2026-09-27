@@ -61,18 +61,33 @@
                 @error('cover_image') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                    <label for="price" class="block text-sm font-medium text-slate-700 mb-1">Fiyat (TL)</label>
-                    <input id="price" name="price" type="number" step="0.01" min="0" value="{{ old('price', $book?->price ?? 0) }}" class="w-full rounded-md border-slate-300 text-sm focus:border-slate-500 focus:ring-slate-500">
-                    @error('price') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
+            {{-- Fiyat 0 ise "Ücretsiz" açıkça işaretlenmeli (bkz. Concerns\ResolvesBookPrice). Var olan
+                 0 TL'lik bir kitap düzenlenirken kutu işaretli gelir. Ücretsizken indirim alanları kapanır. --}}
+            @php $isFree = (bool) old('is_free', $book && (float) $book->price === 0.0); @endphp
+            <div x-data="{ free: {{ $isFree ? 'true' : 'false' }} }" class="space-y-3">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                        <label for="price" class="block text-sm font-medium text-slate-700 mb-1">Fiyat (TL)</label>
+                        <input id="price" name="price" type="number" step="0.01" min="0" value="{{ old('price', $book && (float) $book->price > 0 ? $book->price : null) }}" :disabled="free" class="w-full rounded-md border-slate-300 text-sm focus:border-slate-500 focus:ring-slate-500 disabled:bg-slate-100 disabled:text-slate-400">
+                        @error('price') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
+                    </div>
+                    <div>
+                        <label for="discount_price" class="block text-sm font-medium text-slate-700 mb-1">İndirimli Fiyat</label>
+                        <input id="discount_price" name="discount_price" type="number" step="0.01" min="0" value="{{ old('discount_price', $book?->discount_price) }}" :disabled="free" class="w-full rounded-md border-slate-300 text-sm focus:border-slate-500 focus:ring-slate-500 disabled:bg-slate-100 disabled:text-slate-400">
+                        <p class="text-xs text-slate-400 mt-1">Doluysa "Fırsatlar" rafında gösterilir.</p>
+                        @error('discount_price') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
+                    </div>
+                    <div>
+                        <label for="discount_ends_at" class="block text-sm font-medium text-slate-700 mb-1">İndirim Bitişi</label>
+                        <input id="discount_ends_at" name="discount_ends_at" type="datetime-local" value="{{ old('discount_ends_at', $book?->discount_ends_at?->format('Y-m-d\TH:i')) }}" :disabled="free" class="w-full rounded-md border-slate-300 text-sm focus:border-slate-500 focus:ring-slate-500 disabled:bg-slate-100 disabled:text-slate-400">
+                        <p class="text-xs text-slate-400 mt-1">Boşsa süresiz.</p>
+                        @error('discount_ends_at') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
+                    </div>
                 </div>
-                <div>
-                    <label for="discount_price" class="block text-sm font-medium text-slate-700 mb-1">İndirimli Fiyat</label>
-                    <input id="discount_price" name="discount_price" type="number" step="0.01" min="0" value="{{ old('discount_price', $book?->discount_price) }}" class="w-full rounded-md border-slate-300 text-sm focus:border-slate-500 focus:ring-slate-500">
-                    <p class="text-xs text-slate-400 mt-1">Doluysa "Fırsatlar" rafında gösterilir.</p>
-                    @error('discount_price') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
-                </div>
+                <label class="inline-flex items-center gap-2 text-sm text-slate-700">
+                    <input type="checkbox" name="is_free" value="1" x-model="free" class="rounded border-slate-300 text-slate-900 focus:ring-slate-500">
+                    Bu kitap ücretsiz
+                </label>
             </div>
 
             <label class="inline-flex items-center gap-2 text-sm text-slate-700">

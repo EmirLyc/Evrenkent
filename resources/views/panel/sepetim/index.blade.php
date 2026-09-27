@@ -14,7 +14,8 @@
             </div>
         </div>
     @else
-        @php $total = $items->sum(fn ($item) => $item->book->discount_price ?? $item->book->price); @endphp
+        {{-- Book::priceFor — ödemede (User::purchase) alınacak tutarla birebir aynı. --}}
+        @php $total = $items->sum(fn ($item) => (float) $item->book->priceFor(auth()->user())); @endphp
 
         <div class="card divide-y divide-slate-100">
             @foreach ($items as $item)
@@ -28,7 +29,7 @@
                     </a>
                     <div class="flex items-center gap-4 shrink-0">
                         <div class="text-sm text-slate-700 font-medium">
-                            {{ number_format($item->book->discount_price ?? $item->book->price, 2, ',', '.') }} TL
+                            {{ number_format($item->book->priceFor(auth()->user()), 2, ',', '.') }} TL
                         </div>
                         <form method="POST" action="{{ route('panel.sepet.kitap.sil', $item->book) }}">
                             @csrf

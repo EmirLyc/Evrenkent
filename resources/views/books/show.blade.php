@@ -78,11 +78,15 @@
                     Bu kitabı {{ $purchase->purchased_at->translatedFormat('j F Y') }} tarihinde satın aldınız.
                 </p>
             @else
-                {{-- İndirimli fiyat varsa satın alma/sepet de onu ücretlendiriyor (User::purchase) —
-                     anasayfa/katalog kartlarıyla aynı şekilde eski fiyat üstü çizili gösteriliyor. --}}
-                @if ($book->discount_price !== null)
+                {{-- Fiyat Book::priceFor()'dan — sepet ve satın alma da aynı metodu kullanıyor.
+                     Geçerli bir kampanya varsa eski fiyat üstü çizili, süreliyse bitiş tarihiyle. --}}
+                @php $finalPrice = $book->priceFor(auth()->user()); @endphp
+                @if ((float) $finalPrice < (float) $book->price)
                     <div class="text-sm text-slate-400 line-through">{{ number_format($book->price, 2, ',', '.') }} TL</div>
-                    <div class="text-2xl font-serif font-semibold text-brand-700">{{ number_format($book->discount_price, 2, ',', '.') }} TL</div>
+                    <div class="text-2xl font-serif font-semibold text-brand-700">{{ number_format($finalPrice, 2, ',', '.') }} TL</div>
+                    @if ($book->discount_ends_at)
+                        <div class="text-xs text-brand-700 mt-1">Kampanya {{ $book->discount_ends_at->translatedFormat('j F Y') }} tarihine kadar</div>
+                    @endif
                 @else
                     <div class="text-2xl font-serif font-semibold text-slate-900">{{ number_format($book->price, 2, ',', '.') }} TL</div>
                 @endif
@@ -179,12 +183,7 @@
                             <div class="text-xs text-brand-600 font-medium uppercase tracking-wide">{{ $related->author->name }}</div>
                             <div class="font-medium text-slate-900 text-sm truncate mt-0.5 group-hover:underline">{{ $related->title }}</div>
                             <div class="text-sm mt-1">
-                                @if ($related->discount_price !== null)
-                                    <span class="text-slate-400 line-through mr-1.5">{{ number_format($related->price, 2, ',', '.') }} TL</span>
-                                    <span class="text-brand-700 font-medium">{{ number_format($related->discount_price, 2, ',', '.') }} TL</span>
-                                @else
-                                    <span class="text-slate-500">{{ number_format($related->price, 2, ',', '.') }} TL</span>
-                                @endif
+                                <x-book-price :book="$related" />
                             </div>
                         </div>
                     </a>

@@ -107,7 +107,6 @@ class SuperAdminController extends Controller
             'faturalar' => 'Faturalar',
             'ana-sayfa-yonetimi' => 'Ana Sayfa Yönetimi',
             'premium-sistemi' => 'Premium Sistemi',
-            'indirimler' => 'İndirimler',
             'bildirimler-sistemi' => 'Bildirimler (Sistem)',
             'sistem-ayarlari' => 'Sistem Ayarları',
             'islem-gecmisi' => 'İşlem Geçmişi',

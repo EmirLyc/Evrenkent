@@ -52,11 +52,12 @@ class ContentApprovalTest extends TestCase
         $book = Book::factory()->create(['status' => ContentStatus::Gonderildi]);
 
         $this->actingAs($admin)
-            ->post(route('panel.adminpanel.onaylar.kitap.onayla', $book), [])
+            ->post(route('panel.adminpanel.onaylar.kitap.onayla', $book), ['price' => 120])
             ->assertRedirect(route('panel.adminpanel.onaylar.index', ['tur' => 'kitaplar']));
 
         $book->refresh();
         $this->assertSame(ContentStatus::Onaylandi, $book->status);
+        $this->assertSame('120.00', $book->price);
         $this->assertSame(1, $book->reviews()->count());
         $this->assertSame('onaylandi', $book->reviews()->first()->action);
         Notification::assertSentTo($book->author, \App\Notifications\ContentApproved::class);

@@ -10,6 +10,23 @@
         <form method="POST" action="{{ $submitRoute }}" class="card p-6 space-y-5">
             @csrf
 
+            {{-- Kitap fiyatı yazardan alınmıyor, burada zorunlu. "Ücretsiz" işaretlenirse fiyat
+                 alanı devre dışı kalır (bkz. Concerns\ResolvesBookPrice). --}}
+            @if ($showPrice ?? false)
+                <div x-data="{ free: {{ old('is_free') ? 'true' : 'false' }} }">
+                    <label for="price" class="block text-sm font-medium text-slate-700 mb-1">Satış Fiyatı (TL)</label>
+                    <input id="price" name="price" type="number" step="0.01" min="0" value="{{ old('price', $price) }}" :disabled="free" class="w-full max-w-xs rounded-md border-slate-300 text-sm focus:border-slate-500 focus:ring-slate-500 disabled:bg-slate-100 disabled:text-slate-400">
+                    @if ($discountPrice !== null)
+                        <p class="text-xs text-slate-400 mt-1">Mevcut kampanya fiyatı: {{ number_format($discountPrice, 2, ',', '.') }} TL — satış fiyatı bundan yüksek olmalı.</p>
+                    @endif
+                    <label class="inline-flex items-center gap-2 text-sm text-slate-700 mt-3">
+                        <input type="checkbox" name="is_free" value="1" x-model="free" class="rounded border-slate-300 text-slate-900 focus:ring-slate-500">
+                        Bu kitap ücretsiz
+                    </label>
+                    @error('price') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
+                </div>
+            @endif
+
             @if ($showScheduledPublishAt ?? false)
                 <div>
                     <label for="scheduled_publish_at" class="block text-sm font-medium text-slate-700 mb-1">Planlanan Yayın Tarihi (opsiyonel)</label>

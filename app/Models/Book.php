@@ -19,7 +19,7 @@ class Book extends Model
 
     protected $fillable = [
         'author_id', 'title', 'slug', 'description',
-        'cover_image', 'price', 'discount_price', 'status',
+        'cover_image', 'price', 'discount_price', 'discount_ends_at', 'status',
         'is_editors_pick', 'published_at', 'scheduled_publish_at',
         'average_rating', 'review_count',
         'page_count', 'document_count', 'video_count',
@@ -34,6 +34,7 @@ class Book extends Model
             'scheduled_publish_at' => 'datetime',
             'price' => 'decimal:2',
             'discount_price' => 'decimal:2',
+            'discount_ends_at' => 'datetime',
             'is_editors_pick' => 'boolean',
             'average_rating' => 'decimal:2',
             'review_count' => 'integer',
@@ -59,6 +60,37 @@ class Book extends Model
     public function url(): string
     {
         return route('kitaplar.show', $this);
+    }
+
+    /**
+     * Şu an geçerli kampanya fiyatı — indirim yoksa ya da bitiş tarihi geçmişse null.
+     * Süresi dolan indirimi temizleyen bir zamanlanmış iş yok, gerek de yok: süresi
+     * geçmiş discount_price her yerde (kart, sayfa, sepet, satın alma, Fırsatlar rafı)
+     * bu metod/scopeOnSale üzerinden okunduğu için kendiliğinden devre dışı kalıyor.
+     */
+    public function activeDiscountPrice(): ?string
+    {
+        if ($this->discount_price === null) {
+            return null;
+        }
+
+        if ($this->discount_ends_at !== null && $this->discount_ends_at->isPast()) {
+            return null;
+        }
+
+        return $this->discount_price;
+    }
+
+    /**
+     * Kullanıcının bu kitap için ödeyeceği fiyat — kart, kitap sayfası, sepet ve
+     * satın alma hepsi buradan okur, fiyat mantığı tek yerde kalsın diye.
+     *
+     * $user şimdilik kullanılmıyor: Faz C'de premium üyenin indirimi (kampanya
+     * indirimiyle toplanmaz, ikisinden avantajlı olan uygulanır) burada devreye girecek.
+     */
+    public function priceFor(?User $user = null): string
+    {
+        return $this->activeDiscountPrice() ?? $this->price;
     }
 
     /**
@@ -122,10 +154,11 @@ class Book extends Model
         return $query->where('is_editors_pick', true);
     }
 
-    /** Sadece indirimli fiyatı olan (Fırsatlar) kitaplar. */
+    /** Sadece şu an geçerli bir indirimi olan (Fırsatlar) kitaplar — süresi dolanlar hariç. */
     public function scopeOnSale(Builder $query): Builder
     {
-        return $query->whereNotNull('discount_price');
+        return $query->whereNotNull('discount_price')
+            ->where(fn (Builder $q) => $q->whereNull('discount_ends_at')->orWhere('discount_ends_at', '>', now()));
     }
 
     /**

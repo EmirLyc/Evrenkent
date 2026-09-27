@@ -11,6 +11,7 @@ use App\Notifications\ContentPublished;
 use App\Notifications\ContentRevisionRequested;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 /**
@@ -22,6 +23,8 @@ use Illuminate\View\View;
  */
 class ContentApprovalController extends Controller
 {
+    use Concerns\ResolvesBookPrice;
+
     private const ACTIONABLE_STATUSES = [
         ContentStatus::Gonderildi,
         ContentStatus::Incelemede,
@@ -56,6 +59,11 @@ class ContentApprovalController extends Controller
             'submitRoute' => route('panel.adminpanel.onaylar.kitap.onayla', $book),
             'showScheduledPublishAt' => true,
             'scheduledPublishAt' => $book->scheduled_publish_at,
+            // Fiyatı sadece Süper Admin belirler (2026-09-27 revizesi) — yazar girmediği için
+            // yeni kitaplarda 0 gelir, form o durumda boş açılır ki bilinçli doldurulsun.
+            'showPrice' => true,
+            'price' => (float) $book->price > 0 ? $book->price : null,
+            'discountPrice' => $book->discount_price,
         ]);
     }
 
@@ -63,12 +71,24 @@ class ContentApprovalController extends Controller
     {
         $this->authorize('approve', $book);
 
-        $data = $request->validate(['scheduled_publish_at' => ['nullable', 'date']]);
-
-        $book->update([
-            'status' => ContentStatus::Onaylandi,
-            'scheduled_publish_at' => $data['scheduled_publish_at'] ?? null,
+        $data = $request->validate([
+            'scheduled_publish_at' => ['nullable', 'date'],
+            'price' => ['nullable', 'numeric', 'min:0'],
+            'is_free' => ['nullable', 'boolean'],
         ]);
+        $data = $this->resolveBookPrice($request, $data);
+
+        // Kitabın zaten bir kampanya indirimi varsa yeni fiyat ondan yüksek olmalı.
+        if ($book->discount_price !== null && ! $request->boolean('is_free') && (float) $data['price'] <= (float) $book->discount_price) {
+            throw ValidationException::withMessages([
+                'price' => 'Fiyat, kitabın mevcut indirimli fiyatından ('.number_format($book->discount_price, 2, ',', '.').' TL) yüksek olmalı.',
+            ]);
+        }
+
+        $book->update(array_merge(
+            ['status' => ContentStatus::Onaylandi, 'scheduled_publish_at' => $data['scheduled_publish_at'] ?? null],
+            array_intersect_key($data, array_flip(['price', 'discount_price', 'discount_ends_at'])),
+        ));
         $this->recordReview($book, 'onaylandi');
         $book->author->notify(new ContentApproved($book));
 

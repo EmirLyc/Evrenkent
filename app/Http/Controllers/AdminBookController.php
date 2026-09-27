@@ -18,6 +18,8 @@ use Illuminate\View\View;
  */
 class AdminBookController extends Controller
 {
+    use Concerns\ResolvesBookPrice;
+
     public function index(Request $request): View
     {
         $this->authorize('viewAny', Book::class);
@@ -52,7 +54,7 @@ class AdminBookController extends Controller
     {
         $this->authorize('create', Book::class);
 
-        $data = $request->validate($this->validationRules(create: true));
+        $data = $this->bookData($request, $this->validationRules(create: true));
 
         if ($request->hasFile('cover_image')) {
             // Filament'in FileUpload'ıyla aynı disk/dizin — x-book-cover bileşeni
@@ -87,7 +89,7 @@ class AdminBookController extends Controller
     {
         $this->authorize('update', $book);
 
-        $data = $request->validate($this->validationRules(create: false, book: $book));
+        $data = $this->bookData($request, $this->validationRules(create: false, book: $book));
 
         if ($request->hasFile('cover_image')) {
             $data['cover_image'] = $request->file('cover_image')->store('covers/books', config('filesystems.covers_disk'));
@@ -120,6 +122,27 @@ class AdminBookController extends Controller
     }
 
     /**
+     * Doğrulama + fiyat kuralı (0 TL ancak "Ücretsiz" işaretiyle). is_free bir sütun değil,
+     * sadece formdaki onay işareti — kayda girmesin diye çıkarılıyor.
+     *
+     * @param  array<string, array<mixed>>  $rules
+     * @return array<string, mixed>
+     */
+    private function bookData(Request $request, array $rules): array
+    {
+        $data = $this->resolveBookPrice($request, $request->validate($rules));
+        unset($data['is_free']);
+
+        // İndirim kaldırıldıysa (alan boşaltıldıysa) eski bitiş tarihi de kalmasın.
+        if (empty($data['discount_price'])) {
+            $data['discount_price'] = null;
+            $data['discount_ends_at'] = null;
+        }
+
+        return $data;
+    }
+
+    /**
      * @return array<string, array<mixed>>
      */
     private function validationRules(bool $create, ?Book $book = null): array
@@ -133,8 +156,12 @@ class AdminBookController extends Controller
             ],
             'description' => ['nullable', 'string'],
             'cover_image' => ['nullable', 'image', 'max:5120'],
-            'price' => ['required', 'numeric', 'min:0'],
+            // nullable: "Ücretsiz" işaretliyken fiyat alanı devre dışı, gönderilmiyor —
+            // fiyatın dolu olması kuralı resolveBookPrice()'ta (0 ise ücretsiz işareti şart).
+            'price' => ['nullable', 'numeric', 'min:0'],
             'discount_price' => ['nullable', 'numeric', 'min:0', 'lt:price'],
+            'discount_ends_at' => ['nullable', 'date'],
+            'is_free' => ['nullable', 'boolean'],
             'status' => $create ? ['required', 'in:'.implode(',', array_column(ContentStatus::cases(), 'value'))] : ['sometimes'],
             'categories' => ['nullable', 'array'],
             'categories.*' => ['exists:categories,id'],

@@ -98,15 +98,15 @@ class User extends Authenticatable implements FilamentUser
     /**
      * Gerçek ödeme entegrasyonu (Stripe/iyzico) gelecek bir faz — bu metod ödeme
      * sorulmadan anında/mock tamamlanmış bir satın alma kaydı oluşturur. Hem tekil
-     * "Satın Al" (PurchaseController) hem sepet ödemesi (CartController) bunu kullanır,
-     * ki fiyat mantığı (indirimli fiyat varsa o kullanılır) tek yerde kalsın.
+     * "Satın Al" (PurchaseController) hem sepet ödemesi (CartController) bunu kullanır.
+     * Tutar Book::priceFor()'dan gelir (geçerli kampanya indirimi varsa o).
      */
     public function purchase(Book $book): Purchase
     {
         return $this->purchases()->firstOrCreate([
             'book_id' => $book->id,
         ], [
-            'amount' => $book->discount_price ?? $book->price,
+            'amount' => $book->priceFor($this),
             'purchased_at' => now(),
             'payment_status' => 'completed',
         ]);

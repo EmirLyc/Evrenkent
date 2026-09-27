@@ -89,7 +89,8 @@ class PublicationController extends Controller
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'body' => ['required', 'string'],
-            'price' => ['nullable', 'numeric', 'min:0'],
+            // Fiyat bilerek yok: yazar fiyat belirlemez/önermez (2026-09-27 revizesi),
+            // Süper Admin onay aşamasında belirler (bkz. ContentApprovalController::approveBook).
             'categories' => ['nullable', 'array'],
             'categories.*' => ['integer', 'exists:categories,id'],
             'page_count' => ['nullable', 'integer', 'min:0'],
@@ -108,7 +109,6 @@ class PublicationController extends Controller
         $book->update([
             'title' => $data['title'],
             'description' => $data['body'],
-            'price' => $data['price'] ?? 0,
             'page_count' => $data['page_count'] ?? null,
             'document_count' => $data['document_count'] ?? null,
             'video_count' => $data['video_count'] ?? null,
@@ -172,7 +172,6 @@ class PublicationController extends Controller
             'type' => ['required', 'in:kitap,makale'],
             'title' => ['required', 'string', 'max:255'],
             'body' => ['required', 'string'],
-            'price' => ['nullable', 'numeric', 'min:0'],
             'magazine_issue_id' => ['required_if:type,makale', 'nullable', 'exists:magazine_issues,id'],
         ]);
 
@@ -187,7 +186,8 @@ class PublicationController extends Controller
                 'title' => $data['title'],
                 'slug' => $slug,
                 'description' => $data['body'],
-                'price' => $data['price'] ?? 0,
+                // Fiyat Süper Admin'in onayına kadar 0 kalır (sütun varsayılanı); onay
+                // aşamasında fiyat zorunlu olduğu için bu hâliyle yayına çıkamaz.
                 'status' => ContentStatus::Taslak,
             ]);
         } else {

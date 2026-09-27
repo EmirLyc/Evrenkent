@@ -27,11 +27,10 @@
             @error('title') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
         </div>
 
-        <div x-show="type === 'kitap'">
-            <label for="price" class="block text-sm font-medium text-slate-700 mb-1">Fiyat (TL)</label>
-            <input id="price" name="price" type="number" step="0.01" min="0" value="{{ old('price', 0) }}" class="w-full rounded-md border-slate-300 text-sm focus:border-slate-500 focus:ring-slate-500">
-            @error('price') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
-        </div>
+        {{-- Fiyat yazardan alınmıyor (2026-09-27 revizesi) — Süper Admin onay aşamasında belirliyor. --}}
+        <p x-show="type === 'kitap'" class="text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-md px-3 py-2">
+            Kitabın satış fiyatı, onay aşamasında Süper Admin tarafından belirlenir.
+        </p>
 
         {{-- Makale hangi dergi sayısı için yazılıyorsa o seçilmeli — bu seçim
              olmadan makale hiçbir Dergi Editörü'nün Makale Havuzu'nda görünmüyor. --}}

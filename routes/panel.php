@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AdminBookController;
 use App\Http\Controllers\AdminCategoryController;
+use App\Http\Controllers\AdminDiscountController;
 use App\Http\Controllers\AdminMagazineIssueController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\CartController;
@@ -164,6 +165,14 @@ Route::middleware('auth')->prefix('panel')->as('panel.')->group(function () {
             Route::get('/{category}/duzenle', [AdminCategoryController::class, 'edit'])->name('duzenle');
             Route::put('/{category}', [AdminCategoryController::class, 'update'])->name('guncelle');
             Route::delete('/{category}', [AdminCategoryController::class, 'destroy'])->name('sil');
+        });
+
+        // İndirimler: indirimdeki kitapların listesi + yüzde bazlı toplu kampanya
+        // (2026-09-27 revizesi, Faz B — bkz. UI_RESTYLE_NOTES.md).
+        Route::prefix('indirimler')->as('indirimler.')->group(function () {
+            Route::get('/', [AdminDiscountController::class, 'index'])->name('index');
+            Route::post('/toplu', [AdminDiscountController::class, 'applyBulk'])->name('toplu');
+            Route::delete('/{book}', [AdminDiscountController::class, 'destroy'])->name('kaldir');
         });
 
         // Kullanıcılar/Yazarlar/Dergi Editörleri (?rol= filtresiyle aynı liste) + Roller

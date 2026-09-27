@@ -180,6 +180,19 @@ class BookResource extends Resource
                     ->color('success')
                     ->visible(fn (Book $record): bool => auth()->user()->can('approve', $record))
                     ->form([
+                        // Kendi panelimizdeki onay ekranıyla aynı kural (bkz. ContentApprovalController::approveBook,
+                        // Concerns\ResolvesBookPrice): fiyatı Süper Admin belirler, 0 TL ancak "Ücretsiz" işaretiyle.
+                        Forms\Components\TextInput::make('price')
+                            ->label('Satış Fiyatı')
+                            ->numeric()
+                            ->prefix('₺')
+                            ->default(fn (Book $record) => (float) $record->price > 0 ? $record->price : null)
+                            ->required(fn (Forms\Get $get): bool => ! $get('is_free'))
+                            ->minValue(fn (Forms\Get $get): ?float => $get('is_free') ? null : 0.01)
+                            ->disabled(fn (Forms\Get $get): bool => (bool) $get('is_free')),
+                        Forms\Components\Toggle::make('is_free')
+                            ->label('Bu kitap ücretsiz')
+                            ->live(),
                         Forms\Components\DateTimePicker::make('scheduled_publish_at')
                             ->label('Planlanan Yayın Tarihi')
                             ->default(fn (Book $record) => $record->scheduled_publish_at)
@@ -188,10 +201,13 @@ class BookResource extends Resource
                     ->action(function (Book $record, array $data): void {
                         abort_unless(auth()->user()->can('approve', $record), 403);
 
-                        $record->update([
+                        $isFree = (bool) ($data['is_free'] ?? false);
+
+                        $record->update(array_merge([
                             'status' => ContentStatus::Onaylandi,
                             'scheduled_publish_at' => $data['scheduled_publish_at'] ?? null,
-                        ]);
+                            'price' => $isFree ? 0 : $data['price'],
+                        ], $isFree ? ['discount_price' => null, 'discount_ends_at' => null] : []));
                         static::recordReview($record, 'onaylandi');
                         $record->author->notify(new ContentApproved($record));
 
