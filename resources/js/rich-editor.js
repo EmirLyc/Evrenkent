@@ -35,7 +35,41 @@ const Footnote = Node.create({
     },
 });
 
-export function createEditor({ element, content, onUpdate, onSelection }) {
+// Gömülü belge (Faz F2): <span data-document="id"></span> — editörde kar tanesi, üstüne
+// gelince belgenin açıklaması. Okuma sayfasında RichText::render bunu belgeye çözüyor;
+// listede olmayan (silinmiş) belge editörde kırmızı görünür, okur sayfasında görünmez.
+const createDocumentNode = (documents) => Node.create({
+    name: 'embeddedDocument',
+    group: 'inline',
+    inline: true,
+    atom: true,
+    selectable: true,
+
+    addAttributes() {
+        return {
+            id: {
+                default: null,
+                parseHTML: (element) => element.getAttribute('data-document'),
+                renderHTML: (attributes) => ({ 'data-document': attributes.id }),
+            },
+        };
+    },
+
+    parseHTML() {
+        return [{ tag: 'span[data-document]' }];
+    },
+
+    renderHTML({ node, HTMLAttributes }) {
+        const found = documents.find((document) => String(document.id) === String(node.attrs.id));
+
+        return ['span', mergeAttributes(HTMLAttributes, {
+            class: found ? 'document-marker-edit' : 'document-marker-edit is-missing',
+            title: found ? found.caption : 'Bu belge silinmiş — okur sayfasında görünmez',
+        })];
+    },
+});
+
+export function createEditor({ element, content, documents = [], onUpdate, onSelection }) {
     return new Editor({
         element,
         content,
@@ -52,6 +86,7 @@ export function createEditor({ element, content, onUpdate, onSelection }) {
                 },
             }),
             Footnote,
+            createDocumentNode(documents),
         ],
         editorProps: {
             attributes: { class: 'rich-content rich-editor-surface', 'aria-label': 'İçerik' },

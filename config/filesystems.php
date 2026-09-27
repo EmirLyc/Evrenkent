@@ -34,6 +34,11 @@ return [
 
     'covers_disk' => env('COVERS_DISK', 'public'),
 
+    // Metne gömülü belgeler (Faz F2) — herkese açık OLMAYAN disk: dosyalar sadece
+    // DocumentController üzerinden, içeriği okuyabilen kişiye gösteriliyor. S3'e geçilirse
+    // (DOCUMENTS_DISK=s3) bucket'ın public olmaması gerekiyor.
+    'documents_disk' => env('DOCUMENTS_DISK', 'local'),
+
     /*
     |--------------------------------------------------------------------------
     | Filesystem Disks

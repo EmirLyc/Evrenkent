@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\ContentStatus;
+use App\Models\Concerns\HasDocuments;
 use App\Models\Concerns\HasRichContent;
 use Database\Factories\ArticleFactory;
 use Illuminate\Database\Eloquent\Builder;
@@ -11,13 +12,20 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Support\Collection;
 
 class Article extends Model
 {
+    use HasDocuments;
+
     /** @use HasFactory<ArticleFactory> */
     use HasFactory;
-
     use HasRichContent;
+
+    protected function contentDocuments(): Collection
+    {
+        return $this->documents;
+    }
 
     protected $fillable = [
         'author_id', 'magazine_issue_id', 'title', 'slug',

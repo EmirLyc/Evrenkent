@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\ContentStatus;
+use App\Models\Concerns\HasDocuments;
 use App\Support\PlatformSettings;
 use Database\Factories\BookFactory;
 use Illuminate\Database\Eloquent\Builder;
@@ -15,6 +16,8 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Book extends Model
 {
+    use HasDocuments;
+
     /** @use HasFactory<BookFactory> */
     use HasFactory;
 
@@ -132,6 +135,21 @@ class Book extends Model
             || ($this->status === ContentStatus::Onaylandi && $this->scheduled_publish_at !== null)
             || ($user && $user->id === $this->author_id)
             || ($user && $user->hasRole('super_admin'));
+    }
+
+    /**
+     * Bölümleri bu kullanıcı okuyabilir mi — yazarı her zaman; diğerleri kitap yayındaysa
+     * ve ücretsizse ya da satın aldılarsa. Okuma sayfası ve gömülü belgeler (Faz F2) aynı
+     * kuralı kullansın diye tek yerde (bkz. BookController::read, Document::isViewableBy).
+     */
+    public function isReadableBy(?User $user): bool
+    {
+        if ($user && $user->id === $this->author_id) {
+            return true;
+        }
+
+        return $this->status === ContentStatus::Yayinda
+            && ($this->price <= 0 || ($user && $user->hasPurchased($this)));
     }
 
     public function categories(): BelongsToMany

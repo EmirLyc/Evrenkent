@@ -1,0 +1,2 @@
+{{-- Gömülü belge simgesi (mockup 3 / 3.1) — okuma sayfasındaki işaretle aynı çizim (RichText::SNOWFLAKE_SVG). --}}
+<svg {{ $attributes->merge(['class' => 'w-5 h-5']) }} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v20M3.34 7l17.32 10M3.34 17 20.66 7"/><path d="m9 3.8 3 2.4 3-2.4M9 20.2l3-2.4 3 2.4"/><path d="m3.6 10.4 3.6-.5-1.3-3.4M20.4 13.6l-3.6.5 1.3 3.4"/><path d="m5.9 17.5 1.3-3.4-3.6-.5M18.1 6.5l-1.3 3.4 3.6.5"/></svg>

@@ -73,10 +73,11 @@ Alpine.data('countdown', (iso) => ({
 // Alpine'in reaktif verisine konmuyor (Proxy sarmalayıcısı Tiptap'i bozuyor), kapanışta
 // duruyor; `tick` sadece araç çubuğundaki aktif durumları yeniden hesaplatmak için.
 // Kaydedilecek HTML gizli input'a yazılıyor, form normal POST ile gidiyor.
-Alpine.data('richEditor', ({ importUrl = null, titleInput = null } = {}) => {
+Alpine.data('richEditor', ({ importUrl = null, titleInput = null, documents = [] } = {}) => {
     let editor = null;
 
     return {
+        documents,
         ready: false,
         tick: 0,
         panel: null,
@@ -92,6 +93,7 @@ Alpine.data('richEditor', ({ importUrl = null, titleInput = null } = {}) => {
             editor = createEditor({
                 element: this.$refs.surface,
                 content: this.$refs.input.value,
+                documents,
                 onUpdate: (instance) => this.sync(instance),
                 onSelection: () => this.tick++,
             });
@@ -123,6 +125,9 @@ Alpine.data('richEditor', ({ importUrl = null, titleInput = null } = {}) => {
             if (!editor) return;
             if (type === 'link') {
                 this.panelText = editor.getAttributes('link').href || '';
+            } else if (type === 'document') {
+                this.panel = type;
+                return;
             } else {
                 const selected = editor.state.selection.node;
                 this.editingFootnote = selected?.type.name === 'footnote';
@@ -148,6 +153,10 @@ Alpine.data('richEditor', ({ importUrl = null, titleInput = null } = {}) => {
                 chain.insertContent({ type: 'footnote', attrs: { text } }).run();
             }
 
+            this.closePanel();
+        },
+        insertDocument(id) {
+            editor?.chain().focus().insertContent({ type: 'embeddedDocument', attrs: { id: String(id) } }).run();
             this.closePanel();
         },
         removeFootnote() {
@@ -201,6 +210,74 @@ Alpine.data('richEditor', ({ importUrl = null, titleInput = null } = {}) => {
             } finally {
                 this.importing = false;
             }
+        },
+    };
+});
+
+// Gömülü belge görüntüleyici (x-document-viewer, Faz F2 — mockup 3.1 "tıklayınca belge
+// açılır"). Okuma sayfasındaki kar tanesi işaretleri ve panelin Belgeler listesindeki
+// "Görüntüle" bağlantıları data-document-viewer taşıyor; tıklama window'da yakalanıp
+// bağlantı yerine modal açılıyor (JS yoksa bağlantı dosyayı doğrudan açar). PDF'ler
+// pdf.js ile tuvale çiziliyor (pdf-viewer.js, sadece gerektiğinde yüklenir).
+Alpine.data('documentViewer', () => {
+    let pdf = null;
+
+    return {
+        open: false,
+        type: null,
+        url: '',
+        title: '',
+        loading: false,
+        progress: '',
+        error: '',
+
+        handle(event) {
+            // Turbo body'yi değiştirince eski örneğin window dinleyicisi her zaman
+            // temizlenmiyor; DOM'dan kopmuş örnek tıklamayı alıp preventDefault ederse yeni
+            // örnek olayı "işlenmiş" sayıp modalı açmıyordu (form gönderiminden sonra görüldü).
+            if (!this.$root.isConnected) return;
+            const link = event.target.closest?.('[data-document-viewer]');
+            if (!link || event.defaultPrevented || event.button > 0 || event.metaKey || event.ctrlKey || event.shiftKey) return;
+            event.preventDefault();
+            this.show(link.getAttribute('href'), link.dataset.documentViewer, link.dataset.documentTitle || '');
+        },
+        async show(url, type, title) {
+            this.close();
+            Object.assign(this, { url, type, title, open: true, error: '', progress: '' });
+            document.documentElement.classList.add('overflow-hidden');
+            await this.$nextTick();
+            this.$refs.close?.focus();
+
+            if (type !== 'pdf') return;
+
+            this.loading = true;
+            try {
+                const { renderPdf } = await import('./pdf-viewer.js');
+                if (!this.open || this.url !== url) return;
+                pdf = renderPdf(url, this.$refs.pages, {
+                    onPage: (number, total) => {
+                        this.loading = false;
+                        this.progress = number < total ? `${number} / ${total} sayfa yüklendi` : '';
+                    },
+                });
+                await pdf.done;
+            } catch (e) {
+                console.error('Belge görüntülenemedi:', e?.name, e?.message ?? e);
+                if (this.open) this.error = 'Belge açılamadı. Sayfayı yenileyip tekrar deneyin.';
+            } finally {
+                this.loading = false;
+            }
+        },
+        close() {
+            pdf?.cancel();
+            pdf = null;
+            if (this.$refs.pages) this.$refs.pages.innerHTML = '';
+            this.open = false;
+            this.url = '';
+            document.documentElement.classList.remove('overflow-hidden');
+        },
+        destroy() {
+            this.close();
         },
     };
 });

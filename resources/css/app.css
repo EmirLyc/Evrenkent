@@ -154,6 +154,23 @@
         @apply no-underline text-slate-400 hover:text-brand-700;
     }
 
+    /* Gömülü belge (Faz F2, mockup 3 / 3.1): metin içinde lacivert kar tanesi; üstüne
+       gelince (ya da klavyeyle odaklanınca) koyu balonda "ad (tarih / N sayfa)". */
+    .rich-content a.document-marker {
+        @apply relative inline-flex align-[-0.2em] mx-0.5 rounded text-navy no-underline cursor-pointer hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400;
+    }
+    .document-marker-icon {
+        @apply w-[1.15em] h-[1.15em];
+    }
+    .rich-content .document-tooltip {
+        /* Gizliyken display:none — invisible bırakılsa satır sonundaki balon mobilde yatay kaydırma yaratıyordu. */
+        @apply pointer-events-none absolute left-1/2 top-full z-20 mt-2 hidden w-max max-w-[16rem] -translate-x-1/2 rounded-md bg-slate-900 px-3 py-2 text-left text-xs font-normal not-italic leading-snug text-white shadow-lg;
+    }
+    .rich-content a.document-marker:hover .document-tooltip,
+    .rich-content a.document-marker:focus-visible .document-tooltip {
+        @apply block;
+    }
+
     /* Editör: dipnot işareti sırayla numaralanır (okuma sayfasındaki numarayla aynı). */
     .rich-editor-surface {
         @apply min-h-[18rem] px-4 py-3 outline-none;
@@ -166,6 +183,16 @@
     .rich-editor-surface .footnote-marker::after {
         content: counter(footnote);
     }
+    /* Editör: gömülü belge işareti — kar tanesi (maske ile, emoji olarak çizilmesin). */
+    .rich-editor-surface .document-marker-edit {
+        @apply inline-block w-[1.1em] h-[1.1em] align-[-0.15em] mx-0.5 cursor-pointer rounded bg-navy;
+        -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 2v20M3.34 7l17.32 10M3.34 17 20.66 7'/%3E%3Cpath d='m9 3.8 3 2.4 3-2.4M9 20.2l3-2.4 3 2.4'/%3E%3Cpath d='m3.6 10.4 3.6-.5-1.3-3.4M20.4 13.6l-3.6.5 1.3 3.4'/%3E%3Cpath d='m5.9 17.5 1.3-3.4-3.6-.5M18.1 6.5l-1.3 3.4 3.6.5'/%3E%3C/svg%3E") center / contain no-repeat;
+        mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 2v20M3.34 7l17.32 10M3.34 17 20.66 7'/%3E%3Cpath d='m9 3.8 3 2.4 3-2.4M9 20.2l3-2.4 3 2.4'/%3E%3Cpath d='m3.6 10.4 3.6-.5-1.3-3.4M20.4 13.6l-3.6.5 1.3 3.4'/%3E%3Cpath d='m5.9 17.5 1.3-3.4-3.6-.5M18.1 6.5l-1.3 3.4 3.6.5'/%3E%3C/svg%3E") center / contain no-repeat;
+    }
+    .rich-editor-surface .document-marker-edit.is-missing {
+        @apply bg-red-500;
+    }
+    .rich-editor-surface .document-marker-edit.ProseMirror-selectednode,
     .rich-editor-surface .footnote-marker.ProseMirror-selectednode {
         @apply ring-2 ring-brand-400;
     }

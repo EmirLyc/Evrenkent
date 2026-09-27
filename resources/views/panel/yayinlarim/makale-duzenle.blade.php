@@ -3,7 +3,13 @@
 @section('title', 'Makaleyi Düzenle')
 
 @section('content')
-    <h1 class="font-serif text-xl font-semibold text-slate-900 mb-5">Makaleyi Düzenle</h1>
+    <div class="flex items-center justify-between gap-3 flex-wrap mb-5 max-w-3xl mx-auto">
+        <h1 class="font-serif text-xl font-semibold text-slate-900">Makaleyi Düzenle</h1>
+        {{-- Faz F2: metne gömülü belgeler. --}}
+        <a href="{{ route('panel.yayinlarim.makale.belgeler', $article) }}" class="text-sm px-4 py-2 border border-slate-300 bg-white text-slate-700 rounded-lg hover:bg-slate-50 transition-colors inline-flex items-center gap-1.5">
+            <x-snowflake-icon class="w-4 h-4" /> Belgeler ({{ $article->documents->count() }})
+        </a>
+    </div>
 
     <form method="POST" action="{{ route('panel.yayinlarim.makale.guncelle', $article) }}" class="bg-white border border-slate-200 rounded-lg p-4 sm:p-6 space-y-5 max-w-3xl mx-auto">
         @csrf
@@ -21,6 +27,8 @@
                 :value="old('body', $article->content)"
                 :import-url="route('panel.yayinlarim.word-aktar')"
                 title-input="title"
+                :documents="$article->documents"
+                :documents-url="route('panel.yayinlarim.makale.belgeler', $article)"
             />
             @error('body') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
         </div>

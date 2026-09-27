@@ -33,6 +33,8 @@
                 :value="old('content', $chapter?->content)"
                 :import-url="route('panel.yayinlarim.word-aktar')"
                 title-input="title"
+                :documents="$book->documents"
+                :documents-url="route('panel.yayinlarim.kitap.belgeler', $book)"
             />
             <p class="text-xs text-slate-400 mt-1">Tüm kitabı tek dosyada yüklemek için bölümler sayfasındaki "Word'den Bölüm Aktar"ı kullanın.</p>
             @error('content') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror

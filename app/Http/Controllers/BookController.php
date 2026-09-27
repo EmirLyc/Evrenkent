@@ -65,9 +65,7 @@ class BookController extends Controller
 
         abort_unless($book->status === ContentStatus::Yayinda || $isAuthor, 404);
 
-        $locked = $book->price > 0 && ! ($isAuthor || ($user && $user->hasPurchased($book)));
-
-        if ($locked) {
+        if (! $book->isReadableBy($user)) {
             return redirect()->route('kitaplar.show', $book)
                 ->with('status', 'Bu kitabı okumak için satın almanız gerekiyor.');
         }

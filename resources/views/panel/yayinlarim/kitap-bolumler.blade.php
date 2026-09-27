@@ -10,7 +10,10 @@
                 &larr; Kitaba dön
             </a>
         </div>
-        <div class="flex items-center gap-2 shrink-0">
+        <div class="flex flex-wrap items-center gap-2 shrink-0">
+            <a href="{{ route('panel.yayinlarim.kitap.belgeler', $book) }}" class="text-sm px-4 py-2 border border-slate-300 bg-white text-slate-700 rounded-lg hover:bg-slate-50 transition-colors inline-flex items-center gap-1.5">
+                <x-snowflake-icon class="w-4 h-4" /> Belgeler ({{ $book->documents()->count() }})
+            </a>
             <button type="button" x-data @click="$dispatch('toggle-word-import')" class="text-sm px-4 py-2 border border-slate-300 bg-white text-slate-700 rounded-lg hover:bg-slate-50 transition-colors inline-flex items-center gap-1.5">
                 <x-heroicon-o-document-arrow-up class="w-4 h-4" /> Word'den Bölüm Aktar
             </button>

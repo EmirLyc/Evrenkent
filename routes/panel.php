@@ -11,6 +11,7 @@ use App\Http\Controllers\CartController;
 use App\Http\Controllers\ChapterController;
 use App\Http\Controllers\ContentApprovalController;
 use App\Http\Controllers\DergiYonetimiController;
+use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\DocxImportController;
 use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\NoteController;
@@ -89,6 +90,14 @@ Route::middleware('auth')->prefix('panel')->as('panel.')->group(function () {
         // Faz F1: Word'den aktarma — editöre önizleme (kaydetmez) ve kitabı bölümlere ayırarak ekleme.
         Route::post('/word-aktar', [DocxImportController::class, 'preview'])->name('word-aktar');
         Route::post('/kitap/{book}/bolumler/word-aktar', [DocxImportController::class, 'chapters'])->name('kitap.bolumler.word-aktar');
+
+        // Faz F2: metne gömülü belgeler (PDF/görsel) — kitabın ve makalenin Belgeler sayfası.
+        Route::get('/kitap/{book}/belgeler', [DocumentController::class, 'bookIndex'])->name('kitap.belgeler');
+        Route::post('/kitap/{book}/belgeler', [DocumentController::class, 'bookStore'])->name('kitap.belgeler.store');
+        Route::get('/makale/{article}/belgeler', [DocumentController::class, 'articleIndex'])->name('makale.belgeler');
+        Route::post('/makale/{article}/belgeler', [DocumentController::class, 'articleStore'])->name('makale.belgeler.store');
+        Route::put('/belgeler/{document}', [DocumentController::class, 'update'])->name('belgeler.guncelle');
+        Route::delete('/belgeler/{document}', [DocumentController::class, 'destroy'])->name('belgeler.sil');
     });
 
     // Dergi Yönetimi: sadece Dergi Editörü rolündeki kullanıcılar erişebilir. Sayı

@@ -7,6 +7,7 @@ use Database\Factories\ChapterFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Collection;
 
 class Chapter extends Model
 {
@@ -22,6 +23,11 @@ class Chapter extends Model
     protected function footnotePrefix(): string
     {
         return 'dn-bolum-'.$this->order;
+    }
+
+    protected function contentDocuments(): Collection
+    {
+        return $this->book->documents;
     }
 
     public function book(): BelongsTo

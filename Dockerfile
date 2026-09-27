@@ -4,6 +4,8 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY resources resources
+# Tailwind bu klasörü de tarıyor (RichText'in ürettiği HTML'deki sınıflar, bkz. tailwind.config.js).
+COPY app/Support app/Support
 COPY vite.config.js tailwind.config.js postcss.config.js ./
 RUN npm run build
 

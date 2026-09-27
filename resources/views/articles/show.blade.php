@@ -29,4 +29,7 @@
             </p>
         @endauth
     </div>
+
+    {{-- Faz F2: kar tanesi işaretli gömülü belgeleri site içinde açar. --}}
+    <x-document-viewer />
 @endsection

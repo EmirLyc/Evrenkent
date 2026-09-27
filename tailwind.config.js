@@ -7,6 +7,9 @@ export default {
         './vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php',
         './storage/framework/views/*.php',
         './resources/views/**/*.blade.php',
+        // RichText okuma sayfası HTML'ini PHP'de üretiyor (gömülü belge işareti vb.) —
+        // taranmazsa oradaki sınıfların @layer components kuralları CSS'ten atılıyor.
+        './app/Support/**/*.php',
     ],
 
     theme: {
