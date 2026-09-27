@@ -171,6 +171,65 @@
         @apply block;
     }
 
+    /* Okuma modu (Faz F4, mockup 3): kâğıt dokusu — krem zemin, çok hafif gren (SVG gürültü),
+       üstte ışık, solda cilt gölgesi. Görsel dosya yok, hepsi CSS. */
+    .reader-paper {
+        background-color: theme('colors.parchment.DEFAULT');
+        background-image:
+            linear-gradient(90deg, rgba(110, 80, 30, 0.13), rgba(110, 80, 30, 0) 2.25rem),
+            radial-gradient(ellipse at 50% 0%, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0) 65%),
+            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .42 0 0 0 0 .33 0 0 0 0 .18 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+    .reader-page .reader-kicker {
+        @apply font-reading text-2xl sm:text-4xl font-medium text-navy text-center tracking-wide;
+    }
+    .reader-page .reader-title {
+        @apply font-reading text-2xl sm:text-[2.15rem] leading-tight font-medium text-navy text-center tracking-wide break-words;
+        font-variant-caps: small-caps;
+    }
+    .reader-page .reader-byline {
+        @apply font-reading italic text-lg text-slate-600 text-center;
+    }
+    /* Metin: klasik kitap gövdesi; boyut okurun seçimi (--reader-size, layouts/reader). */
+    .reader-page .rich-content {
+        @apply font-reading text-slate-900;
+        font-size: var(--reader-size, 1.1875rem);
+        line-height: 1.8;
+        hyphens: auto;
+    }
+    .reader-page .rich-content > * + * {
+        margin-top: 1.1em;
+    }
+    .reader-page .rich-content h2 {
+        @apply font-reading font-medium text-navy text-center tracking-wide;
+        font-size: 1.3em;
+        font-variant-caps: small-caps;
+        margin-top: 2em;
+    }
+    .reader-page .rich-content h3 {
+        @apply font-reading font-semibold italic text-navy;
+        font-size: 1.1em;
+        margin-top: 1.6em;
+    }
+    .reader-page .rich-content blockquote {
+        @apply border-gold/50 text-slate-700;
+    }
+    .reader-page .rich-content a:not(.document-marker):not(.footnote-back) {
+        @apply text-navy decoration-gold/60;
+    }
+    .reader-page .rich-content .video-link-title {
+        @apply font-reading;
+    }
+    .reader-page .rich-content .footnotes {
+        @apply border-gold/30 text-slate-700;
+        font-size: 0.8em;
+    }
+    /* Süs ayırıcı: içerikteki <hr> (editörde "Süs ayırıcı") altın fleuron olarak (x-reader-ornament ile aynı çizim). */
+    .reader-page .rich-content hr {
+        @apply border-0 h-5 my-10;
+        background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 20' fill='none' stroke='%23A8843F' stroke-width='1.1' stroke-linecap='round'%3E%3Cpath d='M6 10h48M106 10h48M74.5 10h11'/%3E%3Ccircle cx='56.5' cy='10' r='1.4' fill='%23A8843F' stroke='none'/%3E%3Ccircle cx='103.5' cy='10' r='1.4' fill='%23A8843F' stroke='none'/%3E%3Cpath d='M61 10c3.5-4.5 9-4.5 12 0-3 4.5-8.5 4.5-12 0ZM99 10c-3.5-4.5-9-4.5-12 0 3 4.5 8.5 4.5 12 0Z'/%3E%3Cpath d='M80 2.5c-3.2 3-3.2 12 0 15 3.2-3 3.2-12 0-15Z' fill='%23A8843F' stroke='none'/%3E%3C/svg%3E") center / 10rem 1.25rem no-repeat;
+    }
+
     /* Video satırı (Faz F3, mockup 3): turuncu halkalı oynat simgesi + lacivert kalın başlık + süre. */
     .rich-content p.video-link {
         @apply my-6;
@@ -190,6 +249,14 @@
     }
     .rich-content .video-link-duration {
         @apply ml-1.5 whitespace-nowrap text-slate-500 font-normal;
+    }
+
+    /* Editör: süs ayırıcı (okuma modunda altın fleuron olarak çiziliyor). */
+    .rich-editor-surface hr {
+        @apply my-6 border-0 border-t-2 border-dashed border-gold/50;
+    }
+    .rich-editor-surface hr.ProseMirror-selectednode {
+        @apply border-brand-400;
     }
 
     /* Editör: video satırı — içerik yok (atom), görünüm öznitelikten. */

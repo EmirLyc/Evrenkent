@@ -30,6 +30,8 @@
             ['Alıntı', 'chat-bubble-bottom-center-text', 'toggleBlockquote', null, 'blockquote', []],
             ['Madde işaretli liste', 'list-bullet', 'toggleBulletList', null, 'bulletList', []],
             ['Numaralı liste', 'numbered-list', 'toggleOrderedList', null, 'orderedList', []],
+            // Faz F4: okuma modunda altın fleuron olarak çizilen bölüm içi ayırıcı (mockup 3).
+            ['Süs ayırıcı', 'minus', 'setHorizontalRule', null, 'horizontalRule', []],
         ],
     ];
 @endphp
@@ -76,7 +78,7 @@
             <x-heroicon-o-link class="w-5 h-5" />
         </button>
         <button type="button" class="rich-editor-btn gap-1 text-sm font-medium" title="Dipnot ekle (seçili dipnotu düzenler)" aria-label="Dipnot" :class="isActive('footnote') && 'is-active'" :disabled="!ready" @click="openPanel('footnote')">
-            <x-heroicon-o-hashtag class="w-4 h-4" /> Dipnot
+            <x-heroicon-o-hashtag class="w-4 h-4" /> <span class="hidden sm:inline">Dipnot</span>
         </button>
         <button type="button" class="rich-editor-btn" title="Video ekle (YouTube / Vimeo; seçili videoyu düzenler)" aria-label="Video" :class="(panel === 'video' || isActive('videoLink')) && 'is-active'" :disabled="!ready" @click="panel === 'video' ? closePanel() : openPanel('video')">
             <x-heroicon-o-play-circle class="w-5 h-5" />

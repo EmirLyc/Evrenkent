@@ -323,6 +323,54 @@ Alpine.data('documentViewer', () => {
     };
 });
 
+// Okuma modu (layouts/reader, Faz F4): yazı boyutu (bu cihazda hatırlanır), okuma ilerleme
+// çubuğu, bölümler çekmecesi ve ←/→ ile önceki/sonraki bölüm.
+const READER_SIZES = ['1.0625rem', '1.1875rem', '1.3125rem', '1.4375rem'];
+Alpine.data('reader', () => ({
+    sizes: READER_SIZES,
+    size: 1,
+    progress: 0,
+    drawer: false,
+
+    init() {
+        try {
+            const saved = parseInt(localStorage.getItem('evrenkent.reader.size'), 10);
+            if (saved >= 0 && saved < READER_SIZES.length) this.size = saved;
+        } catch {
+            // Gizli pencere / engellenmiş depolama: varsayılan boyutla devam.
+        }
+        this.$nextTick(() => this.trackProgress());
+    },
+    resize(step) {
+        this.size = Math.min(READER_SIZES.length - 1, Math.max(0, this.size + step));
+        try {
+            localStorage.setItem('evrenkent.reader.size', String(this.size));
+        } catch {
+            // yok say
+        }
+        this.$nextTick(() => this.trackProgress());
+    },
+    trackProgress() {
+        if (!this.$root.isConnected) return;
+        const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+        this.progress = scrollable > 0 ? Math.min(1, window.scrollY / scrollable) : 1;
+    },
+    keyNav(event) {
+        // Turbo sonrası temizlenmemiş eski örnek (bkz. documentViewer) olayı almasın.
+        if (!this.$root.isConnected || event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || this.drawer) return;
+        if (event.target.closest?.('input, textarea, select, [contenteditable]') || document.querySelector('[role=dialog]:not([style*="display: none"])')) return;
+
+        const link = event.key === 'ArrowLeft'
+            ? document.querySelector('[data-reader-prev]')
+            : event.key === 'ArrowRight' ? document.querySelector('[data-reader-next]') : null;
+
+        if (link) {
+            event.preventDefault();
+            window.Turbo ? window.Turbo.visit(link.href) : (window.location.href = link.href);
+        }
+    },
+}));
+
 // Sidebar scroll pozisyonu — Turbo her geçişte <body>'yi (dolayısıyla <aside>'ı)
 // baştan render ediyor, bu yüzden aşağı kaydırıp bir linke tıklayınca sidebar
 // görsel olarak "sıfırlanıp" en başa dönüyordu. scroll event'i bubble etmediği

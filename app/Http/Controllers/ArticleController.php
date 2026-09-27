@@ -11,7 +11,7 @@ class ArticleController extends Controller
     {
         abort_unless($article->isVisibleTo(auth()->user()), 404);
 
-        $article->load(['author', 'magazineIssue']);
+        $article->load(['author', 'magazineIssue.magazine', 'documents']);
 
         return view('articles.show', compact('article'));
     }

@@ -17,6 +17,8 @@ export default {
             fontFamily: {
                 sans: ['Figtree', ...defaultTheme.fontFamily.sans],
                 serif: ['Fraunces', ...defaultTheme.fontFamily.serif],
+                // Okuma modu (Faz F4, mockup 3) — klasik kitap gövde metni.
+                reading: ['"EB Garamond"', 'Georgia', ...defaultTheme.fontFamily.serif],
             },
             colors: {
                 paper: '#FBF9F4',
@@ -36,6 +38,12 @@ export default {
                 // Tailwind'in slate-950'i (neredeyse siyah) mockup'a göre fazla
                 // koyu/donuktu.
                 navy: '#03192F',
+                // Okuma modu (Faz F4, mockup 3): kâğıt ve süsleme altını.
+                parchment: {
+                    DEFAULT: '#F7F1E4',
+                    deep: '#E9E0CC',
+                },
+                gold: '#A8843F',
             },
         },
     },
