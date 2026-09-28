@@ -1,19 +1,22 @@
 @extends('layouts.admin-panel')
 
-@section('title', 'Kitaplar')
+@php $isDictionary = $tur === \App\Models\Book::KIND_SOZLUK; $noun = $isDictionary ? 'sözlük' : 'kitap'; @endphp
+
+@section('title', $isDictionary ? 'Sözlükler' : 'Kitaplar')
 
 @section('content')
     <div class="flex items-center justify-between gap-3 flex-wrap mb-6">
         <div>
-            <h1 class="font-serif text-xl font-semibold text-slate-900">Kitaplar</h1>
-            <p class="text-sm text-slate-500 mt-1">{{ $books->total() }} kitap.</p>
+            <h1 class="font-serif text-xl font-semibold text-slate-900">{{ $isDictionary ? 'Sözlükler' : 'Kitaplar' }}</h1>
+            <p class="text-sm text-slate-500 mt-1">{{ $books->total() }} {{ $noun }}.</p>
         </div>
-        <a href="{{ route('panel.adminpanel.kitaplar.yeni') }}" class="btn-brand btn-sm">
-            <x-heroicon-o-plus class="w-4 h-4" /> Yeni Kitap
+        <a href="{{ route('panel.adminpanel.kitaplar.yeni', $isDictionary ? ['tur' => 'sozluk'] : []) }}" class="btn-brand btn-sm">
+            <x-heroicon-o-plus class="w-4 h-4" /> {{ $isDictionary ? 'Yeni Sözlük' : 'Yeni Kitap' }}
         </a>
     </div>
 
     <form method="GET" class="flex flex-wrap gap-3 mb-5">
+        @if ($isDictionary) <input type="hidden" name="tur" value="sozluk"> @endif
         <input type="text" name="q" value="{{ $q }}" placeholder="Başlıkta ara…" class="w-full sm:w-64 rounded-md border-slate-300 text-sm focus:border-slate-500 focus:ring-slate-500">
         <select name="durum" class="rounded-md border-slate-300 text-sm focus:border-slate-500 focus:ring-slate-500">
             <option value="">Tüm Durumlar</option>
@@ -23,7 +26,7 @@
         </select>
         <button type="submit" class="btn-outline btn-sm">Filtrele</button>
         @if ($q || $durum)
-            <a href="{{ route('panel.adminpanel.kitaplar.index') }}" class="text-sm text-slate-500 hover:text-slate-900 self-center transition-colors">Temizle</a>
+            <a href="{{ route('panel.adminpanel.kitaplar.index', $isDictionary ? ['tur' => 'sozluk'] : []) }}" class="text-sm text-slate-500 hover:text-slate-900 self-center transition-colors">Temizle</a>
         @endif
     </form>
 
@@ -35,6 +38,7 @@
                         <th class="px-5 py-3 font-medium">Kapak</th>
                         <th class="px-5 py-3 font-medium">Başlık</th>
                         <th class="px-5 py-3 font-medium">Yazar</th>
+                        @if ($isDictionary) <th class="px-5 py-3 font-medium">Madde</th> @endif
                         <th class="px-5 py-3 font-medium">Fiyat</th>
                         <th class="px-5 py-3 font-medium">Durum</th>
                         <th class="px-5 py-3 font-medium text-right">İşlemler</th>
@@ -55,6 +59,7 @@
                                 </div>
                             </td>
                             <td class="px-5 py-2.5 text-slate-500 whitespace-nowrap">{{ $book->author->name }}</td>
+                            @if ($isDictionary) <td class="px-5 py-2.5 text-slate-500 tabular-nums">{{ $book->entries_count }}</td> @endif
                             <td class="px-5 py-2.5 text-slate-500 whitespace-nowrap">{{ number_format((float) $book->price, 2, ',', '.') }} TL</td>
                             <td class="px-5 py-2.5 whitespace-nowrap"><x-status-badge :status="$book->status" /></td>
                             <td class="px-5 py-2.5 text-right whitespace-nowrap">
@@ -81,7 +86,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="6" class="px-5 py-8 text-center text-sm text-slate-400">Kitap bulunamadı.</td></tr>
+                        <tr><td colspan="7" class="px-5 py-8 text-center text-sm text-slate-400">{{ $isDictionary ? 'Sözlük' : 'Kitap' }} bulunamadı.</td></tr>
                     @endforelse
                 </tbody>
             </table>

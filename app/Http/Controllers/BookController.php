@@ -34,6 +34,7 @@ class BookController extends Controller
 
         if ($book->categories->isNotEmpty()) {
             $relatedBooks = Book::published()
+                ->where('kind', $book->kind)
                 ->where('id', '!=', $book->id)
                 ->whereHas('categories', fn ($q) => $q->whereIn('categories.id', $book->categories->pluck('id')))
                 ->with('author')
@@ -45,6 +46,7 @@ class BookController extends Controller
         if ($relatedBooks->count() < 6) {
             $relatedBooks = $relatedBooks->concat(
                 Book::published()
+                    ->where('kind', $book->kind)
                     ->where('id', '!=', $book->id)
                     ->where('author_id', $book->author_id)
                     ->whereNotIn('id', $relatedBooks->pluck('id'))

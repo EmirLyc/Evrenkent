@@ -3,6 +3,7 @@
 use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\BookCatalogController;
 use App\Http\Controllers\BookController;
+use App\Http\Controllers\DictionaryController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\MagazineCatalogController;
@@ -22,6 +23,9 @@ Route::get('/dergiler', [MagazineCatalogController::class, 'index'])->name('derg
 Route::get('/dergiler/{magazineIssue}', [MagazineIssueController::class, 'show'])->name('dergiler.show');
 Route::get('/dergi/{magazine:slug}', [MagazineController::class, 'show'])->name('dergi.show');
 Route::get('/makaleler/{article:slug}', [ArticleController::class, 'show'])->name('makaleler.show');
+// Faz G3: sözlükler ve maddeleri ("Sözlüğe Dair" — okurken tıklanan kavram buraya gelir).
+Route::get('/sozlukler', [DictionaryController::class, 'index'])->name('sozlukler.index');
+Route::get('/sozlukler/{book:slug}/{entry:slug}', [DictionaryController::class, 'entry'])->name('sozlukler.madde')->scopeBindings();
 Route::get('/abonelik', [SubscriptionController::class, 'index'])->name('abonelik');
 // Faz F2: gömülü belgeyi site içinde gösterme — erişim içeriği okuyabilmeye bağlı (ziyaretçi ücretsiz kitabı okuyabilir).
 Route::get('/belge/{document}', [DocumentController::class, 'show'])->name('belgeler.goster');

@@ -37,8 +37,19 @@ class Book extends Model
         });
     }
 
+    /**
+     * Yayın türü (Faz G3, "Sözlüğe Dair"): sözlük kitapla aynı yoldan geçiyor (onay, fiyat,
+     * satın alma, okuma) ama ayrı bir kategori — katalogda /sozlukler'de, maddeleri bir veri
+     * nesnesi (DictionaryEntry). Kitaplar rafları sadece KIND_KITAP.
+     */
+    public const KIND_KITAP = 'kitap';
+
+    public const KIND_SOZLUK = 'sozluk';
+
+    protected $attributes = ['kind' => self::KIND_KITAP];
+
     protected $fillable = [
-        'author_id', 'title', 'subtitle', 'slug', 'description', 'page_ratio', 'heading_numbering',
+        'author_id', 'kind', 'title', 'subtitle', 'slug', 'description', 'page_ratio', 'heading_numbering',
         'cover_image', 'price', 'discount_price', 'discount_ends_at', 'status',
         'is_editors_pick', 'published_at', 'scheduled_publish_at',
         'average_rating', 'review_count',
@@ -199,6 +210,28 @@ class Book extends Model
         return $this->hasMany(Chapter::class)->orderBy('order');
     }
 
+    public function isDictionary(): bool
+    {
+        return $this->kind === self::KIND_SOZLUK;
+    }
+
+    /** Sözlüğün maddeleri, metindeki sırayla (Faz G3). */
+    public function entries(): HasMany
+    {
+        return $this->hasMany(DictionaryEntry::class)->orderBy('position');
+    }
+
+    /** Sadece kitaplar (sözlükler hariç) — Kitaplar katalogu, rafları, kategori sayfaları. */
+    public function scopeBooks(Builder $query): Builder
+    {
+        return $query->where('kind', self::KIND_KITAP);
+    }
+
+    public function scopeDictionaries(Builder $query): Builder
+    {
+        return $query->where('kind', self::KIND_SOZLUK);
+    }
+
     /** En son düzenlenen bölüm — Taslaklarım kartındaki "Bölüm 7 – Sessizliğin Dili" satırı. */
     public function latestChapter(): HasOne
     {
@@ -277,6 +310,7 @@ class Book extends Model
     public function contentStats(): array
     {
         return collect([
+            ...($this->isDictionary() ? [['count' => $this->entries()->count(), 'icon' => 'heroicon-o-language', 'label' => 'madde']] : []),
             ['count' => $this->page_count, 'icon' => 'heroicon-o-document-text', 'label' => 'sayfa'],
             ['count' => $this->document_count, 'icon' => 'heroicon-o-paper-clip', 'label' => 'belge'],
             ['count' => $this->video_count, 'icon' => 'heroicon-o-play-circle', 'label' => 'video'],

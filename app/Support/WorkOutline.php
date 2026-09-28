@@ -51,16 +51,29 @@ class WorkOutline
                 $this->toc[] = ['level' => 1, 'number' => $book->heading_numbering ? RichText::headingNumber($counters, 1) : '', 'text' => $chapter->title, 'url' => $url];
             }
 
-            foreach (RichText::headings($chapter->content) as $index => $heading) {
-                $counters[$heading['level']]++;
-                for ($deeper = $heading['level'] + 1; $deeper <= 4; $deeper++) {
+            // Başlıklar ve (sözlükte) kavramlar metindeki sırayla. Kavram numarasız, bulunduğu
+            // başlığın bir altında listelenir (Faz G3).
+            $index = 0;
+            $lastLevel = 1;
+            foreach (RichText::outline($chapter->content) as $item) {
+                if ($item['type'] === 'concept') {
+                    if ($item['text'] !== '' && DictionaryDocument::isValidKey($item['key'])) {
+                        $this->toc[] = ['level' => min(4, $lastLevel + 1), 'number' => '', 'text' => $item['text'], 'url' => $url.'#madde-'.$item['key'], 'concept' => true];
+                    }
+
+                    continue;
+                }
+
+                $level = $lastLevel = $item['level'];
+                $counters[$level]++;
+                for ($deeper = $level + 1; $deeper <= 4; $deeper++) {
                     $counters[$deeper] = 0;
                 }
                 $this->toc[] = [
-                    'level' => $heading['level'],
-                    'number' => $book->heading_numbering ? RichText::headingNumber($counters, $heading['level']) : '',
-                    'text' => $heading['text'],
-                    'url' => $url.'#'.$this->anchor($chapter).'-'.($index + 1),
+                    'level' => $level,
+                    'number' => $book->heading_numbering ? RichText::headingNumber($counters, $level) : '',
+                    'text' => $item['text'],
+                    'url' => $url.'#'.$this->anchor($chapter).'-'.(++$index),
                 ];
             }
 

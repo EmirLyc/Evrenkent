@@ -78,6 +78,7 @@
                     :images="$article?->documents->where('kind', \App\Models\Document::KIND_GORSEL) ?? []"
                     :ratio="old('page_ratio', $article?->page_ratio ?? '21x27.5')"
                     :numbering="$article?->heading_numbering ?? true"
+                    :concept-search-url="route('panel.sozluk-maddeleri')"
                 />
                 @if ($article)
                     <p class="text-xs text-slate-400 mt-1">Belgeler ({{ $article->documents->count() }}) yazarın Belgeler sayfasından yüklenir.</p>

@@ -18,6 +18,7 @@ class BookCatalogController extends Controller
             $category = Category::where('slug', $request->query('kategori'))->firstOrFail();
 
             $books = $category->books()
+                ->books()
                 ->published()
                 ->with('author')
                 ->latest('published_at')

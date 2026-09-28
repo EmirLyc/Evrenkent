@@ -41,6 +41,17 @@ trait IsPublication
             ->values();
     }
 
+    /** Kartlardaki tür etiketi: Kitap / Sözlük (Faz G3) / Dergi Yazısı. */
+    public function kindLabel(): string
+    {
+        return $this instanceof Article ? 'Dergi Yazısı' : ($this->isDictionary() ? 'Sözlük' : 'Kitap');
+    }
+
+    public function kindColor(): string
+    {
+        return $this instanceof Article ? 'text-sky-700' : ($this->isDictionary() ? 'text-emerald-700' : 'text-brand-700');
+    }
+
     /** Taslaklarım sekmesi / rozeti — yazarın gördüğü ad (mockup "Yazarın Gözünden" 1.1). */
     public function authorStatusKey(): string
     {

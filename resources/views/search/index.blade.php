@@ -21,7 +21,7 @@
             <x-heroicon-o-magnifying-glass class="w-8 h-8 mx-auto mb-3 text-slate-300" />
             Aramak için yukarıya bir şeyler yazın.
         </div>
-    @elseif ($books->isEmpty() && $issues->isEmpty() && $articles->isEmpty())
+    @elseif ($books->isEmpty() && $dictionaries->isEmpty() && $entries->isEmpty() && $issues->isEmpty() && $articles->isEmpty())
         <div class="card p-12 text-center text-slate-400">
             <x-heroicon-o-magnifying-glass class="w-8 h-8 mx-auto mb-3 text-slate-300" />
             "{{ $q }}" için bir sonuç bulunamadı.
@@ -33,6 +33,31 @@
                 <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-5">
                     @foreach ($books as $book)
                         <x-book-card :book="$book" />
+                    @endforeach
+                </div>
+            </div>
+        @endif
+
+        @if ($entries->isNotEmpty())
+            <div class="mb-12">
+                <h2 class="font-serif text-xl font-semibold text-slate-900 mb-5">Sözlük Maddeleri</h2>
+                <div class="card divide-y divide-slate-100">
+                    @foreach ($entries as $entry)
+                        <a href="{{ $entry->url() }}" class="block px-5 py-4 hover:bg-slate-50 transition-colors">
+                            <div class="font-medium text-slate-900">{{ $entry->term }}</div>
+                            <div class="text-xs text-slate-400 mt-0.5">{{ $entry->book->title }} · {{ $entry->book->author->name }}</div>
+                        </a>
+                    @endforeach
+                </div>
+            </div>
+        @endif
+
+        @if ($dictionaries->isNotEmpty())
+            <div class="mb-12">
+                <h2 class="font-serif text-xl font-semibold text-slate-900 mb-5">Sözlükler</h2>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-5">
+                    @foreach ($dictionaries as $dictionary)
+                        <x-book-card :book="$dictionary" />
                     @endforeach
                 </div>
             </div>

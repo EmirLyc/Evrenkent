@@ -6,6 +6,7 @@ use App\Enums\ContentStatus;
 use App\Models\Book;
 use App\Models\Category;
 use App\Models\User;
+use App\Support\DictionaryDocument;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -23,16 +24,22 @@ class AdminBookController extends Controller
     {
         $this->authorize('viewAny', Book::class);
 
+        // Menüde "Kitaplar" ve "Sözlükler" (Faz G3) aynı liste, ?tur=sozluk ile.
+        $tur = $request->query('tur') === Book::KIND_SOZLUK ? Book::KIND_SOZLUK : Book::KIND_KITAP;
+
         $books = Book::query()
+            ->where('kind', $tur)
             ->when($request->filled('q'), fn ($query) => $query->where('title', 'like', '%'.addcslashes($request->string('q'), '%_\\').'%'))
             ->when($request->filled('durum'), fn ($query) => $query->where('status', $request->string('durum')))
             ->with('author')
+            ->withCount('entries')
             ->latest('updated_at')
             ->paginate(20)
             ->withQueryString();
 
         return view('panel.admin.kitaplar.index', [
             'books' => $books,
+            'tur' => $tur,
             'q' => $request->string('q')->toString(),
             'durum' => $request->string('durum')->toString(),
         ]);
@@ -63,6 +70,7 @@ class AdminBookController extends Controller
 
         $data['is_editors_pick'] = $request->boolean('is_editors_pick');
         $data['status'] = $data['status'] ?? ContentStatus::Taslak->value;
+        $data['kind'] = $data['kind'] ?? Book::KIND_KITAP;
 
         $book = Book::create($data);
         $book->categories()->sync($request->input('categories', []));
@@ -102,8 +110,12 @@ class AdminBookController extends Controller
 
         $book->update($data);
         $book->categories()->sync($request->input('categories', []));
+        // Tür değiştiyse maddeler de (sözlükten çıkan kitabın maddeleri silinir, sözlük olan üretilir).
+        if ($book->wasChanged('kind')) {
+            DictionaryDocument::sync($book);
+        }
 
-        return redirect()->route('panel.adminpanel.kitaplar.duzenle', $book)->with('status', 'Kitap güncellendi.');
+        return redirect()->route('panel.adminpanel.kitaplar.duzenle', $book)->with('status', ($book->isDictionary() ? 'Sözlük' : 'Kitap').' güncellendi.');
     }
 
     public function destroy(Book $book): RedirectResponse
@@ -144,6 +156,7 @@ class AdminBookController extends Controller
     private function validationRules(bool $create, ?Book $book = null): array
     {
         return [
+            'kind' => [$create ? 'nullable' : 'sometimes', Rule::in([Book::KIND_KITAP, Book::KIND_SOZLUK])],
             'author_id' => ['required', 'exists:users,id'],
             'title' => ['required', 'string', 'max:255'],
             'slug' => [

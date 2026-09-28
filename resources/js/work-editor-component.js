@@ -44,7 +44,8 @@ export default function workEditor(config) {
         numbering: config.numbering !== false,
         saveState: 'saved',
         savedLabel: config.savedLabel || '',
-        stats: { pages: 0, words: 0, chars: 0 },
+        stats: { pages: 0, words: 0, chars: 0, entries: 0 },
+        concept: { query: '', results: [], busy: false, searched: false, current: '' },
         pageBreaks: [],
         bubble: { show: false, top: 0, left: 0 },
         importing: false,
@@ -110,6 +111,13 @@ export default function workEditor(config) {
             const text = editor.state.doc.textContent;
             this.stats.words = (text.trim().match(/\S+/g) || []).length;
             this.stats.chars = text.length;
+            if (config.dictionary) {
+                let entries = 0;
+                editor.state.doc.forEach((node) => {
+                    if (node.type.name === 'concept' && node.textContent.trim()) entries++;
+                });
+                this.stats.entries = entries;
+            }
             this.scheduleMeasure();
         },
         selectionChanged() {
@@ -169,12 +177,14 @@ export default function workEditor(config) {
             for (let level = 1; level <= 4; level++) {
                 if (editor.isActive('heading', { level })) return `Başlık ${level}`;
             }
+            if (editor.isActive('concept')) return 'Kavram';
             return editor.isActive('blockquote') ? 'Alıntı' : 'Normal Metin';
         },
         setStyle(style) {
             const chain = editor.chain().focus();
             if (editor.isActive('blockquote') && style !== 'quote') chain.lift('blockquote');
             if (style === 'paragraph') chain.setParagraph();
+            else if (style === 'concept') chain.setConcept();
             else if (style === 'quote') chain.setParagraph().setBlockquote();
             else chain.setHeading({ level: style });
             chain.run();
@@ -218,6 +228,12 @@ export default function workEditor(config) {
                 editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
                 return;
             }
+            // "Ekle → Kavram" (sözlük): imlecin olduğu satır madde başı olur (belge: "imleci o
+            // satıra getirir ve Kavramı seçer").
+            if (type === 'concept') {
+                this.setStyle('concept');
+                return;
+            }
             this.insertBlock({ type });
         },
         // Blok öğe (sayfa sonu, içindekiler, kaynakça, video, görsel) eklenince seçim öğenin üstünde
@@ -238,10 +254,12 @@ export default function workEditor(config) {
             const start = editor.view.coordsAtPos(from);
             const end = editor.view.coordsAtPos(to);
             const box = this.$refs.paper.getBoundingClientRect();
+            // "Sözlüğe Bağla" düğmesiyle balon genişliyor.
+            const width = config.conceptSearchUrl ? 330 : 220;
             this.bubble = {
                 show: true,
                 top: Math.max(0, Math.min(start.top, end.top) - box.top - 48),
-                left: Math.max(8, Math.min((start.left + end.left) / 2 - box.left - 110, box.width - 240)),
+                left: Math.max(8, Math.min((start.left + end.left) / 2 - box.left - width / 2, box.width - width - 8)),
             };
         },
 
@@ -250,6 +268,8 @@ export default function workEditor(config) {
             if (!editor) return;
             this.menu = null;
             this.panelError = '';
+            // Balon, odak panele geçince kendiliğinden kapanmıyordu (mobilde panelin üstüne biniyordu).
+            this.bubble.show = false;
             const selected = editor.state.selection.node;
             if (type === 'link') {
                 this.panelText = editor.getAttributes('link').href || '';
@@ -263,6 +283,17 @@ export default function workEditor(config) {
                 this.cite.text = '';
             } else if (type === 'size') {
                 this.customSize = String(this.currentSize());
+            } else if (type === 'concept') {
+                const { from, to } = editor.state.selection;
+                const current = editor.getAttributes('conceptLink');
+                this.concept = {
+                    query: current.term || editor.state.doc.textBetween(from, to, ' ').trim().slice(0, 100),
+                    results: [],
+                    busy: false,
+                    searched: false,
+                    current: current.id ? (current.term || 'bir sözlük maddesi') : '',
+                };
+                this.searchConcepts();
             }
             this.panel = type;
             this.$nextTick(() => this.$refs.panelFocus?.focus?.());
@@ -322,6 +353,38 @@ export default function workEditor(config) {
         },
         insertDocument(id) {
             editor.chain().focus().insertContent({ type: 'embeddedDocument', attrs: { id: String(id) } }).run();
+            this.closePanel();
+        },
+        // "Sözlüğe Bağla": yayındaki sözlüklerde (ve yazarın kendi sözlüklerinde) madde arama.
+        async searchConcepts() {
+            const query = this.concept.query.trim();
+            if (!config.conceptSearchUrl || query.length < 2) {
+                this.concept.results = [];
+                this.concept.searched = false;
+                return;
+            }
+            this.concept.busy = true;
+            try {
+                const response = await fetch(`${config.conceptSearchUrl}?q=${encodeURIComponent(query)}`, { headers: { Accept: 'application/json' } });
+                const data = await response.json();
+                // Yazar yazmaya devam ettiyse eski sonuç yenisinin üstüne yazılmasın.
+                if (query === this.concept.query.trim()) {
+                    this.concept.results = data.entries || [];
+                    this.concept.searched = true;
+                }
+            } catch {
+                this.panelError = 'Sözlükler aranamadı. Bağlantınızı kontrol edin.';
+            } finally {
+                this.concept.busy = false;
+            }
+        },
+        linkConcept(entry) {
+            editor.chain().focus().extendMarkRange('conceptLink').unsetLink()
+                .setMark('conceptLink', { id: String(entry.id), term: entry.term }).run();
+            this.closePanel();
+        },
+        unlinkConcept() {
+            editor.chain().focus().extendMarkRange('conceptLink').unsetMark('conceptLink').run();
             this.closePanel();
         },
         removeSelected() {

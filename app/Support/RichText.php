@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\DictionaryEntry;
 use App\Models\Document;
 use DOMDocument;
 use DOMElement;
@@ -141,6 +142,31 @@ class RichText
     }
 
     /**
+     * İçindekiler satırları metindeki sırayla: başlıklar (h1–h4) ve sözlükteki kavramlar
+     * (<p data-concept>, Faz G3 — belge: "kavram otomatik olarak İçindekiler listesine eklenir").
+     *
+     * @return list<array{type: 'heading', level: int, text: string}|array{type: 'concept', key: string, text: string}>
+     */
+    public static function outline(?string $html): array
+    {
+        if (! preg_match('/<h[1-4]\b|data-concept="/i', (string) $html)) {
+            return [];
+        }
+
+        [$dom] = self::parse((string) $html);
+        $items = [];
+        foreach ((new DOMXPath($dom))->query('//h1 | //h2 | //h3 | //h4 | //p[@data-concept]') as $element) {
+            /** @var DOMElement $element */
+            $text = trim(preg_replace('/\s+/u', ' ', $element->textContent));
+            $items[] = $element->nodeName === 'p'
+                ? ['type' => 'concept', 'key' => $element->getAttribute('data-concept'), 'text' => $text]
+                : ['type' => 'heading', 'level' => (int) substr($element->nodeName, 1), 'text' => $text];
+        }
+
+        return $items;
+    }
+
+    /**
      * Kaynak numaraları ("1 Kaynak No.") — içerikteki atıflar, ilk geçiş sırasıyla, tekrarsız.
      *
      * @return list<string>
@@ -216,6 +242,7 @@ class RichText
 
         self::renderTypography($xpath);
         self::renderHeadings($dom, $xpath, $context);
+        self::renderConcepts($dom, $xpath);
         self::renderImages($dom, $xpath, $documents);
         self::renderCitations($dom, $xpath, $context);
         self::renderBlocks($dom, $xpath, $context);
@@ -343,6 +370,58 @@ class RichText
     }
 
     /**
+     * Faz G3 ("Sözlüğe Dair"):
+     *  - Kavram satırı (<p data-concept="anahtar">) → madde başı; içindekiler ve madde sayfasının
+     *    "sözlükte oku" bağlantısı için çapa: #madde-anahtar.
+     *  - "Sözlüğe Bağla" (<span data-concept-link="madde id">) → okurken tıklanabilir kelime,
+     *    madde sayfasına gider. Madde silinmişse ya da sözlüğü yayında değilse (yazarı hariç)
+     *    kelime düz metin olarak kalır.
+     */
+    private static function renderConcepts(DOMDocument $dom, DOMXPath $xpath): void
+    {
+        foreach (iterator_to_array($xpath->query('//p[@data-concept]')) as $concept) {
+            /** @var DOMElement $concept */
+            $key = $concept->getAttribute('data-concept');
+            $concept->removeAttribute('data-concept');
+            $concept->setAttribute('class', trim('rt-concept '.$concept->getAttribute('class')));
+            if (DictionaryDocument::isValidKey($key)) {
+                $concept->setAttribute('id', 'madde-'.$key);
+            }
+        }
+
+        $links = iterator_to_array($xpath->query('//span[@data-concept-link]'));
+        if ($links === []) {
+            return;
+        }
+
+        $ids = array_unique(array_map(fn (DOMElement $link) => (int) $link->getAttribute('data-concept-link'), $links));
+        $entries = DictionaryEntry::whereIn('id', $ids)->availableTo(auth()->user())->with('book')->get()->keyBy('id');
+
+        foreach ($links as $link) {
+            /** @var DOMElement $link */
+            $entry = $entries->get((int) $link->getAttribute('data-concept-link'));
+
+            if (! $entry) {
+                while ($link->firstChild) {
+                    $link->parentNode->insertBefore($link->firstChild, $link);
+                }
+                $link->parentNode->removeChild($link);
+
+                continue;
+            }
+
+            $anchor = $dom->createElement('a');
+            $anchor->setAttribute('href', $entry->url());
+            $anchor->setAttribute('class', 'rt-concept-link');
+            $anchor->setAttribute('title', 'Sözlük: '.$entry->term.' — '.$entry->book->title);
+            while ($link->firstChild) {
+                $anchor->appendChild($link->firstChild);
+            }
+            $link->parentNode->replaceChild($anchor, $link);
+        }
+    }
+
+    /**
      * Metin içi görsel (Ekle → Görsel): <figure data-image="id" data-caption=".."> — sadece
      * içeriğin kendi görsellerine çözülür; dosya belge gibi erişim kontrollü adresten gelir.
      *
@@ -429,8 +508,8 @@ class RichText
             }
 
             $items = collect($entries)->map(fn ($entry) => sprintf(
-                '<li class="rt-toc-l%d"><a href="%s">%s<span>%s</span></a></li>',
-                $entry['level'], e($entry['url']),
+                '<li class="rt-toc-l%d%s"><a href="%s">%s<span>%s</span></a></li>',
+                $entry['level'], empty($entry['concept']) ? '' : ' rt-toc-concept', e($entry['url']),
                 $entry['number'] !== '' ? '<span class="rt-toc-num">'.e($entry['number']).'</span>' : '',
                 e($entry['text']),
             ))->implode('');
@@ -590,14 +669,17 @@ class RichText
         }
 
         // Faz G2: hizalama (data-align) paragraf ve başlıklarda; değerleri render'da beyaz listeyle.
-        foreach (['p', 'h1', 'h2', 'h3', 'h4'] as $element) {
+        foreach (['h1', 'h2', 'h3', 'h4'] as $element) {
             $config = $config->allowElement($element, ['data-align']);
         }
 
         $config = $config
+            // Faz G3: sözlükte "Kavram" satırı (madde başı).
+            ->allowElement('p', ['data-align', 'data-concept'])
             ->allowElement('a', ['href'])
-            // Dipnot, kar taneli belge (F2), yazı tipi / punto ve kaynak numarası (G2).
-            ->allowElement('span', ['data-footnote', 'data-document', 'data-font', 'data-size', 'data-cite'])
+            // Dipnot, kar taneli belge (F2), yazı tipi / punto, kaynak numarası (G2) ve
+            // "Sözlüğe Bağla" (G3: madde kimliği + editörde gösterilen kavram adı).
+            ->allowElement('span', ['data-footnote', 'data-document', 'data-font', 'data-size', 'data-cite', 'data-concept-link', 'data-concept-term'])
             // Video (F3) ve metin içi görsel (G2).
             ->allowElement('figure', ['data-video', 'data-title', 'data-duration', 'data-image', 'data-caption'])
             // Süs ayırıcı (F4) ve Sayfa Sonu (G2).

@@ -10,6 +10,7 @@
         // Tür • Yıl • Yayın adı — hepsi tek yayınevi olduğu için "Evrenkent Yayınları"
         // sabit bir metin (ayrı bir sütun gerektirmiyor), diğer ikisi boşsa satıra girmiyor.
         $metaParts = array_filter([
+            $book->isDictionary() ? 'Sözlük' : null,
             $book->categories->first()?->name,
             $book->published_at?->format('Y'),
             'Evrenkent Yayınları',
@@ -48,8 +49,23 @@
 
             @if ($book->description)
                 <div class="mt-9">
-                    <h2 class="font-serif text-base font-semibold text-slate-900 mb-2">Kitap Hakkında</h2>
+                    <h2 class="font-serif text-base font-semibold text-slate-900 mb-2">{{ $book->isDictionary() ? 'Sözlük' : 'Kitap' }} Hakkında</h2>
                     <p class="text-slate-600 whitespace-pre-line leading-relaxed">{{ $book->description }}</p>
+                </div>
+            @endif
+
+            {{-- Sözlük (Faz G3): maddeler — her biri madde sayfasına gider (önizleme herkese açık). --}}
+            @if ($book->isDictionary() && ($entryCount = $book->entries()->count()) > 0)
+                <div class="mt-9">
+                    <div class="flex items-baseline justify-between gap-3 mb-3">
+                        <h2 class="font-serif text-base font-semibold text-slate-900">Maddeler <span class="font-sans text-sm font-normal text-slate-400 tabular-nums">({{ $entryCount }})</span></h2>
+                        <a href="{{ route('sozlukler.index', ['sozluk' => $book->slug]) }}" class="text-sm font-medium text-brand-700 hover:text-brand-600">Tüm maddeler →</a>
+                    </div>
+                    <ul class="columns-2 sm:columns-3 gap-6 text-[0.95rem]">
+                        @foreach ($book->entries()->reorder('term_search')->limit(30)->get(['id', 'book_id', 'term', 'slug']) as $entry)
+                            <li class="break-inside-avoid py-0.5"><a href="{{ route('sozlukler.madde', [$book, $entry]) }}" class="font-reading text-navy hover:underline">{{ $entry->term }}</a></li>
+                        @endforeach
+                    </ul>
                 </div>
             @endif
         </div>
@@ -66,7 +82,7 @@
                 </div>
                 <x-countdown :at="$book->scheduled_publish_at" class="block text-2xl font-serif font-semibold text-brand-700 mt-1" />
                 <p class="text-sm text-slate-500 mt-2">
-                    Bu kitap şu an tanıtım aşamasında — satın alma ve okuma, yayın tarihinde açılacak.
+                    Bu {{ $book->isDictionary() ? 'sözlük' : 'kitap' }} şu an tanıtım aşamasında — satın alma ve okuma, yayın tarihinde açılacak.
                 </p>
             @elseif ($hasPurchased)
                 {{-- Satın alındı hâli (mockup: 6-)Satın Alındıktan Sonra Kitap Tanıtım Sayfası.png) —
@@ -76,7 +92,7 @@
                     <div class="text-lg font-serif font-semibold text-slate-900">Satın alındı</div>
                 </div>
                 <p class="text-sm text-slate-500 mt-3">
-                    Bu kitabı {{ $purchase->purchased_at->translatedFormat('j F Y') }} tarihinde satın aldınız.
+                    Bu {{ $book->isDictionary() ? 'sözlüğü' : 'kitabı' }} {{ $purchase->purchased_at->translatedFormat('j F Y') }} tarihinde satın aldınız.
                 </p>
             @else
                 {{-- Fiyat Book::priceFor()'dan — sepet ve satın alma da aynı metodu kullanıyor.

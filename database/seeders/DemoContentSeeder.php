@@ -348,6 +348,9 @@ class DemoContentSeeder extends Seeder
             }
         }
 
+        // --- Sözlük (Faz G3): yayındaki sözlük + başka bir kitapta sözlüğe bağlı kelimeler ---
+        $this->call(DictionaryDemoSeeder::class);
+
         // --- Okur: Favoriler / Okuma Listesi / Notlar / Satın Alımlar ---
         if ($reader) {
             $sisler = $bookModels['Sislerin Ardındaki Fener'];

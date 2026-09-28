@@ -13,6 +13,7 @@ use App\Http\Controllers\CartController;
 use App\Http\Controllers\ContentApprovalController;
 use App\Http\Controllers\ContentMessageController;
 use App\Http\Controllers\DergiYonetimiController;
+use App\Http\Controllers\DictionaryController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\NoteController;
@@ -64,6 +65,9 @@ Route::middleware('auth')->prefix('panel')->as('panel.')->group(function () {
     Route::post('/sepet/kitap/{book}', [CartController::class, 'store'])->name('sepet.kitap.ekle');
     Route::delete('/sepet/kitap/{book}', [CartController::class, 'destroy'])->name('sepet.kitap.sil');
     Route::post('/sepet/checkout', [CartController::class, 'checkout'])->name('sepet.checkout');
+
+    // "Sözlüğe Bağla" paneli (Faz G3) — yazar, dergi editörü ve Süper Admin'in makale formu.
+    Route::get('/sozluk-maddeleri', [DictionaryController::class, 'search'])->name('sozluk-maddeleri');
 
     // Esere bağlı yazışma (Faz G1, Taslaklarım'daki "Sohbet / Mesajlar") — yazar, Süper Admin
     // ve (makalede) sayının editörü; erişim ContentMessageController'da policy ile.

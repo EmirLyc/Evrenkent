@@ -9,6 +9,7 @@
 //  - kaynak numarası (<span data-cite="kaynak">), Kaynakça (<section data-bibliography>),
 //    İçindekiler (<nav data-toc>), Sayfa Sonu (<hr data-page-break>), tablo.
 import { Editor, Extension, Mark, Node, mergeAttributes } from '@tiptap/core';
+import { Plugin } from '@tiptap/pm/state';
 import StarterKit from '@tiptap/starter-kit';
 import { TableKit } from '@tiptap/extension-table';
 
@@ -318,6 +319,102 @@ const createPlaceholderBlock = (name, tag, attribute, className) => Node.create(
 const TableOfContents = createPlaceholderBlock('tableOfContents', 'nav', 'data-toc', 'rt-toc toc-edit');
 const Bibliography = createPlaceholderBlock('bibliography', 'section', 'data-bibliography', 'rt-bibliography bibliography-edit');
 
+// Sözlük "Kavram" satırı (Faz G3, "Sözlüğe Dair"): <p data-concept="anahtar">Egemenlik</p> — bir
+// sözlük maddesinin başı; İçindekiler'e girer, sonraki metin bir sonraki kavrama kadar o maddeye
+// ait (sunucuda DictionaryDocument). Anahtar maddenin kimliği: kavramın adı değişse de bağlantılar
+// korunur. Kopyala-yapıştırla çoğalan ya da eksik anahtar burada yenilenir.
+const newConceptKey = () => (Math.random().toString(36).slice(2) + Date.now().toString(36)).slice(0, 10);
+
+const Concept = Node.create({
+    name: 'concept',
+    group: 'block',
+    content: 'inline*',
+    defining: true,
+    addAttributes() {
+        return {
+            key: {
+                default: null,
+                parseHTML: (element) => element.getAttribute('data-concept') || null,
+                renderHTML: (attributes) => ({ 'data-concept': attributes.key || '' }),
+            },
+        };
+    },
+    parseHTML() {
+        // Paragraftan (öncelik 50) önce eşleşsin.
+        return [{ tag: 'p[data-concept]', priority: 60 }];
+    },
+    renderHTML({ HTMLAttributes }) {
+        return ['p', mergeAttributes(HTMLAttributes, { class: 'rt-concept' }), 0];
+    },
+    addCommands() {
+        return {
+            setConcept: () => ({ commands }) => commands.setNode(this.name, { key: newConceptKey() }),
+        };
+    },
+    addKeyboardShortcuts() {
+        return {
+            // Kavram satırında Enter: tanım normal paragrafla sürer (satır ortada bölünse bile).
+            Enter: ({ editor }) => {
+                const { $from, empty } = editor.state.selection;
+                if (!empty || $from.parent.type.name !== this.name) return false;
+                return editor.chain().splitBlock().setParagraph().run();
+            },
+        };
+    },
+    addProseMirrorPlugins() {
+        return [new Plugin({
+            appendTransaction: (transactions, oldState, newState) => {
+                if (!transactions.some((transaction) => transaction.docChanged)) return null;
+                const seen = new Set();
+                let tr = null;
+                newState.doc.forEach((node, offset) => {
+                    if (node.type.name !== 'concept') return;
+                    let key = node.attrs.key;
+                    if (!key || seen.has(key)) {
+                        key = newConceptKey();
+                        tr = tr || newState.tr;
+                        tr.setNodeMarkup(offset, undefined, { ...node.attrs, key });
+                    }
+                    seen.add(key);
+                });
+                return tr;
+            },
+        })];
+    },
+});
+
+// "Sözlüğe Bağla" (Faz G3, 1.1.6): seçili kelime bir sözlük maddesine bağlanır —
+// <span data-concept-link="madde id" data-concept-term="Egemenlik">egemenlik</span>. Okurken
+// tıklanabilir, madde sayfasına gider (RichText::renderConcepts). Normal bağlantıyla üst üste binmez.
+const ConceptLink = Mark.create({
+    name: 'conceptLink',
+    inclusive: false,
+    excludes: 'link',
+    addAttributes() {
+        return {
+            id: {
+                default: null,
+                parseHTML: (element) => element.getAttribute('data-concept-link'),
+                renderHTML: (attributes) => ({ 'data-concept-link': attributes.id }),
+            },
+            term: {
+                default: '',
+                parseHTML: (element) => element.getAttribute('data-concept-term') || '',
+                renderHTML: (attributes) => (attributes.term ? { 'data-concept-term': attributes.term } : {}),
+            },
+        };
+    },
+    parseHTML() {
+        return [{ tag: 'span[data-concept-link]' }];
+    },
+    renderHTML({ mark, HTMLAttributes }) {
+        return ['span', mergeAttributes(HTMLAttributes, {
+            class: 'concept-link-edit',
+            title: mark.attrs.term ? `Sözlüğe bağlı: ${mark.attrs.term}` : 'Sözlüğe bağlı',
+        }), 0];
+    },
+});
+
 // Başlık numarası: Başlık 1 → I., altları 1.1., 1.1.1. (RichText::headingNumber ile aynı).
 const ROMAN = [['M', 1000], ['CM', 900], ['D', 500], ['CD', 400], ['C', 100], ['XC', 90], ['L', 50], ['XL', 40], ['X', 10], ['IX', 9], ['V', 5], ['IV', 4], ['I', 1]];
 const roman = (number) => ROMAN.reduce((out, [symbol, value]) => {
@@ -328,12 +425,22 @@ const roman = (number) => ROMAN.reduce((out, [symbol, value]) => {
     return out;
 }, '');
 
+// İçindekiler satırları: başlıklar ve (sözlükte) kavramlar — kavram numarasız, bulunduğu başlığın
+// bir altında (WorkOutline ile aynı kural).
 export function headingOutline(doc, numbering) {
     const counters = [0, 0, 0, 0, 0];
     const outline = [];
+    let lastLevel = 1;
     doc.descendants((node) => {
+        if (node.type.name === 'concept') {
+            if (node.textContent.trim()) {
+                outline.push({ level: Math.min(4, lastLevel + 1), number: '', text: node.textContent, concept: true });
+            }
+            return false;
+        }
         if (node.type.name !== 'heading') return true;
         const level = node.attrs.level;
+        lastLevel = level;
         counters[level]++;
         for (let deeper = level + 1; deeper <= 4; deeper++) counters[deeper] = 0;
         const number = !numbering ? '' : (level === 1 ? `${roman(Math.max(1, counters[1]))}.` : `${counters.slice(1, level + 1).join('.')}.`);
@@ -365,7 +472,7 @@ export function refreshNumbers(editor, numbering) {
     const outline = headingOutline(editor.state.doc, numbering);
     root.querySelectorAll('.toc-edit').forEach((toc) => {
         toc.innerHTML = `<p class="rt-toc-title">İçindekiler</p>${outline.length
-            ? `<ol>${outline.map((entry) => `<li class="rt-toc-l${entry.level}"><span class="rt-toc-num">${entry.number}</span><span>${escape(entry.text || '(başlıksız)')}</span></li>`).join('')}</ol>`
+            ? `<ol>${outline.map((entry) => `<li class="rt-toc-l${entry.level}${entry.concept ? ' rt-toc-concept' : ''}"><span class="rt-toc-num">${entry.number}</span><span>${escape(entry.text || '(başlıksız)')}</span></li>`).join('')}</ol>`
             : '<p class="rt-empty">Başlık eklendikçe burada listelenir.</p>'}`;
     });
     root.querySelectorAll('.bibliography-edit').forEach((section) => {
@@ -405,6 +512,8 @@ export function createWorkEditor({ element, content, editable = true, getDocumen
             PageBreak,
             TableOfContents,
             Bibliography,
+            Concept,
+            ConceptLink,
         ],
         editorProps: {
             attributes: { class: 'rich-content rt-editor-surface', 'aria-label': 'Eser metni', spellcheck: 'true', lang: 'tr' },

@@ -9,7 +9,7 @@
     $isBook = $item instanceof \App\Models\Book;
     $key = $item->authorStatusKey();
 
-    [$kindLabel, $kindClass] = $isBook ? ['Kitap', 'text-brand-700'] : ['Dergi Yazısı', 'text-sky-700'];
+    [$kindLabel, $kindClass] = [$item->kindLabel(), $item->kindColor()];
     $subtitle = $isBook
         ? ($item->latestChapter ? 'Bölüm '.$item->latestChapter->order.' – '.$item->latestChapter->title : null)
         : ($item->magazineIssue?->magazine ? '('.$item->magazineIssue->magazine->name.')' : null);

@@ -17,7 +17,7 @@
 
         <div class="flex items-start justify-between gap-3 flex-wrap mb-5">
             <div class="min-w-0">
-                <div class="text-[11px] font-semibold uppercase tracking-wider {{ $isBook ? 'text-brand-700' : 'text-sky-700' }}">{{ $isBook ? 'Kitap' : 'Dergi Yazısı' }} · Mesajlar</div>
+                <div class="text-[11px] font-semibold uppercase tracking-wider {{ $item->kindColor() }}">{{ $item->kindLabel() }} · Mesajlar</div>
                 <h1 class="font-serif text-2xl font-semibold text-slate-900 break-words">{{ $item->title }}</h1>
                 <p class="text-sm text-slate-500">
                     Yazar: {{ $item->author->name }}

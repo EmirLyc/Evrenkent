@@ -70,7 +70,7 @@
                 @endif
             </div>
             <div class="min-w-0">
-                <div class="text-[11px] font-semibold uppercase tracking-wider {{ $isBook ? 'text-brand-700' : 'text-sky-700' }}">{{ $isBook ? 'Kitap' : 'Dergi Yazısı' }}</div>
+                <div class="text-[11px] font-semibold uppercase tracking-wider {{ $work->kindColor() }}">{{ $work->kindLabel() }}</div>
                 <div class="font-serif text-lg font-semibold leading-snug text-slate-900 break-words">{{ $work->title }}</div>
                 @if ($work->subtitle) <div class="text-sm text-slate-600">{{ $work->subtitle }}</div> @endif
                 <div class="mt-1 text-xs text-slate-500">Sayfa oranı {{ \App\Http\Controllers\WorkController::RATIOS[$work->page_ratio][0] ?? $work->page_ratio }}</div>

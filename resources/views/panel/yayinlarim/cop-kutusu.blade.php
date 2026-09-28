@@ -25,7 +25,7 @@
                 @php $isBook = $item instanceof \App\Models\Book; @endphp
                 <div class="flex items-center justify-between gap-3 px-4 sm:px-5 py-4 flex-wrap">
                     <div class="min-w-0">
-                        <div class="text-[11px] font-semibold uppercase tracking-wider {{ $isBook ? 'text-brand-700' : 'text-sky-700' }}">{{ $isBook ? 'Kitap' : 'Dergi Yazısı' }}</div>
+                        <div class="text-[11px] font-semibold uppercase tracking-wider {{ $item->kindColor() }}">{{ $item->kindLabel() }}</div>
                         <div class="font-serif text-lg font-semibold text-slate-900 break-words">{{ $item->title }}</div>
                         <div class="text-sm text-slate-500">Silinme: {{ $item->deleted_at->translatedFormat('j F Y H:i') }}</div>
                     </div>

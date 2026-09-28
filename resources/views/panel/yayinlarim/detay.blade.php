@@ -53,7 +53,7 @@
                     @endif
                 </div>
                 <div class="min-w-0">
-                    <div class="text-[11px] font-semibold uppercase tracking-wider {{ $isBook ? 'text-brand-700' : 'text-sky-700' }}">{{ $isBook ? 'Kitap' : 'Dergi Yazısı' }}</div>
+                    <div class="text-[11px] font-semibold uppercase tracking-wider {{ $item->kindColor() }}">{{ $item->kindLabel() }}</div>
                     <h1 class="font-serif text-2xl font-semibold text-slate-900 leading-snug break-words">{{ $item->title }}</h1>
                     @if (! $isBook && $item->magazineIssue)
                         <p class="text-sm text-slate-600">{{ $item->magazineIssue->magazine?->name }} · {{ $item->magazineIssue->title }}</p>

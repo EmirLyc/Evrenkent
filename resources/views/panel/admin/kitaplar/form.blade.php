@@ -22,6 +22,16 @@
                 @method('PUT')
             @endif
 
+            {{-- Faz G3: sözlük bir kitap türü (katalogda /sozlukler, editörde "Kavram"). --}}
+            <div>
+                <label for="kind" class="block text-sm font-medium text-slate-700 mb-1">Tür</label>
+                <select id="kind" name="kind" class="w-full sm:w-60 rounded-md border-slate-300 text-sm focus:border-slate-500 focus:ring-slate-500">
+                    <option value="{{ \App\Models\Book::KIND_KITAP }}" @selected(old('kind', $book?->kind ?? request('tur')) !== \App\Models\Book::KIND_SOZLUK)>Kitap</option>
+                    <option value="{{ \App\Models\Book::KIND_SOZLUK }}" @selected(old('kind', $book?->kind ?? request('tur')) === \App\Models\Book::KIND_SOZLUK)>Sözlük</option>
+                </select>
+                @error('kind') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
+            </div>
+
             <div>
                 <label for="author_id" class="block text-sm font-medium text-slate-700 mb-1">Yazar</label>
                 <select id="author_id" name="author_id" class="w-full rounded-md border-slate-300 text-sm focus:border-slate-500 focus:ring-slate-500">

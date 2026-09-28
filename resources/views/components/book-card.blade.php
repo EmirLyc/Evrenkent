@@ -8,7 +8,9 @@
 <a href="{{ route('kitaplar.show', $book) }}" {{ $attributes->merge(['class' => 'group block card-hover overflow-hidden']) }}>
     <x-book-cover :book="$book" class="aspect-[3/4]" />
     <div class="p-3">
-        <div class="text-xs text-brand-600 font-medium uppercase tracking-wide truncate">{{ $book->author->name }}</div>
+        <div class="text-xs text-brand-600 font-medium uppercase tracking-wide truncate">
+            @if ($book->isDictionary())<span class="text-emerald-700">Sözlük ·</span> @endif{{ $book->author->name }}
+        </div>
         <div class="font-medium text-slate-900 text-sm truncate mt-0.5">{{ $book->title }}</div>
         <div class="text-sm mt-1">
             @if ($showScheduledDate && $book->scheduled_publish_at)

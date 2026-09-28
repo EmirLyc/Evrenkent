@@ -42,8 +42,8 @@ class HomeController extends Controller
             'newIssues' => MagazineIssue::published()->with('magazine')->latest('publish_date')->take(6)->get(),
             // Sadece en az bir yayındaki kitabı olan kategoriler — boş bir etikete tıklayıp
             // "bu kategoride kitap yok" sayfasına düşmek anlamsız olurdu.
-            'categories' => Category::whereHas('books', fn ($query) => $query->published())
-                ->withCount(['books' => fn ($query) => $query->published()])
+            'categories' => Category::whereHas('books', fn ($query) => $query->books()->published())
+                ->withCount(['books' => fn ($query) => $query->books()->published()])
                 ->orderBy('name')
                 ->get(),
         ]);

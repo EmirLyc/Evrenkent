@@ -3,7 +3,7 @@
     birebir. Her kalem iki türden biri:
     1) Kendi panelimizdeki gerçek bir liste/form (Kitaplar, Dergiler, Makaleler,
        Kategoriler, Kullanıcılar, Premium Sistemi, İndirimler...).
-    2) Hiç altyapısı olmayan bir özellik (Sözlükler, Gelir Merkezi, Sistem Ayarları
+    2) Hiç altyapısı olmayan bir özellik (Gelir Merkezi, Sistem Ayarları
        vb.) → tek bir generic "Yakında" sayfasına link (panel.adminpanel.placeholder),
        sahte veri/işlevsellik üretilmiyor.
 --}}
@@ -18,7 +18,7 @@
             ['label' => 'Dergiler', 'icon' => 'newspaper', 'href' => route('panel.adminpanel.dergiler.index')],
             ['label' => 'Dergi Sayıları', 'icon' => 'document-duplicate', 'href' => route('panel.adminpanel.sayilar.index')],
             ['label' => 'Makaleler', 'icon' => 'document-text', 'href' => route('panel.adminpanel.makaleler.index')],
-            ['label' => 'Sözlükler', 'icon' => 'language', 'href' => route('panel.adminpanel.placeholder', 'sozlukler')],
+            ['label' => 'Sözlükler', 'icon' => 'language', 'href' => route('panel.adminpanel.kitaplar.index', ['tur' => 'sozluk'])],
             ['label' => 'Tüm Yayınlar', 'icon' => 'rectangle-stack', 'href' => route('panel.adminpanel.placeholder', 'tum-yayinlar')],
             ['label' => 'Onay Bekleyenler', 'icon' => 'clock', 'href' => route('panel.adminpanel.onaylar.index'), 'badge' => $pendingTotal],
             // 2026-09-27, karar A: kalıcı reddedilen tüm içerik tek listede.

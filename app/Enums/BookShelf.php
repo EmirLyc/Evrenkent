@@ -41,14 +41,14 @@ enum BookShelf: string
         };
     }
 
-    /** İlgili rafın kitap sorgusu — sıralama/filtre bu raftan gelir. */
+    /** İlgili rafın kitap sorgusu — sıralama/filtre bu raftan gelir. Sözlükler rafta yok (/sozlukler). */
     public function query(): Builder
     {
         if ($this === self::YakindaCikacaklar) {
-            return Book::upcoming()->with('author');
+            return Book::books()->upcoming()->with('author');
         }
 
-        $query = Book::published()->with('author');
+        $query = Book::books()->published()->with('author');
 
         return match ($this) {
             self::YeniCikanlar => $query->latest('published_at'),

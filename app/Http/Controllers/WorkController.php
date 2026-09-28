@@ -10,6 +10,7 @@ use App\Models\Document;
 use App\Models\MagazineIssue;
 use App\Rules\RichTextContent;
 use App\Support\BookDocument;
+use App\Support\DictionaryDocument;
 use App\Support\DocxImporter;
 use App\Support\EpubImporter;
 use App\Support\RichText;
@@ -53,11 +54,18 @@ class WorkController extends Controller
 
     // --- Yeni eser (Adım 1) ----------------------------------------------------------------
 
+    /**
+     * "Yeni Yayın Oluştur" pop-up'ı (1.1.0) Kitap / Dergi ile Sözlük'ü ayırıyor: ?tur=sozluk ile
+     * gelen form sözlük oluşturur (Faz G3) — sözlük bir kitap türü, editörde "Kavram" açılır.
+     */
     public function create(Request $request): View
     {
+        $tur = $request->query('tur');
+
         return view('panel.yayinlarim.eser', [
             'work' => null,
-            'type' => $request->query('tur') === 'makale' ? 'makale' : 'kitap',
+            'type' => $tur === 'makale' ? 'makale' : 'kitap',
+            'kind' => $tur === 'sozluk' ? Book::KIND_SOZLUK : Book::KIND_KITAP,
             'step' => 'bilgiler',
             ...$this->infoFormData(null),
         ]);
@@ -69,13 +77,16 @@ class WorkController extends Controller
         $this->authorize('create', $type === 'kitap' ? Book::class : Article::class);
 
         $data = $request->validate([
-            'type' => ['required', 'in:kitap,makale'],
+            'type' => ['required', 'in:kitap,makale,sozluk'],
             ...$this->infoRules($type, null),
             'file' => ['nullable', 'file', 'extensions:docx,epub', 'max:20480'],
         ], $this->infoMessages());
 
         $attributes = $this->infoAttributes($data, $type);
         $attributes['author_id'] = $request->user()->id;
+        if ($type === 'kitap') {
+            $attributes['kind'] = $data['type'] === 'sozluk' ? Book::KIND_SOZLUK : Book::KIND_KITAP;
+        }
         $attributes['slug'] = Str::slug($data['title']).'-'.Str::random(6);
         $attributes['status'] = ContentStatus::Taslak;
 
@@ -115,6 +126,7 @@ class WorkController extends Controller
         return view('panel.yayinlarim.eser', [
             'work' => $work,
             'type' => $isBook ? 'kitap' : 'makale',
+            'kind' => $isBook ? $work->kind : null,
             'step' => $step,
             'done' => $this->completion($work),
             'editorHtml' => $isBook ? BookDocument::toHtml($work) : (string) $work->content,
@@ -323,7 +335,9 @@ class WorkController extends Controller
     private function storeContent(Book|Article $work, string $html, ?int $pageCount = null): void
     {
         if ($work instanceof Book) {
-            BookDocument::sync($work, $html);
+            // Sözlük (Faz G3): kavram anahtarları tamamlanır, maddeler metinden yeniden üretilir.
+            BookDocument::sync($work, $work->isDictionary() ? DictionaryDocument::assignKeys($html) : $html);
+            DictionaryDocument::sync($work);
             // Sayfa ve kaynak sayısı artık otomatik: editördeki sayfa hesabı ve tekil kaynaklar.
             $sources = collect($work->chapters()->pluck('content'))->flatMap(fn ($content) => RichText::citations($content))->unique()->count();
             $work->forceFill([

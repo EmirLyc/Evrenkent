@@ -10,7 +10,8 @@
     $steps = \App\Http\Controllers\WorkController::STEPS;
     $done = $done ?? ['bilgiler' => false, 'icerik' => false, 'kapak' => false, 'gonder' => false];
     $stepUrl = fn (string $key) => $work ? app(\App\Http\Controllers\WorkController::class)->stepUrl($work, $key) : null;
-    $kindLabel = $isBook ? 'Kitap' : 'Dergi Yazısı';
+    $isDictionary = $isBook && ($work ? $work->isDictionary() : ($kind ?? null) === \App\Models\Book::KIND_SOZLUK);
+    $kindLabel = $isDictionary ? 'Sözlük' : ($isBook ? 'Kitap' : 'Dergi Yazısı');
     $isRevision = $work?->status === \App\Enums\ContentStatus::RevizyonIstendi;
 @endphp
 

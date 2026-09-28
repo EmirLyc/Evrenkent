@@ -24,6 +24,8 @@
     'numbering' => true,
     'editable' => true,
     'isBook' => false,
+    'dictionary' => false,
+    'conceptSearchUrl' => null,
     'savedLabel' => '',
     'heading' => null,
     'subheading' => null,
@@ -45,6 +47,8 @@
         'numbering' => (bool) $numbering,
         'editable' => (bool) $editable,
         'isBook' => (bool) $isBook,
+        'dictionary' => (bool) $dictionary,
+        'conceptSearchUrl' => $conceptSearchUrl,
         'savedLabel' => $savedLabel,
     ];
     $btn = 'rich-editor-btn';
@@ -77,9 +81,12 @@
                     <button type="button" class="{{ $menuItem }}" @click="openPanel('video')"><x-heroicon-o-play-circle class="w-4 h-4" /> Video</button>
                     <button type="button" class="{{ $menuItem }}" @click="openPanel('document')"><x-snowflake-icon class="w-4 h-4" /> Belge</button>
                     <button type="button" class="{{ $menuItem }}" @click="openPanel('link')"><x-heroicon-o-link class="w-4 h-4" /> Bağlantı</button>
-                    {{ $insertItems ?? '' }}
+                    @if ($dictionary)
+                        {{-- Sözlük (Faz G3, mockup 1.1.6): imlecin olduğu satır madde başı olur. --}}
+                        <button type="button" class="{{ $menuItem }}" :class="isActive('concept') && 'bg-brand-50'" @click="insert('concept')" title="İmlecin olduğu satırı sözlük maddesinin başı yapar"><x-heroicon-o-book-open class="w-4 h-4" /> Kavram</button>
+                    @endif
                     <div class="my-1 border-t border-slate-100"></div>
-                    <button type="button" class="{{ $menuItem }}" @click="insert('bibliography')"><x-heroicon-o-book-open class="w-4 h-4" /> Kaynakça</button>
+                    <button type="button" class="{{ $menuItem }}" @click="insert('bibliography')"><x-heroicon-o-document-text class="w-4 h-4" /> Kaynakça</button>
                 </div>
             </div>
             <span class="hidden sm:block mx-1 h-5 w-px bg-slate-200" aria-hidden="true"></span>
@@ -98,6 +105,9 @@
                     @endforeach
                     <div class="my-1 border-t border-slate-100"></div>
                     <button type="button" class="{{ $menuItem }}" @click="setStyle('quote')"><x-heroicon-s-chat-bubble-bottom-center-text class="w-4 h-4" /> Alıntı</button>
+                    @if ($dictionary)
+                        <button type="button" class="{{ $menuItem }}" :class="currentStyle() === 'Kavram' && 'bg-brand-50'" @click="setStyle('concept')"><x-heroicon-o-book-open class="w-4 h-4" /> <span class="font-semibold">Kavram</span> <span class="text-xs text-slate-400">madde başı</span></button>
+                    @endif
                 </div>
             </div>
 
@@ -273,8 +283,37 @@
                 </div>
             </template>
 
+            <template x-if="panel === 'concept'">
+                <div class="space-y-2">
+                    <div class="text-xs font-medium text-slate-600">Sözlüğe Bağla — seçili kelime okurken tıklanabilir olur ve sözlükteki maddeye götürür.</div>
+                    <div x-show="concept.current" class="flex flex-wrap items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-emerald-900">
+                        <x-heroicon-o-book-open class="w-4 h-4 shrink-0" />
+                        <span class="min-w-0">Şu an bağlı: <span class="font-semibold" x-text="concept.current"></span></span>
+                        <button type="button" class="ml-auto text-sm text-red-600 hover:underline" @click="unlinkConcept()">Bağlantıyı kaldır</button>
+                    </div>
+                    <div class="relative">
+                        <x-heroicon-o-magnifying-glass class="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <input x-ref="panelFocus" type="search" x-model="concept.query" @input.debounce.300ms="searchConcepts()" @keydown.enter.prevent="searchConcepts()" placeholder="Sözlüklerde kavram ara (ör. egemenlik)" aria-label="Sözlüklerde kavram ara" class="w-full rounded-md border-slate-300 pl-8 text-sm focus:border-slate-500 focus:ring-slate-500">
+                    </div>
+                    <div class="grid gap-1 max-h-56 overflow-y-auto" x-show="concept.results.length">
+                        <template x-for="entry in concept.results" :key="entry.id">
+                            <button type="button" class="rounded-md px-2.5 py-1.5 text-left text-slate-700 hover:bg-white hover:shadow-sm" @click="linkConcept(entry)">
+                                <span class="flex flex-wrap items-baseline gap-x-2">
+                                    <span class="font-semibold text-navy" x-text="entry.term"></span>
+                                    <span class="text-xs text-slate-500" x-text="entry.dictionary + (entry.author ? ' · ' + entry.author : '') + (entry.published ? '' : ' · taslak')"></span>
+                                </span>
+                                <span class="block text-xs text-slate-500 line-clamp-2" x-text="entry.excerpt"></span>
+                            </button>
+                        </template>
+                    </div>
+                    <p x-show="concept.busy" class="text-slate-500">Aranıyor…</p>
+                    <p x-show="concept.searched && !concept.busy && !concept.results.length" class="text-slate-500">Bu adla bir sözlük maddesi bulunamadı. Yayındaki sözlükler ve kendi sözlükleriniz aranır.</p>
+                    <div class="flex justify-end"><button type="button" class="btn-ghost btn-sm" @click="closePanel()">Kapat</button></div>
+                </div>
+            </template>
+
             <p x-show="panelError" x-text="panelError" class="text-sm text-red-600" role="alert"></p>
-            <div class="flex flex-wrap items-center gap-2" x-show="panel !== 'document'">
+            <div class="flex flex-wrap items-center gap-2" x-show="!['document', 'concept'].includes(panel)">
                 <button type="button" class="btn-dark btn-sm"
                         :disabled="image.busy"
                         @click="panel === 'cite' ? insertCitation() : (panel === 'size' ? setSize(customSize) : (panel === 'image' ? uploadImage() : savePanel()))"
@@ -307,7 +346,12 @@
                 <button type="button" class="{{ $btn }}" :class="isActive('italic') && 'is-active'" @click="run('toggleItalic')" aria-label="Eğik"><x-heroicon-o-italic class="w-5 h-5" /></button>
                 <button type="button" class="{{ $btn }}" :class="isActive('underline') && 'is-active'" @click="run('toggleUnderline')" aria-label="Altı çizili"><x-heroicon-o-underline class="w-5 h-5" /></button>
                 <button type="button" class="{{ $btn }}" :class="isActive('link') && 'is-active'" @click="openPanel('link')" aria-label="Bağlantı"><x-heroicon-o-link class="w-5 h-5" /></button>
-                {{ $bubbleItems ?? '' }}
+                @if ($conceptSearchUrl)
+                    {{-- Mockup "Sözlüğe Dair" görsel 4: seçili kelimeyi bir sözlük maddesine bağla. --}}
+                    <button type="button" class="ml-0.5 inline-flex h-9 items-center gap-1.5 rounded-md px-2.5 text-sm font-medium text-navy hover:bg-brand-50" :class="isActive('conceptLink') && 'bg-emerald-50 text-emerald-800'" @click="openPanel('concept')">
+                        <x-heroicon-o-book-open class="w-5 h-5" /> <span class="whitespace-nowrap">Sözlüğe Bağla</span>
+                    </button>
+                @endif
             </div>
 
             <div class="relative">
@@ -330,6 +374,9 @@
         <span class="tabular-nums">Sayfa: <span x-text="stats.pages.toLocaleString('tr-TR')">0</span></span>
         <span class="tabular-nums">Kelime: <span x-text="stats.words.toLocaleString('tr-TR')">0</span></span>
         <span class="tabular-nums">Karakter: <span x-text="stats.chars.toLocaleString('tr-TR')">0</span></span>
+        @if ($dictionary)
+            <span class="tabular-nums">Madde: <span x-text="stats.entries.toLocaleString('tr-TR')">0</span></span>
+        @endif
         @if ($mode === 'autosave')
             <span class="ml-auto inline-flex items-center gap-1.5" aria-live="polite">
                 <template x-if="saveState === 'saved'"><span class="inline-flex items-center gap-1.5"><x-heroicon-o-check-circle class="w-5 h-5 text-emerald-600" /> Tüm değişiklikler kaydedildi</span></template>

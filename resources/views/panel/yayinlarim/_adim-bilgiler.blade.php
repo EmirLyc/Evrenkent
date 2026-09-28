@@ -9,10 +9,18 @@
 <form method="POST"
       action="{{ $work ? ($isBook ? route('panel.yayinlarim.kitap.guncelle', $work) : route('panel.yayinlarim.makale.guncelle', $work)) : route('panel.yayinlarim.taslaklarim.store') }}"
       enctype="multipart/form-data"
-      x-data="{ type: @js(old('type', $type)) }"
+      x-data="{ type: @js(old('type', $isDictionary ? 'sozluk' : $type)) }"
       class="card p-4 sm:p-6 space-y-6 max-w-3xl">
     @if ($work)
         @method('PUT')
+    @elseif ($isDictionary)
+        {{-- Pop-up'ta "Sözlük" seçildi (Faz G3): tür sabit. --}}
+        <input type="hidden" name="type" value="sozluk">
+        <div class="rounded-lg border border-emerald-200 bg-emerald-50/70 px-4 py-3 text-sm text-emerald-900">
+            <span class="font-serif text-lg font-semibold">Sözlük</span>
+            <p class="mt-1">Editörde imleci bir satıra getirip <span class="font-medium">Ekle → Kavram</span>'ı seçtiğinizde o satır bir sözlük maddesinin başı olur, İçindekiler'e eklenir; sonraki metin bir sonraki kavrama kadar o maddeye ait sayılır. Diğer yazarlar metinlerindeki kelimeleri bu maddelere bağlayabilir.</p>
+        </div>
+        @error('type') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
     @else
         <fieldset>
             <legend class="block text-sm font-medium text-slate-700 mb-2">Ne yayınlıyorsunuz?</legend>
@@ -31,7 +39,7 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div class="sm:col-span-2">
             <label for="title" class="block text-sm font-medium text-slate-700 mb-1">Başlık</label>
-            <input id="title" name="title" type="text" value="{{ old('title', $work?->title) }}" required maxlength="255" class="{{ $input }} font-reading text-lg" placeholder="Ör. Modern Devletin Dönüşümü">
+            <input id="title" name="title" type="text" value="{{ old('title', $work?->title) }}" required maxlength="255" class="{{ $input }} font-reading text-lg" placeholder="{{ $isDictionary ? 'Ör. Siyaset Bilimi Sözlüğü' : 'Ör. Modern Devletin Dönüşümü' }}">
             @error('title') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
         </div>
         <div class="sm:col-span-2">
@@ -84,7 +92,7 @@
 
     <label class="flex items-start gap-3 text-sm text-slate-700">
         <input type="hidden" name="heading_numbering" value="0">
-        <input type="checkbox" name="heading_numbering" value="1" @checked(old('heading_numbering', $work?->heading_numbering ?? true)) class="mt-0.5 rounded border-slate-300 text-slate-900 focus:ring-slate-500">
+        <input type="checkbox" name="heading_numbering" value="1" @checked(old('heading_numbering', $work?->heading_numbering ?? ! $isDictionary)) class="mt-0.5 rounded border-slate-300 text-slate-900 focus:ring-slate-500">
         <span><span class="font-medium">Başlıkları otomatik numarala</span> <span class="text-slate-500">— Başlık 1 "I.", altları "1.1.", "1.1.1." (roman gibi eserlerde kapatabilirsiniz)</span></span>
     </label>
 
@@ -102,14 +110,14 @@
     </div>
 
     {{-- Fiyat yazardan alınmıyor (2026-09-27 revizesi). --}}
-    <p x-show="type === 'kitap'" class="text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-md px-3 py-2">
-        Kitabın satış fiyatı, onay aşamasında Süper Admin tarafından belirlenir.
+    <p x-show="type !== 'makale'" class="text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-md px-3 py-2">
+        {{ $isDictionary ? 'Sözlüğün' : 'Kitabın' }} satış fiyatı, onay aşamasında Süper Admin tarafından belirlenir.
     </p>
 
     {{-- Kitap: yazarın önerdiği yayın tarihi (Süper Admin onaylarken görür) --}}
-    <div x-show="type === 'kitap'" x-cloak class="border-t border-slate-100 pt-5">
+    <div x-show="type !== 'makale'" x-cloak class="border-t border-slate-100 pt-5">
         <label for="scheduled_publish_at" class="block text-sm font-medium text-slate-700 mb-1">Önerilen yayın tarihi <span class="font-normal text-slate-400">(isteğe bağlı)</span></label>
-        <input id="scheduled_publish_at" name="scheduled_publish_at" type="datetime-local" :disabled="type !== 'kitap'" value="{{ old('scheduled_publish_at', $work instanceof \App\Models\Book ? $work->scheduled_publish_at?->format('Y-m-d\TH:i') : null) }}" class="{{ $input }} sm:max-w-xs">
+        <input id="scheduled_publish_at" name="scheduled_publish_at" type="datetime-local" :disabled="type === 'makale'" value="{{ old('scheduled_publish_at', $work instanceof \App\Models\Book ? $work->scheduled_publish_at?->format('Y-m-d\TH:i') : null) }}" class="{{ $input }} sm:max-w-xs">
         <p class="text-xs text-slate-400 mt-1">Kesin tarihi Süper Admin onay sırasında belirler.</p>
         @error('scheduled_publish_at') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
     </div>
