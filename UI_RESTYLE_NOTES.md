@@ -6,7 +6,7 @@ yapılmış" ya da "bunu değiştirmiş miydik" karışıklığını önlemek.
 
 Fonksiyonel/işlevsel durum (route/controller/policy/test) bu dosyanın konusu
 **değil** — o taraf zaten sağlam ve ayrıca doğrulandı (başlangıçta 82 test;
-2026-09-28 itibarıyla **389 test** geçiyor). Burada ağırlıklı olarak
+2026-09-28 itibarıyla **427 test** geçiyor). Burada ağırlıklı olarak
 **görsel/tasarım** kararları ve gerekçeleri var — ama zamanla işlevsel düzeltmeler
 ve deploy notları da bu günlüğe girdi (bkz. madde 20+).
 
@@ -157,7 +157,7 @@ Kaynak: `dosyalar/1-)Yazarın Gözünden/` (Yayın Yönetimi ve Sözlük Word be
 - Railway'de zamanlayıcı yok, `content:publish-scheduled` demoda çalışmıyor (hosting konusuyla birlikte ele alınacak) — zamanlanmış içerik demoda "Yayına giriyor"da bekler.
 - ~~PDF'e göre Dergi Editörü yazar panelini de görmeli~~ — **çözüldü** (madde 51): editör rolü yazarlığı kapsıyor.
 - ~~Onay mantığı iki yerde~~ — **çözüldü** (madde 50, `ContentReviewer` / `ContentPublisher`); Süper Admin'e Makaleler sayfası eklendi ve **Filament tamamen kaldırıldı** (madde 52).
-- `README.md` hâlâ Laravel varsayılanı; `dosyalar/` (mockup'lar) git'e eklenmemiş.
+- ~~`README.md` hâlâ Laravel varsayılanı; `dosyalar/` (mockup'lar) git'e eklenmemiş~~ — **çözüldü** (madde 57): README projeye özel; `dosyalar/` kullanıcı kararıyla bilerek git dışında (`.gitignore`).
 - ~~`composer audit` iki pakette uyarı veriyor (`league/commonmark`, `livewire/livewire`)~~ — **çözüldü** (madde 49, yama sürümlerine güncellendi, audit temiz).
 - ~~Word görselleri taşınmıyor, Belge/Video sayıları elle giriliyor~~ — **çözüldü** (madde 50).
 - ~~EPUB içe aktarma yok~~ — **çözüldü** (madde 50).
