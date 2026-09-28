@@ -27,3 +27,6 @@ Homestead.json
 Homestead.yaml
 Thumbs.db
 /.claude/settings.local.json
+
+# Müşteriden gelen belgeler ve mockup'lar (yerelde tutulur, repoya girmez)
+/dosyalar/

@@ -28,8 +28,11 @@ class PurchaseController extends Controller
     {
         abort_unless($book->status === ContentStatus::Yayinda, 404);
 
-        auth()->user()->purchase($book);
+        $purchase = auth()->user()->purchase($book);
 
-        return back()->with('status', 'Satın alma tamamlandı.');
+        // Ücretsiz eser: 0 TL'lik kayıt — fiyatı sonradan artsa da kullanıcının kitaplığında kalır.
+        return back()->with('status', (float) $purchase->amount <= 0
+            ? "\"{$book->title}\" kitaplığınıza eklendi. Fiyatı ileride değişse de sizin kalacak."
+            : 'Satın alma tamamlandı.');
     }
 }

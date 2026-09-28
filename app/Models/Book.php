@@ -135,6 +135,16 @@ class Book extends Model
         return $price;
     }
 
+    /**
+     * Bu kullanıcıya şu an ücretsiz mi (fiyatı 0 ya da kampanyayla 0'a inmiş). Ücretsiz eser
+     * "Kitaplığıma Ekle" ile 0 TL'lik bir satın alma olarak alınır (Epic Games'teki gibi):
+     * fiyatı sonradan artsa da alan kullanıcıda kalır (isReadableBy satın almaya bakıyor).
+     */
+    public function isFreeFor(?User $user = null): bool
+    {
+        return (float) $this->priceFor($user) <= 0;
+    }
+
     /** Premium indirimi uygulanmış fiyat (kampanyadan bağımsız) — "Premium ile X TL" için. */
     public function premiumPrice(): string
     {

@@ -43,6 +43,17 @@ class CartController extends Controller
             return back()->with('status', 'Bu kitabı zaten satın aldınız.');
         }
 
+        // Ücretsiz eserin sepete girmesine gerek yok: doğrudan kitaplığa eklenir.
+        if ($book->isFreeFor($user)) {
+            $user->purchase($book);
+
+            if ($request->wantsJson()) {
+                return response()->json(['added' => false, 'reason' => 'claimed'], 200);
+            }
+
+            return back()->with('status', "\"{$book->title}\" kitaplığınıza eklendi.");
+        }
+
         $user->cartItems()->firstOrCreate(['book_id' => $book->id]);
 
         if ($request->wantsJson()) {

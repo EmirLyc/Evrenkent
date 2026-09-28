@@ -86,14 +86,26 @@
                 </p>
             @elseif ($hasPurchased)
                 {{-- Satın alındı hâli (mockup: 6-)Satın Alındıktan Sonra Kitap Tanıtım Sayfası.png) —
-                     fiyat artık anlamsız, yerine satın alma tarihi gösteriliyor. --}}
+                     fiyat artık anlamsız, yerine satın alma tarihi gösteriliyor. Ücretsizken alınan
+                     eser (0 TL'lik kayıt) "Kitaplığınızda" — fiyatı sonradan artsa da kullanıcının. --}}
+                @php $claimed = (float) $purchase->amount <= 0; @endphp
                 <div class="flex items-center gap-3">
                     <x-heroicon-o-check-circle class="w-9 h-9 text-emerald-700 shrink-0" />
-                    <div class="text-lg font-serif font-semibold text-slate-900">Satın alındı</div>
+                    <div class="text-lg font-serif font-semibold text-slate-900">{{ $claimed ? 'Kitaplığınızda' : 'Satın alındı' }}</div>
                 </div>
                 <p class="text-sm text-slate-500 mt-3">
-                    Bu {{ $book->isDictionary() ? 'sözlüğü' : 'kitabı' }} {{ $purchase->purchased_at->translatedFormat('j F Y') }} tarihinde satın aldınız.
+                    Bu {{ $book->isDictionary() ? 'sözlüğü' : 'kitabı' }} {{ $purchase->purchased_at->translatedFormat('j F Y') }} tarihinde {{ $claimed ? 'ücretsiz olarak kitaplığınıza eklediniz' : 'satın aldınız' }}.
                 </p>
+            @elseif ($book->isFreeFor(auth()->user()))
+                {{-- Ücretsiz (fiyatı 0 ya da kampanyayla 0'a inmiş): "Kitaplığıma Ekle" (Epic Games gibi). --}}
+                @if ((float) $book->price > 0)
+                    <div class="text-sm text-slate-400 line-through">{{ number_format($book->price, 2, ',', '.') }} TL</div>
+                @endif
+                <div class="text-2xl font-serif font-semibold text-emerald-700">Ücretsiz</div>
+                @if ((float) $book->price > 0 && $book->discount_ends_at)
+                    <div class="text-xs text-brand-700 mt-1">{{ $book->discount_ends_at->translatedFormat('j F Y') }} tarihine kadar ücretsiz</div>
+                @endif
+                <p class="text-xs text-slate-500 mt-2">Kitaplığınıza ekleyin; fiyatı ileride değişse de sizin kalır.</p>
             @else
                 {{-- Fiyat Book::priceFor()'dan — sepet ve satın alma da aynı metodu kullanıyor.
                      Geçerli bir kampanya varsa eski fiyat üstü çizili, süreliyse bitiş tarihiyle. --}}
@@ -137,6 +149,19 @@
                             <a href="{{ route('panel.index') }}" class="btn-outline w-full">
                                 <x-heroicon-o-building-library class="w-4 h-4" /> Kütüphanemde Görüntüle
                             </a>
+                        @elseif ($book->status === \App\Enums\ContentStatus::Yayinda && $book->isFreeFor(auth()->user()))
+                            <form method="POST" action="{{ route('panel.satin-al', $book) }}">
+                                @csrf
+                                <button type="submit" class="btn-brand w-full">
+                                    <x-heroicon-o-plus-circle class="w-4 h-4" /> Kitaplığıma Ekle
+                                </button>
+                            </form>
+
+                            @if (! $locked)
+                                <a href="{{ route('kitaplar.oku', $book) }}" class="btn-dark w-full">
+                                    <x-heroicon-o-book-open class="w-4 h-4" /> Oku
+                                </a>
+                            @endif
                         @elseif ($book->status === \App\Enums\ContentStatus::Yayinda)
                             <form method="POST" action="{{ route('panel.satin-al', $book) }}">
                                 @csrf
@@ -185,7 +210,16 @@
                             </p>
                         @endif
                     @else
-                        <a href="{{ route('login') }}" class="btn-brand w-full">Giriş Yap ve Satın Al</a>
+                        @if ($book->isFreeFor(null))
+                            <a href="{{ route('login') }}" class="btn-brand w-full">Giriş Yap ve Kitaplığına Ekle</a>
+                            @if (! $locked && $book->status === \App\Enums\ContentStatus::Yayinda)
+                                <a href="{{ route('kitaplar.oku', $book) }}" class="btn-dark w-full">
+                                    <x-heroicon-o-book-open class="w-4 h-4" /> Oku
+                                </a>
+                            @endif
+                        @else
+                            <a href="{{ route('login') }}" class="btn-brand w-full">Giriş Yap ve Satın Al</a>
+                        @endif
                         <p class="text-xs text-slate-400 text-center">
                             Favorilemek veya okuma listenize eklemek için de giriş yapmanız gerekiyor.
                         </p>

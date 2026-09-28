@@ -34,7 +34,7 @@
                         </div>
                     @endif
                     <div class="text-sm text-slate-700 font-medium shrink-0">
-                        {{ number_format($purchase->amount, 2, ',', '.') }} TL
+                        {{ (float) $purchase->amount <= 0 ? 'Ücretsiz' : number_format($purchase->amount, 2, ',', '.').' TL' }}
                     </div>
                 </div>
             @endforeach

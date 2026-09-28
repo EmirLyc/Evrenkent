@@ -10,7 +10,13 @@
 
 @php $finalPrice = $book->priceFor(auth()->user()); @endphp
 
-@if ((float) $finalPrice < (float) $book->price)
+@if ((float) $finalPrice <= 0)
+    {{-- Ücretsiz (fiyatı 0 ya da kampanyayla 0): "Kitaplığıma Ekle" ile alınır. --}}
+    @if ((float) $book->price > 0)
+        <span class="text-slate-400 line-through mr-1.5 whitespace-nowrap">{{ number_format($book->price, 2, ',', '.') }} TL</span>
+    @endif
+    <span class="text-emerald-700 font-medium whitespace-nowrap">Ücretsiz</span>
+@elseif ((float) $finalPrice < (float) $book->price)
     <span class="text-slate-400 line-through mr-1.5 whitespace-nowrap">{{ number_format($book->price, 2, ',', '.') }} TL</span>
     <span class="text-brand-700 font-medium whitespace-nowrap">{{ number_format($finalPrice, 2, ',', '.') }} TL</span>
     {{-- Fiyat premium indiriminden geliyorsa (kampanyadan değil) üye neden farklı gördüğünü bilsin. --}}
