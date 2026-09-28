@@ -76,6 +76,7 @@ class AdminArticleController extends Controller
             'title' => $data['title'],
             'slug' => $data['slug'],
             'content' => $data['body'],
+            'page_ratio' => $data['page_ratio'] ?? '21x27.5',
             'status' => $status,
             'published_at' => $data['published_at'] ?? ($status === ContentStatus::Yayinda ? now() : null),
         ]);
@@ -106,6 +107,7 @@ class AdminArticleController extends Controller
             'title' => $data['title'],
             'slug' => $data['slug'],
             'content' => $data['body'],
+            'page_ratio' => $data['page_ratio'] ?? $article->page_ratio,
             'published_at' => $data['published_at'] ?? $article->published_at,
         ]);
         $article->categories()->sync($data['categories'] ?? []);
@@ -153,6 +155,7 @@ class AdminArticleController extends Controller
             'categories' => ['nullable', 'array'],
             'categories.*' => ['exists:categories,id'],
             'published_at' => ['nullable', 'date'],
+            'page_ratio' => ['nullable', Rule::in(array_keys(WorkController::RATIOS))],
         ];
     }
 

@@ -33,6 +33,9 @@ class FakeDocx
             .'<w:style w:type="paragraph" w:styleId="Balk2"><w:name w:val="heading 2"/><w:basedOn w:val="Normal"/></w:style>'
             .'<w:style w:type="paragraph" w:styleId="Alnt"><w:name w:val="Quote"/></w:style>'
             .'<w:style w:type="paragraph" w:styleId="BolumBasligi"><w:name w:val="Bölüm Başlığı"/><w:basedOn w:val="Balk1"/></w:style>'
+            // Türkçe Word'de "Konu Başlığı" (Title) — eserin adı, bölüm başlığı değil.
+            .'<w:style w:type="paragraph" w:styleId="KonuBal"><w:name w:val="Title"/><w:basedOn w:val="Normal"/></w:style>'
+            .'<w:style w:type="paragraph" w:styleId="Balk3"><w:name w:val="heading 3"/><w:basedOn w:val="Normal"/></w:style>'
             .'</w:styles>');
         $zip->addFromString('word/numbering.xml', '<?xml version="1.0" encoding="UTF-8"?><w:numbering '.self::NS.'>'
             .'<w:abstractNum w:abstractNumId="0"><w:lvl w:ilvl="0"><w:numFmt w:val="bullet"/></w:lvl></w:abstractNum>'

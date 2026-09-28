@@ -46,7 +46,7 @@ class EpubImporterTest extends TestCase
         );
     }
 
-    public function test_images_become_documents_through_the_handler(): void
+    public function test_images_become_inline_images_through_the_handler(): void
     {
         $stored = [];
         $importer = (new EpubImporter)->withImages(function (string $contents, string $mime, string $name, string $title) use (&$stored) {
@@ -61,7 +61,8 @@ class EpubImporterTest extends TestCase
         ));
 
         $this->assertSame([['image/png', 'harita.png', 'Eski İstanbul haritası']], $stored);
-        $this->assertStringContainsString('<span data-document="42"></span>', $chapters[0]['html']);
+        // Faz G2: metin içi görsel (paragrafın arkasında, blok düzeyinde).
+        $this->assertStringContainsString('<figure data-image="42" data-caption="Eski İstanbul haritası"></figure>', $chapters[0]['html']);
         $this->assertSame(['imported' => 1, 'skipped' => 0], $importer->imageStats());
     }
 

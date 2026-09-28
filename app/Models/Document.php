@@ -22,10 +22,25 @@ class Document extends Model
 
     public const MIME_TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
 
+    /** Kar tanesiyle açılan belge (Faz F2) ile metnin içinde görünen görsel (Faz G2, "Ekle → Görsel"). */
+    public const KIND_BELGE = 'belge';
+
+    public const KIND_GORSEL = 'gorsel';
+
     protected $fillable = [
-        'uploaded_by', 'title', 'date_label', 'page_count',
+        'kind', 'uploaded_by', 'title', 'date_label', 'page_count',
         'file_path', 'mime_type', 'size', 'original_name',
     ];
+
+    public function scopeBelge($query)
+    {
+        return $query->where('kind', self::KIND_BELGE);
+    }
+
+    public function isImage(): bool
+    {
+        return in_array($this->mime_type, ['image/jpeg', 'image/png'], true);
+    }
 
     protected function casts(): array
     {
@@ -48,10 +63,11 @@ class Document extends Model
     }
 
     /**
-     * Dosya içeriğinden belge oluşturur — Word'den aktarılan görseller (DocxImporter::withImages).
-     * İçerik türü çağıran tarafta doğrulanmış olmalı (MIME_TYPES).
+     * Dosya içeriğinden belge oluşturur — Word/EPUB'dan aktarılan görseller (DocxImporter::withImages;
+     * Faz G2'den beri metin içi görsel) ve editördeki "Ekle → Görsel". İçerik türü çağıran tarafta
+     * doğrulanmış olmalı (MIME_TYPES).
      */
-    public static function storeContents(Model $owner, string $contents, string $mime, string $originalName, string $title, ?User $by): self
+    public static function storeContents(Model $owner, string $contents, string $mime, string $originalName, string $title, ?User $by, string $kind = self::KIND_BELGE): self
     {
         $extension = ['image/png' => 'png', 'image/jpeg' => 'jpg', 'application/pdf' => 'pdf'][$mime];
         $path = 'documents/'.Str::uuid().'.'.$extension;
@@ -59,6 +75,7 @@ class Document extends Model
         Storage::disk(config('filesystems.documents_disk'))->put($path, $contents);
 
         return $owner->documents()->create([
+            'kind' => $kind,
             'uploaded_by' => $by?->id,
             'title' => $title,
             'file_path' => $path,

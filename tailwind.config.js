@@ -10,6 +10,8 @@ export default {
         // RichText okuma sayfası HTML'ini PHP'de üretiyor (gömülü belge işareti vb.) —
         // taranmazsa oradaki sınıfların @layer components kuralları CSS'ten atılıyor.
         './app/Support/**/*.php',
+        // Faz G2: editör düğüm görünümleri (içindekiler, kaynakça, sayfa sonu…) sınıfları JS'te üretiyor.
+        './resources/js/**/*.js',
     ],
 
     theme: {

@@ -18,10 +18,10 @@ use ZipArchive;
  * bizim satır içi biçimimize çevirmek gerekiyordu. Başlık tespiti stil kimliğine değil
  * styles.xml'deki dile bağımsız stil adına ("heading 1") ve anahat düzeyine bakıyor.
  *
- * Taşınanlar: paragraf, başlık, kalın/eğik/altı çizili/üstü çizili, üst/alt simge, dipnot ve
- * sonnot, madde işaretli/numaralı liste, alıntı stili, dış bağlantı, tablo hücreleri (paragraf
- * olarak). Görseller: withImages() ile bir kaydedici verilirse her PNG/JPG görsel gömülü belge
- * (Faz F2) olarak kaydedilir ve yerine kar tanesi işareti konur; verilmezse atlanır.
+ * Taşınanlar: paragraf, başlık (Başlık 1–4 aynen), hizalama, kalın/eğik/altı çizili/üstü çizili,
+ * üst/alt simge, dipnot ve sonnot, madde işaretli/numaralı liste, alıntı stili, dış bağlantı,
+ * tablo, sayfa sonu. Görseller: withImages() ile bir kaydedici verilirse her PNG/JPG görsel
+ * kaydedilir ve yerinde metin içi görsel olur (Faz G2); verilmezse atlanır.
  */
 class DocxImporter
 {
@@ -86,61 +86,24 @@ class DocxImporter
     }
 
     /**
-     * Tek içerik olarak (bir bölüm ya da makale). Dosya tek bir üst düzey başlıkla
-     * başlıyorsa o başlık öneri olarak döner ve metinden çıkarılır.
+     * Bütün dosya tek belge olarak (Faz G2, "Yazarın Gözünden": platform docx başlık
+     * katmanlarıyla uyumlu). Word'deki Başlık 1–4 editörde de Başlık 1–4 olur — kitapta her
+     * Başlık 1 bir bölüm (bkz. BookDocument). Dosyanın başındaki "Konu Başlığı" (Title) stili
+     * eserin adı önerisi olarak döner ve metinden çıkarılır.
      *
      * @return array{title: ?string, html: string}
      */
-    public function importSingle(string $path): array
+    public function importDocument(string $path): array
     {
         $blocks = $this->blocks($path);
         $title = null;
 
-        $headingLevels = collect($blocks)->where('type', 'heading')->pluck('level');
-        $first = collect($blocks)->first();
-
-        if ($first && $first['type'] === 'heading' && $first['level'] === $headingLevels->min()
-            && $headingLevels->filter(fn ($level) => $level === $first['level'])->count() === 1) {
-            $title = $first['text'];
+        if (($blocks[0]['type'] ?? null) === 'title') {
+            $title = $blocks[0]['text'];
             array_shift($blocks);
         }
 
         return ['title' => $title, 'html' => $this->toHtml($blocks)];
-    }
-
-    /**
-     * Kitap dosyasını bölümlere ayırır: en üst düzey başlık (genelde "Başlık 1") her
-     * bölümün başlangıcı. Başlıktan önceki metin (önsöz vb.) ayrı bir bölüm olur; hiç
-     * başlık yoksa tüm dosya tek bölüm.
-     *
-     * @return list<array{title: ?string, html: string}>
-     */
-    public function importChapters(string $path): array
-    {
-        $blocks = $this->blocks($path);
-        $topLevel = collect($blocks)->where('type', 'heading')->min('level');
-
-        $chapters = [];
-        $current = ['title' => null, 'blocks' => []];
-
-        foreach ($blocks as $block) {
-            if ($block['type'] === 'heading' && $block['level'] === $topLevel) {
-                if ($current['title'] !== null || $current['blocks'] !== []) {
-                    $chapters[] = $current;
-                }
-                $current = ['title' => $block['text'], 'blocks' => []];
-
-                continue;
-            }
-            $current['blocks'][] = $block;
-        }
-        $chapters[] = $current;
-
-        return collect($chapters)
-            ->map(fn ($chapter) => ['title' => $chapter['title'], 'html' => $this->toHtml($chapter['blocks'])])
-            ->filter(fn ($chapter) => $chapter['title'] !== null || RichText::hasText($chapter['html']))
-            ->values()
-            ->all();
     }
 
     /**
@@ -210,9 +173,10 @@ class DocxImporter
             }
 
             match ($node->localName) {
-                'p' => ($block = $this->paragraph($node)) ? $blocks[] = $block : null,
-                // Tablo düzeni okuma ekranında taşmasın diye hücreler sırayla paragraf oluyor.
-                'tbl', 'tr', 'tc', 'sdt', 'sdtContent', 'customXml' => array_push($blocks, ...$this->blockChildren($node)),
+                'p' => array_push($blocks, ...$this->paragraph($node)),
+                // Faz G2: tablo editörde de tablo ("Ekle → Tablo"); okumada dar ekranda yatay kayar.
+                'tbl' => $blocks[] = ['type' => 'table', 'html' => $this->table($node)],
+                'sdt', 'sdtContent', 'customXml' => array_push($blocks, ...$this->blockChildren($node)),
                 default => null,
             };
         }
@@ -221,22 +185,63 @@ class DocxImporter
     }
 
     /**
-     * @return array<string, mixed>|null
+     * Paragraf bir ya da birkaç blok olur: satır içi görsel (G2'de metin içi görsel) ve sayfa
+     * sonu blok düzeyinde olduğu için paragrafı böler.
+     *
+     * @return list<array<string, mixed>>
      */
-    private function paragraph(DOMElement $p): ?array
+    private function paragraph(DOMElement $p): array
     {
         $properties = $this->child($p, 'pPr');
+        $blocks = [];
+
+        if ($properties && $this->isOn($this->child($properties, 'pageBreakBefore'))) {
+            $blocks[] = ['type' => 'pagebreak'];
+        }
+
+        // Görsel ve sayfa sonu işaretlerinde bölünüyor; aradaki metin parçaları aynı paragraf türünde.
+        foreach (preg_split('/(\x01[^\x01]*\x01)/', $this->inline($p), -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY) as $part) {
+            if ($part === "\x01PB\x01") {
+                $blocks[] = ['type' => 'pagebreak'];
+            } elseif (preg_match('/^\x01FIG:(\d+):([^\x01]*)\x01$/', $part, $figure)) {
+                $blocks[] = ['type' => 'figure', 'id' => (int) $figure[1], 'caption' => base64_decode($figure[2])];
+            } elseif (($block = $this->textBlock(trim($part), $properties)) !== null) {
+                $blocks[] = $block;
+            }
+        }
+
+        return $blocks;
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function textBlock(string $html, ?DOMElement $properties): ?array
+    {
         $styleId = $properties ? $this->attr($this->child($properties, 'pStyle'), 'val') : null;
-        $html = trim($this->inline($p));
         $text = trim(html_entity_decode(strip_tags($html), ENT_QUOTES | ENT_HTML5));
 
-        if ($text === '' && ! str_contains($html, 'data-footnote') && ! str_contains($html, 'data-document')) {
+        if ($text === '' && ! str_contains($html, 'data-footnote')) {
             return null;
+        }
+
+        // Hizalama (Word'de "ortala / sağa yasla / iki yana yasla").
+        $align = match ($properties ? $this->attr($this->child($properties, 'jc'), 'val') : null) {
+            'center' => 'center',
+            'right', 'end' => 'right',
+            'both', 'distribute' => 'justify',
+            default => null,
+        };
+
+        // Word'ün "Konu Başlığı" (Title) stili eserin adıdır, bölüm başlığı değil.
+        $styleName = $this->styleName($styleId);
+        if ($styleName !== null && strcasecmp($styleName, 'title') === 0) {
+            return ['type' => 'title', 'text' => $text, 'html' => $html];
         }
 
         $level = $this->headingLevel($styleId, $properties);
         if ($level !== null) {
-            return ['type' => 'heading', 'level' => $level, 'text' => $text, 'html' => $html];
+            return ['type' => 'heading', 'level' => $level, 'text' => $text, 'html' => $html, 'align' => $align];
         }
 
         $numbering = $properties ? $this->child($properties, 'numPr') : null;
@@ -252,12 +257,50 @@ class DocxImporter
             }
         }
 
-        $styleName = $this->styleName($styleId);
         if ($styleName !== null && preg_match('/quote|alıntı/iu', $styleName)) {
-            return ['type' => 'quote', 'html' => $html];
+            return ['type' => 'quote', 'html' => $html, 'align' => $align];
         }
 
-        return ['type' => 'p', 'html' => $html];
+        return ['type' => 'p', 'html' => $html, 'align' => $align];
+    }
+
+    /**
+     * Word tablosu → HTML tablo. Birleştirilmiş sütunlar (gridSpan) colspan olur; dikey
+     * birleştirmenin devam hücreleri boş hücre olarak kalır. Başlık satırı (tblHeader) th.
+     */
+    private function table(DOMElement $table): string
+    {
+        $rows = '';
+
+        foreach ($table->childNodes as $row) {
+            if (! $row instanceof DOMElement || $row->localName !== 'tr') {
+                continue;
+            }
+
+            $rowProperties = $this->child($row, 'trPr');
+            $cellTag = $rowProperties && $this->child($rowProperties, 'tblHeader') ? 'th' : 'td';
+            $cells = '';
+
+            foreach ($row->childNodes as $cell) {
+                if (! $cell instanceof DOMElement || $cell->localName !== 'tc') {
+                    continue;
+                }
+                $cellProperties = $this->child($cell, 'tcPr');
+                $span = (int) ($this->attr($this->child($cellProperties, 'gridSpan'), 'val') ?? 1);
+                $inner = $this->toHtml(array_values(array_filter(
+                    $this->blockChildren($cell),
+                    fn ($block) => ! in_array($block['type'], ['pagebreak', 'figure', 'table', 'title'], true)
+                )));
+
+                $cells .= "<{$cellTag}".($span > 1 ? " colspan=\"{$span}\"" : '').'>'.($inner !== '' ? $inner : '<p></p>')."</{$cellTag}>";
+            }
+
+            if ($cells !== '') {
+                $rows .= "<tr>{$cells}</tr>";
+            }
+        }
+
+        return $rows === '' ? '' : "<table><tbody>{$rows}</tbody></table>";
     }
 
     /**
@@ -308,7 +351,8 @@ class DocxImporter
                 't' => $text .= e($node->textContent),
                 'tab' => $text .= ' ',
                 'noBreakHyphen' => $text .= '-',
-                'br', 'cr' => $text .= $this->attr($node, 'type') === 'page' ? '' : '<br>',
+                // Faz G2: Word'deki sayfa sonu editörde de "Sayfa Sonu" (paragrafı böler, bkz. paragraph()).
+                'br', 'cr' => $this->attr($node, 'type') === 'page' ? $footnotes .= "\x01PB\x01" : $text .= '<br>',
                 'footnoteReference' => $footnotes .= $this->footnoteMarker($this->footnotes[$this->attr($node, 'id')] ?? null),
                 'endnoteReference' => $footnotes .= $this->footnoteMarker($this->endnotes[$this->attr($node, 'id')] ?? null),
                 // Görsel: modern çizim (w:drawing) ya da eski VML (w:pict).
@@ -340,8 +384,9 @@ class DocxImporter
     }
 
     /**
-     * Word görselini gömülü belgeye çevirip yerine kar tanesi işareti koyar. Sadece içeriği
-     * gerçekten PNG/JPG olanlar (getimagesizefromstring); EMF/WMF/GIF vb. atlanır.
+     * Word görselini kaydedip yerinde metin içi görsel yapar (Faz G2; önceden kar taneli belge).
+     * Sadece içeriği gerçekten PNG/JPG olanlar (getimagesizefromstring); EMF/WMF/GIF vb. atlanır.
+     * Dönen işaret paragrafı böler (görsel blok düzeyinde) — bkz. paragraph().
      */
     private function image(DOMElement $node): string
     {
@@ -372,8 +417,9 @@ class DocxImporter
         }
 
         $properties = $node->getElementsByTagNameNS(self::WP, 'docPr')->item(0);
-        $title = trim((string) ($properties?->getAttribute('descr') ?: $properties?->getAttribute('title')));
-        $title = mb_substr($title !== '' ? $title : 'Görsel '.($this->importedImages + 1), 0, 200);
+        // Alternatif metin varsa görselin alt yazısı olur.
+        $caption = mb_substr(trim((string) ($properties?->getAttribute('descr') ?: $properties?->getAttribute('title'))), 0, 200);
+        $title = $caption !== '' ? $caption : 'Görsel '.($this->importedImages + 1);
 
         $id = ($this->imageHandler)($contents, $mime, basename($path), $title);
         if (! $id) {
@@ -384,7 +430,7 @@ class DocxImporter
 
         $this->importedImages++;
 
-        return '<span data-document="'.(int) $id.'"></span>';
+        return "\x01FIG:".(int) $id.':'.base64_encode($caption)."\x01";
     }
 
     private function footnoteMarker(?string $text): string
@@ -521,14 +567,13 @@ class DocxImporter
     }
 
     /**
-     * Blokları HTML'e çevirir. Başlıklar göreli eşleniyor: içerikteki en üst düzey başlık
-     * h2, bir altı h3, geri kalanı h4 (sayfanın h1'i bölüm/makale başlığı).
+     * Blokları HTML'e çevirir. Başlıklar Word'deki düzeyiyle (Başlık 1 → h1 … Başlık 4 ve
+     * altı → h4) — Faz G2; önceden göreli eşleniyor, en üst başlık h2 oluyordu.
      *
      * @param  list<array<string, mixed>>  $blocks
      */
     private function toHtml(array $blocks): string
     {
-        $levels = collect($blocks)->where('type', 'heading')->pluck('level')->unique()->sort()->values();
         $html = '';
         $openList = null;
 
@@ -548,14 +593,16 @@ class DocxImporter
                 continue;
             }
 
-            $html .= match ($block['type']) {
-                'heading' => (function () use ($block, $levels) {
-                    $tag = 'h'.min(4, 2 + $levels->search($block['level']));
+            $align = ! empty($block['align']) ? ' data-align="'.$block['align'].'"' : '';
 
-                    return "<{$tag}>{$block['html']}</{$tag}>";
-                })(),
-                'quote' => "<blockquote><p>{$block['html']}</p></blockquote>",
-                default => "<p>{$block['html']}</p>",
+            $html .= match ($block['type']) {
+                'heading' => '<h'.min(4, max(1, $block['level'])).$align.'>'.$block['html'].'</h'.min(4, max(1, $block['level'])).'>',
+                'quote' => "<blockquote><p{$align}>{$block['html']}</p></blockquote>",
+                'table' => $block['html'],
+                'pagebreak' => '<hr data-page-break="true">',
+                'figure' => '<figure data-image="'.$block['id'].'" data-caption="'.e($block['caption']).'"></figure>',
+                'title' => '',
+                default => "<p{$align}>{$block['html']}</p>",
             };
         }
 

@@ -62,7 +62,7 @@ class EditorAuthorshipTest extends TestCase
         $this->actingAs($editor)->post(route('panel.yayinlarim.taslaklarim.store'), [
             'type' => 'makale',
             'title' => 'Editörün Yazısı',
-            'body' => '<p>Metin</p>',
+            'page_ratio' => '21x27.5',
             'magazine_issue_id' => $ownIssue->id,
         ])->assertSessionHasNoErrors();
 
@@ -77,7 +77,7 @@ class EditorAuthorshipTest extends TestCase
         $this->actingAs($editor)->post(route('panel.yayinlarim.taslaklarim.store'), [
             'type' => 'makale',
             'title' => 'Yanlış Dergi',
-            'body' => '<p>Metin</p>',
+            'page_ratio' => '21x27.5',
             'magazine_issue_id' => $foreignIssue->id,
         ])->assertSessionHasErrors('magazine_issue_id');
 
@@ -87,7 +87,7 @@ class EditorAuthorshipTest extends TestCase
         $this->actingAs($editor)->post(route('panel.yayinlarim.taslaklarim.store'), [
             'type' => 'makale',
             'title' => 'Atandığı Dergi',
-            'body' => '<p>Metin</p>',
+            'page_ratio' => '21x27.5',
             'magazine_issue_id' => $foreignIssue->id,
         ])->assertSessionHasNoErrors();
     }
@@ -99,7 +99,7 @@ class EditorAuthorshipTest extends TestCase
         $this->actingAs($editor)->post(route('panel.yayinlarim.taslaklarim.store'), [
             'type' => 'kitap',
             'title' => 'Editörün Kitabı',
-            'body' => 'Açıklama',
+            'page_ratio' => '13x20',
         ])->assertSessionHasNoErrors();
 
         $this->assertSame($editor->id, Book::where('title', 'Editörün Kitabı')->value('author_id'));

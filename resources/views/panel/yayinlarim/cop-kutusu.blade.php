@@ -13,11 +13,6 @@
         <p class="text-sm text-slate-600 mt-1">Sildiğiniz taslaklar burada saklanır. Geri alabilir ya da kalıcı olarak silebilirsiniz.</p>
     </div>
 
-    @if (session('status'))
-        <div class="mb-5 bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm rounded-md px-4 py-2.5">
-            {{ session('status') }}
-        </div>
-    @endif
 
     @if ($items->isEmpty())
         <div class="card p-12 text-center text-slate-500">

@@ -12,11 +12,6 @@
         @include('panel.yayinlarim._yeni-yayin-modal')
     </div>
 
-    @if (session('status'))
-        <div class="mb-5 bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm rounded-md px-4 py-2.5">
-            {{ session('status') }}
-        </div>
-    @endif
 
     {{-- Sekmeler ve arama çok genişte tek satır, daha darda iki satır (arama ezilmesin). --}}
     <div class="flex flex-col 2xl:flex-row 2xl:items-center gap-3 mb-5">

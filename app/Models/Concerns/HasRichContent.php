@@ -27,7 +27,18 @@ trait HasRichContent
     /** Okuma sayfası HTML'i (dipnotlar numaralı, gömülü belgeler kar tanesi ikonu). */
     public function renderedContent(): string
     {
-        return RichText::render($this->content, $this->footnotePrefix(), $this->contentDocuments());
+        return RichText::render($this->content, $this->footnotePrefix(), $this->contentDocuments(), $this->renderContext());
+    }
+
+    /**
+     * Eser geneli bağlam (Faz G2): başlık numaraları, içindekiler, kaynak numaraları —
+     * bkz. WorkOutline. Varsayılan boş (içerik kendi başına render edilir).
+     *
+     * @return array<string, mixed>
+     */
+    protected function renderContext(): array
+    {
+        return [];
     }
 
     /**

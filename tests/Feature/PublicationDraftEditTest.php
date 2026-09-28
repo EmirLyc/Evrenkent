@@ -39,10 +39,10 @@ class PublicationDraftEditTest extends TestCase
         $this->actingAs($author)
             ->put(route('panel.yayinlarim.kitap.guncelle', $book), [
                 'title' => 'Yeni Başlık',
-                'body' => 'Güncellenmiş açıklama.',
+                'page_ratio' => '13x20',
                 'price' => 149.90,
             ])
-            ->assertRedirect(route('panel.yayinlarim.taslaklarim', ['durum' => 'taslak']));
+            ->assertRedirect(route('panel.yayinlarim.kitap.duzenle', [$book, 'bilgiler']));
 
         $book->refresh();
         $this->assertSame('Yeni Başlık', $book->title);
@@ -55,17 +55,16 @@ class PublicationDraftEditTest extends TestCase
         $book = Book::factory()->for($author, 'author')->create(['status' => ContentStatus::Taslak]);
 
         $this->actingAs($author)
-            ->put(route('panel.yayinlarim.kitap.guncelle', $book), [
-                'title' => $book->title,
-                'body' => $book->description,
-                'page_count' => 220,
-                'source_count' => 15,
+            ->post(route('panel.yayinlarim.kitap.kapak', $book), [
+                'description' => 'Tanıtım',
+                'map_count' => 3,
+                'author_note_count' => 15,
             ])
             ->assertRedirect();
 
         $book->refresh();
-        $this->assertSame(220, $book->page_count);
-        $this->assertSame(15, $book->source_count);
+        $this->assertSame(3, $book->map_count);
+        $this->assertSame(15, $book->author_note_count);
         $this->assertNull($book->document_count);
     }
 
@@ -78,7 +77,7 @@ class PublicationDraftEditTest extends TestCase
         $this->actingAs($author)
             ->put(route('panel.yayinlarim.kitap.guncelle', $book), [
                 'title' => $book->title,
-                'body' => $book->description,
+                'page_ratio' => '13x20',
                 'scheduled_publish_at' => $target->format('Y-m-d\TH:i'),
             ])
             ->assertRedirect();
@@ -94,7 +93,7 @@ class PublicationDraftEditTest extends TestCase
         $this->actingAs($author)
             ->put(route('panel.yayinlarim.kitap.guncelle', $book), [
                 'title' => $book->title,
-                'body' => $book->description,
+                'page_ratio' => '13x20',
                 'scheduled_publish_at' => now()->subDay()->format('Y-m-d\TH:i'),
             ])
             ->assertSessionHasErrors('scheduled_publish_at');
@@ -112,7 +111,7 @@ class PublicationDraftEditTest extends TestCase
         $this->actingAs($author)
             ->put(route('panel.yayinlarim.kitap.guncelle', $book), [
                 'title' => $book->title,
-                'body' => $book->description,
+                'page_ratio' => '13x20',
                 'categories' => [$roman->id, $siir->id],
             ])
             ->assertRedirect();
@@ -199,10 +198,10 @@ class PublicationDraftEditTest extends TestCase
         $this->actingAs($author)
             ->put(route('panel.yayinlarim.makale.guncelle', $article), [
                 'title' => 'Yeni Makale',
-                'body' => 'Güncellenmiş içerik.',
+                'page_ratio' => '21x27.5',
                 'magazine_issue_id' => $issue->id,
             ])
-            ->assertRedirect(route('panel.yayinlarim.taslaklarim', ['durum' => 'taslak']));
+            ->assertRedirect(route('panel.yayinlarim.makale.duzenle', [$article, 'bilgiler']));
 
         $article->refresh();
         $this->assertSame('Yeni Makale', $article->title);

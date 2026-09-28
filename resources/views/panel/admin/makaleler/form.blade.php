@@ -66,11 +66,18 @@
             </div>
 
             <div>
-                {{-- Yazar panelindeki editörün aynısı; makalenin yüklenmiş belgeleri kar tanesiyle eklenebilir. --}}
-                <x-rich-editor
+                {{-- Yazar panelindeki editörün aynısı (Faz G2) — eski editör yeni öğeleri (tablo, kaynak,
+                     yazı tipi…) tanımadığı için Süper Admin kaydedince siliniyordu. Makalenin yüklenmiş
+                     belgeleri ve görselleri eklenebilir; yükleme yazarın editöründe. --}}
+                <div class="block text-sm font-medium text-slate-700 mb-1">İçerik</div>
+                <x-work-editor
+                    mode="form"
                     name="body"
                     :value="old('body', $article?->content)"
-                    :documents="$article?->documents"
+                    :documents="$article?->documents->where('kind', \App\Models\Document::KIND_BELGE) ?? []"
+                    :images="$article?->documents->where('kind', \App\Models\Document::KIND_GORSEL) ?? []"
+                    :ratio="old('page_ratio', $article?->page_ratio ?? '21x27.5')"
+                    :numbering="$article?->heading_numbering ?? true"
                 />
                 @if ($article)
                     <p class="text-xs text-slate-400 mt-1">Belgeler ({{ $article->documents->count() }}) yazarın Belgeler sayfasından yüklenir.</p>

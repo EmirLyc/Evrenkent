@@ -36,9 +36,11 @@ class BookPricingTest extends TestCase
             ->assertDontSee('name="price"', false)
             ->assertSee('Süper Admin tarafından belirlenir');
 
-        $this->actingAs($author)->get(route('panel.yayinlarim.kitap.duzenle', $book))
-            ->assertOk()
-            ->assertDontSee('name="price"', false);
+        foreach (['bilgiler', 'icerik', 'kapak', 'gonder'] as $step) {
+            $this->actingAs($author)->get(route('panel.yayinlarim.kitap.duzenle', [$book, $step]))
+                ->assertOk()
+                ->assertDontSee('name="price"', false);
+        }
     }
 
     public function test_a_price_sent_by_the_author_is_ignored(): void
@@ -48,7 +50,7 @@ class BookPricingTest extends TestCase
 
         $this->actingAs($author)->put(route('panel.yayinlarim.kitap.guncelle', $book), [
             'title' => $book->title,
-            'body' => 'Açıklama',
+            'page_ratio' => '13x20',
             'price' => 999,
         ])->assertRedirect();
 
@@ -57,7 +59,7 @@ class BookPricingTest extends TestCase
         $this->actingAs($author)->post(route('panel.yayinlarim.taslaklarim.store'), [
             'type' => 'kitap',
             'title' => 'Yeni Kitap',
-            'body' => 'Açıklama',
+            'page_ratio' => '13x20',
             'price' => 555,
         ])->assertRedirect();
 

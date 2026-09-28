@@ -6,6 +6,7 @@ use App\Enums\ContentStatus;
 use App\Models\Concerns\HasDocuments;
 use App\Models\Concerns\HasRichContent;
 use App\Models\Concerns\IsPublication;
+use App\Support\WorkOutline;
 use Database\Factories\ArticleFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -30,14 +31,20 @@ class Article extends Model
         return $this->documents;
     }
 
+    protected function renderContext(): array
+    {
+        return WorkOutline::for($this)->articleContext();
+    }
+
     protected $fillable = [
-        'author_id', 'magazine_issue_id', 'title', 'slug',
-        'content', 'status', 'published_at', 'scheduled_publish_at',
+        'author_id', 'magazine_issue_id', 'title', 'subtitle', 'slug', 'description', 'cover_image',
+        'content', 'status', 'published_at', 'scheduled_publish_at', 'page_ratio', 'heading_numbering',
     ];
 
     protected function casts(): array
     {
         return [
+            'heading_numbering' => 'boolean',
             'status' => ContentStatus::class,
             'published_at' => 'datetime',
             'scheduled_publish_at' => 'datetime',

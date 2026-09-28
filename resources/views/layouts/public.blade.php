@@ -129,13 +129,18 @@
                     {{-- Yatayda bilerek padding yok: aktif menü öğesinin sol vurgu çizgisi
                          sidebar'ın gerçek kenarına yapışsın istiyoruz (bkz. x-panel-nav içindeki
                          border-l-4 + mr-5 deseni), o yüzden boşluk her linkin kendi içinde. --}}
-                    <div class="w-72 py-5">
-                        <x-panel-nav />
+                    <div class="w-72 py-5 h-full">
+                        {{-- Sayfa kendi kenar çubuğunu verebilir (Faz G2: Yeni Yayın editörünün adımları). --}}
+                        @hasSection('sidebar')
+                            @yield('sidebar')
+                        @else
+                            <x-panel-nav />
+                        @endif
                     </div>
                 </aside>
 
                 <div class="flex-1 min-w-0 flex flex-col">
-                    <main class="flex-1 max-w-6xl mx-auto px-6 py-10 w-full">
+                    <main class="flex-1 @yield('main_width', 'max-w-6xl') mx-auto @yield('main_padding', 'px-6 py-10') w-full">
                         @if (session('status'))
                             <div class="mb-6 bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm rounded-md px-4 py-2.5">
                                 {{ session('status') }}

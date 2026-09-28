@@ -38,7 +38,7 @@ class Book extends Model
     }
 
     protected $fillable = [
-        'author_id', 'title', 'slug', 'description',
+        'author_id', 'title', 'subtitle', 'slug', 'description', 'page_ratio', 'heading_numbering',
         'cover_image', 'price', 'discount_price', 'discount_ends_at', 'status',
         'is_editors_pick', 'published_at', 'scheduled_publish_at',
         'average_rating', 'review_count',
@@ -56,6 +56,7 @@ class Book extends Model
             'discount_price' => 'decimal:2',
             'discount_ends_at' => 'datetime',
             'is_editors_pick' => 'boolean',
+            'heading_numbering' => 'boolean',
             'average_rating' => 'decimal:2',
             'review_count' => 'integer',
             'page_count' => 'integer',

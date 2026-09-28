@@ -68,16 +68,21 @@ class ContentCountsTest extends TestCase
         $author->assignRole('yazar');
         $book = Book::factory()->for($author, 'author')->create(['status' => ContentStatus::Taslak]);
 
-        $this->actingAs($author)->put(route('panel.yayinlarim.kitap.guncelle', $book), [
-            'title' => $book->title,
-            'body' => 'Açıklama',
+        // Faz G2: sayfa ve kaynak sayısı da otomatik (editördeki sayfa hesabı, tekil kaynaklar);
+        // "Kapak ve Tanıtım" adımında sadece harita ve yazar notu elle giriliyor.
+        $this->actingAs($author)->post(route('panel.yayinlarim.kitap.kapak', $book), [
+            'description' => 'Açıklama',
+            'map_count' => 4,
             'page_count' => 120,
+            'source_count' => 50,
             'document_count' => 99,
             'video_count' => 99,
         ])->assertSessionHasNoErrors();
 
         $book->refresh();
-        $this->assertSame(120, $book->page_count);
+        $this->assertSame(4, $book->map_count);
+        $this->assertNull($book->page_count);
+        $this->assertNull($book->source_count);
         $this->assertNull($book->document_count);
         $this->assertNull($book->video_count);
     }

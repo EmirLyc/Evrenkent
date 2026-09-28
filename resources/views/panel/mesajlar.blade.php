@@ -29,9 +29,6 @@
             <x-author-status-badge :item="$item" />
         </div>
 
-        @if (session('status'))
-            <div class="mb-4 bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm rounded-md px-4 py-2.5">{{ session('status') }}</div>
-        @endif
 
         <div class="card p-4 sm:p-5">
             @if ($timeline->isEmpty())

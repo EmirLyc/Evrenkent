@@ -6,6 +6,7 @@ use App\Models\Article;
 use App\Models\Book;
 use App\Models\Document;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -29,20 +30,20 @@ class DocumentController extends Controller
 {
     public function bookIndex(Book $book): View
     {
-        return $this->index($book, route('panel.yayinlarim.kitap.bolumler', $book), 'Bölümlere dön');
+        return $this->index($book, route('panel.yayinlarim.kitap.duzenle', $book), 'Editöre dön');
     }
 
     public function articleIndex(Article $article): View
     {
-        return $this->index($article, route('panel.yayinlarim.makale.duzenle', $article), 'Makaleye dön');
+        return $this->index($article, route('panel.yayinlarim.makale.duzenle', $article), 'Editöre dön');
     }
 
-    public function bookStore(Request $request, Book $book): RedirectResponse
+    public function bookStore(Request $request, Book $book): RedirectResponse|JsonResponse
     {
         return $this->store($request, $book);
     }
 
-    public function articleStore(Request $request, Article $article): RedirectResponse
+    public function articleStore(Request $request, Article $article): RedirectResponse|JsonResponse
     {
         return $this->store($request, $article);
     }
@@ -86,7 +87,8 @@ class DocumentController extends Controller
     {
         $this->authorize('update', $owner);
 
-        $documents = $owner->documents()->get()->each(fn (Document $document) => $document->setAttribute('usage_count', $document->usageCount()));
+        // Metin içi görseller ("Ekle → Görsel", Faz G2) editörde yönetiliyor; burada sadece kar taneli belgeler.
+        $documents = $owner->documents()->belge()->get()->each(fn (Document $document) => $document->setAttribute('usage_count', $document->usageCount()));
 
         return view('panel.yayinlarim.belgeler', [
             'owner' => $owner,
@@ -99,7 +101,11 @@ class DocumentController extends Controller
         ]);
     }
 
-    private function store(Request $request, Model $owner): RedirectResponse
+    /**
+     * Belgeler sayfasından ya da editördeki "Ekle → Belge" panelinden (Faz G2, JSON — editör
+     * sayfadan ayrılmadan yükleyip hemen kar tanesiyle ekleyebilsin).
+     */
+    private function store(Request $request, Model $owner): RedirectResponse|JsonResponse
     {
         $this->authorize('update', $owner);
 
@@ -117,7 +123,8 @@ class DocumentController extends Controller
         $mime = $file->getMimeType();
         $path = $file->store('documents', config('filesystems.documents_disk'));
 
-        $owner->documents()->create([
+        $document = $owner->documents()->create([
+            'kind' => Document::KIND_BELGE,
             'uploaded_by' => $request->user()->id,
             'title' => $data['title'],
             'date_label' => $data['date_label'] ?? null,
@@ -128,6 +135,10 @@ class DocumentController extends Controller
             'size' => $file->getSize(),
             'original_name' => mb_substr($file->getClientOriginalName(), 0, 255),
         ]);
+
+        if ($request->wantsJson()) {
+            return response()->json(['id' => $document->id, 'caption' => $document->caption()], 201);
+        }
 
         return back()->with('status', 'Belge yüklendi. Metne eklemek için editördeki kar tanesi düğmesini kullanın.');
     }

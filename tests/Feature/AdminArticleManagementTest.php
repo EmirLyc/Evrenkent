@@ -111,8 +111,8 @@ class AdminArticleManagementTest extends TestCase
 
         $this->actingAs($this->user('super_admin'))->get(route('panel.adminpanel.makaleler.duzenle', $article))
             ->assertOk()
-            ->assertSee('richEditor', false)
-            ->assertSee('Belge ekle (kar tanesi)')
+            ->assertSee('workEditor', false)
+            ->assertSee('Kaynak No.')
             ->assertSee('Ek Harita')
             ->assertDontSee('Belge yükle / yönet');
     }

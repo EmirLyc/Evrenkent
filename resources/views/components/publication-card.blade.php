@@ -55,6 +55,9 @@
         <div class="w-full h-full overflow-hidden {{ $list ? 'rounded-l-lg' : 'rounded-md' }}">
         @if ($isBook)
             <x-book-cover :book="$item" class="w-full h-full" icon-class="w-8 h-8" />
+        @elseif ($item->cover_image)
+            {{-- Faz G2: dergi yazısının kendi kapağı ("Kapak ve Tanıtım" adımı). --}}
+            <img src="{{ \Illuminate\Support\Facades\Storage::disk(config('filesystems.covers_disk'))->url($item->cover_image) }}" alt="{{ $item->title }}" class="w-full h-full object-cover">
         @elseif ($item->magazineIssue)
             <x-magazine-cover :issue="$item->magazineIssue" class="w-full h-full" />
         @else
@@ -80,9 +83,6 @@
                 @endcan
                 @can('update', $item)
                     <a href="{{ $routes['edit'] }}" class="flex items-center gap-2 px-3 py-2 text-slate-700 hover:bg-slate-50"><x-heroicon-o-pencil class="w-4 h-4" /> Düzenle</a>
-                    @if ($isBook)
-                        <a href="{{ route('panel.yayinlarim.kitap.bolumler', $item) }}" class="flex items-center gap-2 px-3 py-2 text-slate-700 hover:bg-slate-50"><x-heroicon-o-queue-list class="w-4 h-4" /> Bölümler</a>
-                    @endif
                     <a href="{{ $routes['documents'] }}" class="flex items-center gap-2 px-3 py-2 text-slate-700 hover:bg-slate-50"><x-snowflake-icon class="w-4 h-4" /> Belgeler</a>
                 @endcan
                 <a href="{{ $routes['preview'] }}" class="flex items-center gap-2 px-3 py-2 text-slate-700 hover:bg-slate-50"><x-heroicon-o-eye class="w-4 h-4" /> Önizle</a>

@@ -59,7 +59,7 @@ class ArticleMagazineIssueAssignmentTest extends TestCase
         $this->actingAs($author)->post(route('panel.yayinlarim.taslaklarim.store'), [
             'type' => 'makale',
             'title' => 'Sızma Makalesi',
-            'body' => 'İçerik.',
+            'page_ratio' => '21x27.5',
             'magazine_issue_id' => $foreignIssue->id,
         ])->assertSessionHasErrors('magazine_issue_id');
 
@@ -74,7 +74,7 @@ class ArticleMagazineIssueAssignmentTest extends TestCase
             ->post(route('panel.yayinlarim.taslaklarim.store'), [
                 'type' => 'makale',
                 'title' => 'Yeni Makale',
-                'body' => 'İçerik.',
+                'page_ratio' => '21x27.5',
             ])
             ->assertSessionHasErrors('magazine_issue_id');
 
@@ -90,9 +90,9 @@ class ArticleMagazineIssueAssignmentTest extends TestCase
         $this->actingAs($author)->post(route('panel.yayinlarim.taslaklarim.store'), [
             'type' => 'makale',
             'title' => 'Yeni Makale',
-            'body' => 'İçerik.',
+            'page_ratio' => '21x27.5',
             'magazine_issue_id' => $issue->id,
-        ])->assertRedirect(route('panel.yayinlarim.taslaklarim'));
+        ])->assertSessionHasNoErrors();
 
         $article = Article::where('title', 'Yeni Makale')->firstOrFail();
         $this->assertSame($issue->id, $article->magazine_issue_id);
@@ -105,9 +105,9 @@ class ArticleMagazineIssueAssignmentTest extends TestCase
         $this->actingAs($author)->post(route('panel.yayinlarim.taslaklarim.store'), [
             'type' => 'kitap',
             'title' => 'Yeni Kitap',
-            'body' => 'Açıklama.',
+            'page_ratio' => '13x20',
             'price' => 10,
-        ])->assertRedirect(route('panel.yayinlarim.taslaklarim'));
+        ])->assertSessionHasNoErrors();
 
         $this->assertDatabaseHas('books', ['title' => 'Yeni Kitap']);
     }
@@ -147,7 +147,7 @@ class ArticleMagazineIssueAssignmentTest extends TestCase
 
         $this->actingAs($author)->put(route('panel.yayinlarim.makale.guncelle', $article), [
             'title' => $article->title,
-            'body' => $article->content,
+            'page_ratio' => '21x27.5',
             'magazine_issue_id' => $newIssue->id,
         ]);
 

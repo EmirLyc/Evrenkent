@@ -10,12 +10,10 @@ use App\Http\Controllers\AdminPremiumController;
 use App\Http\Controllers\AdminRejectedController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\CartController;
-use App\Http\Controllers\ChapterController;
 use App\Http\Controllers\ContentApprovalController;
 use App\Http\Controllers\ContentMessageController;
 use App\Http\Controllers\DergiYonetimiController;
 use App\Http\Controllers\DocumentController;
-use App\Http\Controllers\DocxImportController;
 use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\NoteController;
 use App\Http\Controllers\NotificationController;
@@ -25,6 +23,8 @@ use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\ReadingListController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\SuperAdminController;
+use App\Http\Controllers\WorkController;
+use App\Models\Book;
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
 
@@ -79,19 +79,28 @@ Route::middleware('auth')->prefix('panel')->as('panel.')->group(function () {
     Route::middleware('role:'.implode('|', User::AUTHOR_ROLES))->prefix('yayinlarim')->as('yayinlarim.')->group(function () {
         Route::get('/', [PublicationController::class, 'index'])->name('index');
         Route::get('/taslaklarim', [PublicationController::class, 'taslaklarim'])->name('taslaklarim');
-        Route::get('/taslaklarim/yeni', [PublicationController::class, 'yeniTaslakForm'])->name('taslaklarim.yeni');
-        Route::post('/taslaklarim', [PublicationController::class, 'storeTaslak'])->name('taslaklarim.store');
+        // Faz G2: Yeni Yayın sayfası (4 adım) — bkz. WorkController.
+        Route::get('/taslaklarim/yeni', [WorkController::class, 'create'])->name('taslaklarim.yeni');
+        Route::post('/taslaklarim', [WorkController::class, 'store'])->name('taslaklarim.store');
         Route::get('/gonderilenler', [PublicationController::class, 'gonderilenler'])->name('gonderilenler');
         Route::get('/geri-donenler', [PublicationController::class, 'geriDonenler'])->name('geri-donenler');
         Route::get('/yayinlananlar', [PublicationController::class, 'yayinlananlar'])->name('yayinlananlar');
         Route::get('/istatistiklerim', [PublicationController::class, 'istatistiklerim'])->name('istatistiklerim');
         Route::post('/kitap/{book}/gonder', [PublicationController::class, 'submitBook'])->name('kitap.gonder');
         Route::post('/makale/{article}/gonder', [PublicationController::class, 'submitArticle'])->name('makale.gonder');
-        Route::get('/kitap/{book}/duzenle', [PublicationController::class, 'editBook'])->name('kitap.duzenle');
-        Route::put('/kitap/{book}', [PublicationController::class, 'updateBook'])->name('kitap.guncelle');
+        Route::get('/kitap/{book}/duzenle/{adim?}', [WorkController::class, 'editBook'])->name('kitap.duzenle');
+        Route::put('/kitap/{book}', [WorkController::class, 'updateBook'])->name('kitap.guncelle');
+        Route::put('/kitap/{book}/icerik', [WorkController::class, 'saveBookContent'])->name('kitap.icerik');
+        Route::post('/kitap/{book}/kapak', [WorkController::class, 'updateBookCover'])->name('kitap.kapak');
+        Route::post('/kitap/{book}/gorsel', [WorkController::class, 'uploadBookImage'])->name('kitap.gorsel');
+        Route::post('/kitap/{book}/aktar', [WorkController::class, 'importBook'])->name('kitap.aktar');
         Route::delete('/kitap/{book}', [PublicationController::class, 'destroyBook'])->name('kitap.sil');
-        Route::get('/makale/{article}/duzenle', [PublicationController::class, 'editArticle'])->name('makale.duzenle');
-        Route::put('/makale/{article}', [PublicationController::class, 'updateArticle'])->name('makale.guncelle');
+        Route::get('/makale/{article}/duzenle/{adim?}', [WorkController::class, 'editArticle'])->name('makale.duzenle');
+        Route::put('/makale/{article}', [WorkController::class, 'updateArticle'])->name('makale.guncelle');
+        Route::put('/makale/{article}/icerik', [WorkController::class, 'saveArticleContent'])->name('makale.icerik');
+        Route::post('/makale/{article}/kapak', [WorkController::class, 'updateArticleCover'])->name('makale.kapak');
+        Route::post('/makale/{article}/gorsel', [WorkController::class, 'uploadArticleImage'])->name('makale.gorsel');
+        Route::post('/makale/{article}/aktar', [WorkController::class, 'importArticle'])->name('makale.aktar');
         Route::delete('/makale/{article}', [PublicationController::class, 'destroyArticle'])->name('makale.sil');
 
         // Faz G1: Gönderimi Gör / Detayları Gör / Yayın Sürecini Takip Et + iki kademeli silme (çöp kutusu).
@@ -103,16 +112,8 @@ Route::middleware('auth')->prefix('panel')->as('panel.')->group(function () {
         Route::post('/cop-kutusu/makale/{article}', [PublicationController::class, 'restoreArticle'])->name('makale.geri-al')->withTrashed();
         Route::delete('/cop-kutusu/makale/{article}', [PublicationController::class, 'forceDeleteArticle'])->name('makale.kalici-sil')->withTrashed();
 
-        Route::get('/kitap/{book}/bolumler', [ChapterController::class, 'index'])->name('kitap.bolumler');
-        Route::get('/kitap/{book}/bolumler/yeni', [ChapterController::class, 'create'])->name('kitap.bolumler.yeni');
-        Route::post('/kitap/{book}/bolumler', [ChapterController::class, 'store'])->name('kitap.bolumler.store');
-        Route::get('/kitap/{book}/bolumler/{chapter}/duzenle', [ChapterController::class, 'edit'])->name('kitap.bolumler.duzenle');
-        Route::put('/kitap/{book}/bolumler/{chapter}', [ChapterController::class, 'update'])->name('kitap.bolumler.guncelle');
-        Route::delete('/kitap/{book}/bolumler/{chapter}', [ChapterController::class, 'destroy'])->name('kitap.bolumler.sil');
-
-        // Faz F1: Word'den aktarma — editöre önizleme (kaydetmez) ve kitabı bölümlere ayırarak ekleme.
-        Route::post('/word-aktar', [DocxImportController::class, 'preview'])->name('word-aktar');
-        Route::post('/kitap/{book}/bolumler/word-aktar', [DocxImportController::class, 'chapters'])->name('kitap.bolumler.word-aktar');
+        // Faz G2: kitap editörde tek belge — eski "Bölümler" sayfası editöre yönleniyor.
+        Route::get('/kitap/{book}/bolumler', fn (Book $book) => redirect()->route('panel.yayinlarim.kitap.duzenle', [$book, 'icerik']))->name('kitap.bolumler');
 
         // Faz F2: metne gömülü belgeler (PDF/görsel) — kitabın ve makalenin Belgeler sayfası.
         Route::get('/kitap/{book}/belgeler', [DocumentController::class, 'bookIndex'])->name('kitap.belgeler');

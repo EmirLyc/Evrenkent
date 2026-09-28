@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\HasRichContent;
+use App\Support\WorkOutline;
 use Database\Factories\ChapterFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -17,8 +18,19 @@ class Chapter extends Model
     use HasRichContent;
 
     protected $fillable = [
-        'book_id', 'title', 'content', 'order',
+        'book_id', 'title', 'content', 'order', 'is_preface',
     ];
+
+    protected function casts(): array
+    {
+        return ['is_preface' => 'boolean'];
+    }
+
+    /** Bölüm, kitabın bütünü içinde render edilir (numara, içindekiler, kaynaklar — Faz G2). */
+    protected function renderContext(): array
+    {
+        return WorkOutline::for($this->book)->contextFor($this);
+    }
 
     /** Kitabın belge/video sayısı metinden hesaplanıyor (Book::refreshContentCounts). */
     protected static function booted(): void

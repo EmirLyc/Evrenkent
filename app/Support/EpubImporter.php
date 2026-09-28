@@ -47,6 +47,21 @@ class EpubImporter
     }
 
     /**
+     * Editör için tek belge (Faz G2): her bölüm bir "Başlık 1" + metni. Başlıksız bölüm
+     * (baştaki önsöz) başlıksız kalır.
+     *
+     * @return array{title: null, html: string}
+     */
+    public function importDocument(string $path): array
+    {
+        $html = collect($this->importChapters($path))
+            ->map(fn ($chapter) => ($chapter['title'] !== null ? '<h1>'.e($chapter['title']).'</h1>' : '').$chapter['html'])
+            ->implode('');
+
+        return ['title' => null, 'html' => $html];
+    }
+
+    /**
      * @return list<array{title: ?string, html: string}>
      */
     public function importChapters(string $path): array
@@ -225,17 +240,39 @@ class EpubImporter
             return null;
         }
 
-        // 4) Görseller → gömülü belge ya da atla.
+        // Bölüm başlığı dışındaki h1'ler alt başlık olur — editörde her Başlık 1 yeni bölüm (Faz G2).
+        foreach (iterator_to_array($xpath->query('//body//h1')) as $h1) {
+            /** @var DOMElement $h1 */
+            $h2 = $dom->createElement('h2');
+            while ($h1->firstChild) {
+                $h2->appendChild($h1->firstChild);
+            }
+            $h1->parentNode->replaceChild($h2, $h1);
+        }
+
+        // 4) Görseller → metin içi görsel (Faz G2; blok düzeyinde, içinde bulunduğu paragrafın
+        //    hemen arkasına) ya da atla.
         foreach (iterator_to_array($dom->getElementsByTagName('img')) as $img) {
             /** @var DOMElement $img */
             $id = $this->storeImage($zip, $file, $img);
-            if ($id) {
-                $marker = $dom->createElement('span');
-                $marker->setAttribute('data-document', (string) $id);
-                $img->parentNode->replaceChild($marker, $img);
-            } else {
+            if (! $id) {
                 $img->parentNode->removeChild($img);
+
+                continue;
             }
+
+            $figure = $dom->createElement('figure');
+            $figure->setAttribute('data-image', (string) $id);
+            $figure->setAttribute('data-caption', mb_substr(trim($img->getAttribute('alt')), 0, 200));
+
+            $block = $img;
+            while ($block->parentNode instanceof DOMElement && ! in_array(strtolower($block->parentNode->nodeName), ['body', 'section', 'div', 'article'], true)) {
+                $block = $block->parentNode;
+            }
+            $img->parentNode->removeChild($img);
+            $block === $img
+                ? $body->appendChild($figure)
+                : $block->parentNode->insertBefore($figure, $block->nextSibling);
         }
 
         $html = '';
