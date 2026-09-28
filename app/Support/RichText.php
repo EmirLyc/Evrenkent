@@ -32,12 +32,14 @@ class RichText
      * Metinde sadece anahtar saklanır (<span data-font="georgia">); bilinmeyen anahtar atılır.
      */
     public const FONTS = [
-        'georgia' => ['Georgia', "Georgia, 'Times New Roman', serif"],
-        'times' => ['Times New Roman', "'Times New Roman', Times, serif"],
+        // Georgia / Times / Arial'ın yanında aynı ölçülerde açık yazı tipleri (Gelasio, Tinos, Arimo):
+        // sistemde olmayan cihazda dizgi ve sayfa sayısı değişmesin (Faz G4).
+        'georgia' => ['Georgia', "Georgia, Gelasio, 'Times New Roman', serif"],
+        'times' => ['Times New Roman', "'Times New Roman', Tinos, Times, serif"],
         'palatino' => ['Palatino', "'Palatino Linotype', Palatino, 'Book Antiqua', serif"],
         'garamond' => ['Garamond', "'EB Garamond', Garamond, serif"],
-        'arial' => ['Arial', 'Arial, Helvetica, sans-serif'],
-        'helvetica' => ['Helvetica', 'Helvetica, Arial, sans-serif'],
+        'arial' => ['Arial', 'Arial, Arimo, Helvetica, sans-serif'],
+        'helvetica' => ['Helvetica', 'Helvetica, Arial, Arimo, sans-serif'],
         'lato' => ['Lato', 'Lato, sans-serif'],
         'source-serif' => ['Source Serif', "'Source Serif 4', 'Source Serif Pro', serif"],
         // "Daha fazla yazı tipi…"
@@ -54,7 +56,7 @@ class RichText
     public const DEFAULT_SIZE = 16;
 
     /** Web yazı tipleri (Bunny Fonts) — sistemde olmayanlar; editörde ve okumada yüklenir. */
-    public const WEB_FONTS_URL = 'https://fonts.bunny.net/css?family=eb-garamond:400,400i,500,600|lato:400,400i,700|source-serif-4:400,400i,600|merriweather:400,400i,700|libre-baskerville:400,400i,700|crimson-pro:400,400i,600|open-sans:400,400i,600|roboto:400,400i,500&display=swap';
+    public const WEB_FONTS_URL = 'https://fonts.bunny.net/css?family=gelasio:400,400i,700,700i|tinos:400,400i,700,700i|arimo:400,400i,700,700i|eb-garamond:400,400i,500,600|lato:400,400i,700|source-serif-4:400,400i,600|merriweather:400,400i,700|libre-baskerville:400,400i,700|crimson-pro:400,400i,600|open-sans:400,400i,600|roboto:400,400i,500&display=swap';
 
     public const ALIGNMENTS = ['left', 'center', 'right', 'justify'];
 
@@ -117,7 +119,11 @@ class RichText
             || str_contains($html, 'data-footnote')
             || str_contains($html, 'data-document')
             || str_contains($html, 'data-video')
-            || str_contains($html, 'data-image');
+            || str_contains($html, 'data-image')
+            // Kitabın başındaki İçindekiler / sondaki Kaynakça tek başına da içerik: yoksa ilk
+            // Başlık 1'den önceki İçindekiler kaydederken atılıyordu (BookDocument::split).
+            || str_contains($html, 'data-toc')
+            || str_contains($html, 'data-bibliography');
     }
 
     /**

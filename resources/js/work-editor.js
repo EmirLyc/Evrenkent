@@ -14,12 +14,12 @@ import StarterKit from '@tiptap/starter-kit';
 import { TableKit } from '@tiptap/extension-table';
 
 export const FONTS = {
-    georgia: "Georgia, 'Times New Roman', serif",
-    times: "'Times New Roman', Times, serif",
+    georgia: "Georgia, Gelasio, 'Times New Roman', serif",
+    times: "'Times New Roman', Tinos, Times, serif",
     palatino: "'Palatino Linotype', Palatino, 'Book Antiqua', serif",
     garamond: "'EB Garamond', Garamond, serif",
-    arial: 'Arial, Helvetica, sans-serif',
-    helvetica: 'Helvetica, Arial, sans-serif',
+    arial: 'Arial, Arimo, Helvetica, sans-serif',
+    helvetica: 'Helvetica, Arial, Arimo, sans-serif',
     lato: 'Lato, sans-serif',
     'source-serif': "'Source Serif 4', 'Source Serif Pro', serif",
     merriweather: 'Merriweather, serif',
@@ -524,8 +524,9 @@ export function createWorkEditor({ element, content, editable = true, getDocumen
     });
 }
 
-// Sayfa hesabı: sabit sayfa oranında, üst düzey blokların yüksekliğiyle (blok düzeyinde —
-// okuma modunun sayfalamasıyla aynı yaklaşım). Sayfa Sonu yeni sayfa başlatır.
+// Sayfa hesabı: sabit sayfa oranında, üst düzey blokların yüksekliğiyle (blok düzeyinde; okuma
+// sayfası satır düzeyinde böldüğü için sayı yaklaşık). Sayfa Sonu ve — okumadaki gibi — her
+// Başlık 1 (kitapta bölüm) yeni sayfa başlatır.
 export function paginate(surface, pageContentHeight) {
     const blocks = Array.from(surface.children);
     const breaks = [];
@@ -541,7 +542,7 @@ export function paginate(surface, pageContentHeight) {
         }
         const next = blocks[index + 1];
         const height = (next ? next.offsetTop : block.offsetTop + block.offsetHeight) - block.offsetTop;
-        if (used > 0 && used + height > pageContentHeight) {
+        if (used > 0 && (block.tagName === 'H1' || used + height > pageContentHeight)) {
             pages++;
             used = 0;
             breaks.push({ top: block.offsetTop, forced: false });

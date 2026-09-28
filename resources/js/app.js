@@ -1,6 +1,7 @@
 import '@hotwired/turbo';
 import Alpine from 'alpinejs';
 import workEditor from './work-editor-component.js';
+import pagedReader from './paged-reader.js';
 
 window.Alpine = Alpine;
 
@@ -145,31 +146,30 @@ Alpine.data('documentViewer', () => {
     };
 });
 
-// Okuma modu (layouts/reader, Faz F4): yazı boyutu (bu cihazda hatırlanır), okuma ilerleme
-// çubuğu, bölümler çekmecesi ve ←/→ ile önceki/sonraki bölüm.
-const READER_SIZES = ['1.0625rem', '1.1875rem', '1.3125rem', '1.4375rem'];
+// Sayfalı okuma (x-paged-reader, Faz G4) — bkz. paged-reader.js. Okuma düzeninin başlığı
+// (yakınlaştırma, ilerleme) ve bölümler çekmecesi bu store'dan okuyor.
+Alpine.store('pager', {
+    active: false,
+    page: 0,
+    total: 0,
+    percent: 100,
+    canZoomIn: true,
+    canZoomOut: true,
+    chapter: null,
+    last: false,
+    progress: 0,
+    location: '',
+});
+Alpine.data('pagedReader', pagedReader);
+
+// Okuma modu (layouts/reader, Faz F4): okuma ilerleme çubuğu, bölümler çekmecesi ve ←/→ ile
+// önceki/sonraki bölüm. Okurun yazı boyutu ayarı Faz G4'te kalktı (belge: "punto üzerinde
+// değişiklik hakkı olursa tüm kitap dizgisini bozar") — sayfalı okumada sayfa büyütülüyor.
 Alpine.data('reader', () => ({
-    sizes: READER_SIZES,
-    size: 1,
     progress: 0,
     drawer: false,
 
     init() {
-        try {
-            const saved = parseInt(localStorage.getItem('evrenkent.reader.size'), 10);
-            if (saved >= 0 && saved < READER_SIZES.length) this.size = saved;
-        } catch {
-            // Gizli pencere / engellenmiş depolama: varsayılan boyutla devam.
-        }
-        this.$nextTick(() => this.trackProgress());
-    },
-    resize(step) {
-        this.size = Math.min(READER_SIZES.length - 1, Math.max(0, this.size + step));
-        try {
-            localStorage.setItem('evrenkent.reader.size', String(this.size));
-        } catch {
-            // yok say
-        }
         this.$nextTick(() => this.trackProgress());
     },
     trackProgress() {
@@ -179,7 +179,8 @@ Alpine.data('reader', () => ({
     },
     keyNav(event) {
         // Turbo sonrası temizlenmemiş eski örnek (bkz. documentViewer) olayı almasın.
-        if (!this.$root.isConnected || event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || this.drawer) return;
+        // Sayfalı okumada oklar sayfa çeviriyor (paged-reader.js).
+        if (!this.$root.isConnected || this.$store.pager.active || event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || this.drawer) return;
         if (event.target.closest?.('input, textarea, select, [contenteditable]') || document.querySelector('[role=dialog]:not([style*="display: none"])')) return;
 
         const link = event.key === 'ArrowLeft'

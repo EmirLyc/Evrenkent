@@ -4,8 +4,12 @@
     ortalı kâğıt sayfa, mobilde tam genişlik kâğıt.
 
     Section'lar: title, reader_back_url, reader_back_label, reader_drawer (isteğe bağlı —
-    "Bölümler" çekmecesi), content. Klavye ←/→ ile önceki/sonraki bölüm: sayfadaki
-    [data-reader-prev] / [data-reader-next] bağlantıları.
+    "Bölümler" çekmecesi), reader_paged (Faz G4: içerik x-paged-reader — sayfalar kendi kâğıdında,
+    başlıkta yakınlaştırma), content. Sayfasız içerikte klavye ←/→ sayfadaki
+    [data-reader-prev] / [data-reader-next] bağlantılarına gider.
+
+    Okurun yazı boyutu ayarı Faz G4'te kalktı (belge: punto değişirse dizgi bozulur); sayfa
+    büyütülüyor.
 --}}
 <!DOCTYPE html>
 <html lang="tr">
@@ -18,11 +22,13 @@
 
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=fraunces:500,600,600i|figtree:400,500,600|eb-garamond:400,400i,500,600,600i&display=swap" rel="stylesheet" />
+        {{-- Yazarın seçebildiği yazı tipleri (editördeki liste) — okur da aynı dizgiyi görsün. --}}
+        <link href="{{ \App\Support\RichText::WEB_FONTS_URL }}" rel="stylesheet" />
 
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
     <body class="font-sans antialiased bg-parchment-deep text-slate-800">
-        <div x-data="reader" @keydown.window="keyNav($event)" @scroll.window.throttle.50ms="trackProgress()" class="min-h-screen flex flex-col">
+        <div x-data="reader" @keydown.window="keyNav($event)" @scroll.window.throttle.50ms="trackProgress()" @pager-navigated.window="drawer = false" class="min-h-screen flex flex-col">
             <header class="sticky top-0 z-30 bg-parchment/95 backdrop-blur border-b border-gold/20">
                 <div class="mx-auto flex h-14 max-w-4xl items-center gap-2 px-3 sm:px-6">
                     <a href="@yield('reader_back_url', route('home'))" class="inline-flex min-w-0 items-center gap-1.5 rounded-md px-2 py-1.5 text-sm text-slate-600 hover:bg-white/60 hover:text-slate-900">
@@ -31,11 +37,11 @@
                     </a>
 
                     <div class="ml-auto flex shrink-0 items-center gap-1">
-                        {{-- Yazı boyutu: tarayıcıda hatırlanıyor (yalnızca bu cihaz). --}}
-                        <div class="flex items-center rounded-md border border-gold/30 bg-white/50" role="group" aria-label="Yazı boyutu">
-                            <button type="button" class="h-9 w-9 text-sm text-slate-600 hover:text-slate-900 disabled:opacity-30" @click="resize(-1)" :disabled="size === 0" aria-label="Yazıyı küçült">A<span class="sr-only">−</span></button>
-                            <span class="h-5 w-px bg-gold/30" aria-hidden="true"></span>
-                            <button type="button" class="h-9 w-9 text-lg text-slate-600 hover:text-slate-900 disabled:opacity-30" @click="resize(1)" :disabled="size === sizes.length - 1" aria-label="Yazıyı büyüt">A<span class="sr-only">+</span></button>
+                        {{-- Sayfayı büyüt / küçült (sayfalı okuma; bu cihazda hatırlanır). --}}
+                        <div x-show="$store.pager.active" x-cloak class="flex items-center rounded-md border border-gold/30 bg-white/50" role="group" aria-label="Sayfa büyüklüğü">
+                            <button type="button" class="grid h-9 w-9 place-items-center text-slate-600 hover:text-slate-900 disabled:opacity-30" @click="$dispatch('pager-zoom', -1)" :disabled="!$store.pager.canZoomOut" aria-label="Sayfayı küçült"><x-heroicon-o-magnifying-glass-minus class="w-5 h-5" /></button>
+                            <span class="w-11 text-center text-xs tabular-nums text-slate-600" x-text="$store.pager.percent + '%'"></span>
+                            <button type="button" class="grid h-9 w-9 place-items-center text-slate-600 hover:text-slate-900 disabled:opacity-30" @click="$dispatch('pager-zoom', 1)" :disabled="!$store.pager.canZoomIn" aria-label="Sayfayı büyüt"><x-heroicon-o-magnifying-glass-plus class="w-5 h-5" /></button>
                         </div>
                         @hasSection('reader_drawer')
                             <button type="button" class="inline-flex h-9 items-center gap-1.5 rounded-md px-2.5 text-sm text-slate-600 hover:bg-white/60 hover:text-slate-900" @click="drawer = true" aria-label="Bölümler">
@@ -46,20 +52,32 @@
                     </div>
                 </div>
                 {{-- Okuma ilerlemesi --}}
-                <div class="h-0.5 bg-gold/70 origin-left transition-transform duration-100" :style="`transform: scaleX(${progress})`" aria-hidden="true"></div>
+                <div class="h-0.5 bg-gold/70 origin-left transition-transform duration-100" :style="`transform: scaleX(${$store.pager.active ? $store.pager.progress : progress})`" aria-hidden="true"></div>
             </header>
 
-            <main class="flex-1 px-0 sm:px-6 sm:py-8">
-                <article class="reader-paper reader-page mx-auto w-full max-w-3xl px-5 py-10 sm:rounded-sm sm:px-14 sm:py-16 sm:shadow-xl sm:shadow-slate-900/10" :style="`--reader-size: ${sizes[size]}`">
+            @hasSection('reader_paged')
+                <main class="flex-1 px-2 py-4 sm:px-6 sm:py-8">
                     @if (session('status'))
-                        <div class="mb-8 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2.5 font-sans text-sm text-emerald-800">
+                        <div class="mx-auto mb-4 max-w-[46rem] rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2.5 font-sans text-sm text-emerald-800">
                             {{ session('status') }}
                         </div>
                     @endif
 
                     @yield('content')
-                </article>
-            </main>
+                </main>
+            @else
+                <main class="flex-1 px-0 sm:px-6 sm:py-8">
+                    <article class="reader-paper reader-page mx-auto w-full max-w-3xl px-5 py-10 sm:rounded-sm sm:px-14 sm:py-16 sm:shadow-xl sm:shadow-slate-900/10">
+                        @if (session('status'))
+                            <div class="mb-8 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2.5 font-sans text-sm text-emerald-800">
+                                {{ session('status') }}
+                            </div>
+                        @endif
+
+                        @yield('content')
+                    </article>
+                </main>
+            @endif
 
             @hasSection('reader_drawer')
                 <div x-show="drawer" x-cloak class="fixed inset-0 z-40" @keydown.escape.window="drawer = false">

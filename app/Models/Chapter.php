@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\HasRichContent;
+use App\Support\RichText;
 use App\Support\WorkOutline;
 use Database\Factories\ChapterFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -30,6 +31,15 @@ class Chapter extends Model
     protected function renderContext(): array
     {
         return WorkOutline::for($this->book)->contextFor($this);
+    }
+
+    /**
+     * Sayfalı okumada (Faz G4) bütün kitap tek sayfada: eser bağlamı bir kez hesaplanıp her
+     * bölüme veriliyor (renderedContent her bölüm için WorkOutline'ı baştan kurardı).
+     */
+    public function renderedIn(WorkOutline $outline): string
+    {
+        return RichText::render($this->content, $this->footnotePrefix(), $this->contentDocuments(), $outline->contextFor($this));
     }
 
     /** Kitabın belge/video sayısı metinden hesaplanıyor (Book::refreshContentCounts). */

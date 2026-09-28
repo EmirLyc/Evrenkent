@@ -39,6 +39,8 @@ Route::get('/admin/{path?}', fn () => redirect(auth()->user()?->redirectPath() ?
     ->where('path', '.*');
 
 Route::middleware('auth')->group(function () {
+    // Faz G4: sayfalı okumada bölüm değişince okuma listesindeki konum.
+    Route::post('/kitaplar/{book:slug}/konum', [BookController::class, 'position'])->name('kitaplar.konum');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');

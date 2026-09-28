@@ -1,4 +1,5 @@
-@props(['noteableType', 'noteableId', 'defaultLocation' => null])
+{{-- locationBind: Alpine ifadesi — sayfalı okumada "Sayfa / Bölüm" alanı o anki sayfayla dolsun (Faz G4). --}}
+@props(['noteableType', 'noteableId', 'defaultLocation' => null, 'locationBind' => null])
 
 <form method="POST" action="{{ route('panel.notlar.ekle') }}" x-data="{ type: 'not' }" class="bg-white border border-slate-200 rounded-lg p-5 space-y-4">
     @csrf
@@ -16,7 +17,7 @@
 
     <div x-show="type === 'alinti'">
         <label for="location" class="block text-sm font-medium text-slate-700 mb-1">Sayfa / Bölüm</label>
-        <input id="location" name="location" type="text" value="{{ old('location', $defaultLocation) }}" class="w-full rounded-md border-slate-300 text-sm focus:border-slate-500 focus:ring-slate-500">
+        <input id="location" name="location" type="text" value="{{ old('location', $defaultLocation) }}" @if ($locationBind && ! old('location')) x-bind:value="{{ $locationBind }}" @endif class="w-full rounded-md border-slate-300 text-sm focus:border-slate-500 focus:ring-slate-500">
     </div>
 
     <div>

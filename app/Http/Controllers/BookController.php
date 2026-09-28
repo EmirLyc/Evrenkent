@@ -5,7 +5,12 @@ namespace App\Http\Controllers;
 use App\Enums\ContentStatus;
 use App\Enums\ReadingStatus;
 use App\Models\Book;
+use App\Models\Chapter;
+use App\Support\RichText;
+use App\Support\WorkOutline;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\View\View;
 
 class BookController extends Controller
@@ -96,9 +101,38 @@ class BookController extends Controller
             $readingListItem->update(['last_chapter_number' => $chapter->order]);
         }
 
-        $prevChapter = $chapter ? $chapters->where('order', '<', $chapter->order)->last() : null;
-        $nextChapter = $chapter ? $chapters->where('order', '>', $chapter->order)->first() : null;
+        // Faz G4 — sayfalı okuma: bütün kitap tek akışta, yazarın sayfa oranında sayfalara
+        // bölünüyor (tarayıcıda); sayfa numaraları kitap boyunca sürüyor, istenen bölüm açılış
+        // sayfası. Bölüm başlığı numarası editördeki gibi (Başlık 1 → "I.").
+        $book->load('documents');
+        $chapters->each->setRelation('book', $book);
+        $outline = WorkOutline::for($book);
+        $sections = $chapters->map(fn (Chapter $item) => [
+            'chapter' => $item,
+            'number' => ! $item->is_preface && $book->heading_numbering ? RichText::roman($outline->chapterNumber($item)).'.' : null,
+            'html' => $item->renderedIn($outline),
+        ]);
 
-        return view('books.read', compact('book', 'chapters', 'chapter', 'prevChapter', 'nextChapter', 'readingListItem'));
+        return view('books.read', compact('book', 'chapters', 'chapter', 'sections', 'readingListItem'));
+    }
+
+    /**
+     * Sayfalı okumada okur başka bir bölüme geçince (sayfa çevirerek) okuma listesindeki
+     * konum güncelleniyor — "kaldığın yerden devam et" bölüm bazında.
+     */
+    public function position(Request $request, Book $book): Response
+    {
+        $user = $request->user();
+        abort_unless($book->isReadableBy($user), 403);
+
+        $order = (int) $request->input('bolum');
+        abort_unless($book->chapters()->where('order', $order)->exists(), 422);
+
+        $user->readingListItems()->firstOrCreate(
+            ['readable_type' => Book::class, 'readable_id' => $book->id],
+            ['status' => ReadingStatus::Listede],
+        )->update(['last_chapter_number' => $order]);
+
+        return response()->noContent();
     }
 }

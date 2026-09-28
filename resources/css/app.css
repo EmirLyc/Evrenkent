@@ -364,15 +364,118 @@
         @apply border-b-2 border-dotted border-emerald-600 bg-emerald-50/70 rounded-sm;
     }
 
-    /* Okumada Sayfa Sonu (sayfalama Faz G4'te): şimdilik boşluk. */
+    /* Sayfasız görünümde (makale önizlemesi dışı alanlar) Sayfa Sonu: boşluk. */
     .rich-content .rt-page-break {
         @apply h-6;
+    }
+
+    /* --- Faz G4: Sayfalı okuma (x-paged-reader) --------------------------------------------------
+       Metin editörle aynı dizgide (.rt-editor-surface: Georgia 16, 624 px) CSS sütunlarına akıyor;
+       her sütun bir sayfa. Sütun aralığı = iki kenar boşluğu (2 × 56 px) → bir sayfa kaydırması
+       tam sayfa genişliği (736 px). Ölçüler sabit px: ekran genişliğine göre değişen (sm:, md:)
+       hiçbir kural sayfanın içinde kullanılmamalı, yoksa sayfalar cihaza göre kayar. */
+    .rt-page {
+        @apply rounded-sm shadow-xl shadow-slate-900/10;
+    }
+    .rt-flow {
+        width: 624px;
+        column-width: 624px;
+        column-gap: 112px;
+        column-fill: auto;
+        orphans: 2;
+        widows: 2;
+    }
+    .rt-flow .rt-chapter {
+        min-height: 0;
+        margin-top: 0;
+    }
+    /* Her bölüm yeni sayfada; Sayfa Sonu yeni sayfa. */
+    .rt-flow .rt-chapter + .rt-chapter {
+        break-before: column;
+        -webkit-column-break-before: always;
+    }
+    .rt-flow .rt-page-break {
+        height: 0;
+        break-after: column;
+        -webkit-column-break-after: always;
+    }
+    .rt-flow figure,
+    .rt-flow tr,
+    .rt-flow .video-link,
+    .rt-flow .rt-opener,
+    .rt-flow .rt-toc li,
+    .rt-flow blockquote {
+        break-inside: avoid;
+        -webkit-column-break-inside: avoid;
+    }
+    .rt-flow h1,
+    .rt-flow h2,
+    .rt-flow h3,
+    .rt-flow h4,
+    .rt-flow p.rt-concept {
+        break-after: avoid;
+        -webkit-column-break-after: avoid;
+    }
+    /* Görsel bir sayfadan uzun olamaz. */
+    .rt-flow figure.rt-image img {
+        max-height: calc(var(--rt-text-height) - 4rem);
+        width: auto;
+    }
+    .rt-page-number {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 20px;
+        text-align: center;
+        font-family: Georgia, Gelasio, 'Times New Roman', serif;
+        font-size: 15px;
+        color: theme('colors.navy');
+    }
+    /* Bölüm açılışı (mockup 3: süs, "2.1.", küçük büyük harfli başlık, süs). */
+    .rt-opener {
+        padding-top: 36px;
+        margin-bottom: 44px;
+        text-align: center;
+    }
+    .rt-opener-number {
+        margin-top: 28px;
+        font-family: theme('fontFamily.reading');
+        font-size: 40px;
+        line-height: 1.2;
+        color: theme('colors.navy');
+    }
+    .rt-opener-kicker {
+        margin-top: 24px;
+        font-family: theme('fontFamily.reading');
+        font-size: 14px;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: theme('colors.gold');
+    }
+    .rt-opener-title {
+        margin: 10px 0 26px;
+        font-family: theme('fontFamily.reading');
+        font-size: 32px;
+        line-height: 1.25;
+        letter-spacing: 0.03em;
+        font-variant-caps: small-caps;
+        overflow-wrap: anywhere;
+        color: theme('colors.navy');
+    }
+    .rt-opener-byline {
+        margin: -14px 0 26px;
+        font-family: theme('fontFamily.reading');
+        font-size: 18px;
+        font-style: italic;
+        color: theme('colors.slate.600');
     }
 
     /* Editör yüzeyi: varsayılan Georgia 16 (mockup'ta seçili olan) — okur da aynı dizgiyi görür. */
     .rt-editor-surface {
         @apply min-h-[24rem] outline-none text-slate-900;
-        font-family: Georgia, 'Times New Roman', serif;
+        /* Gelasio: Georgia ile aynı ölçülerde açık yazı tipi — Georgia'sı olmayan cihazda (Android,
+           Linux) satırlar ve sayfalar değişmesin (Faz G4). */
+        font-family: Georgia, Gelasio, 'Times New Roman', serif;
         font-size: 16px;
         line-height: 1.65;
         counter-reset: footnote h1 h2 h3 h4;
