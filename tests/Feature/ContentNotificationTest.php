@@ -120,7 +120,7 @@ class ContentNotificationTest extends TestCase
 
     /**
      * Bağlantı içeriğin durumuna göre: revizyonda düzenleme sayfası, onaylı/zamanlı içerikte
-     * sahibinin listesi (düzenleme sayfası orada 403 verirdi), yayında herkese açık sayfa.
+     * yayın süreci (düzenleme sayfası orada 403 verirdi), yayında herkese açık sayfa.
      */
     public function test_notification_links_depend_on_the_content_status(): void
     {
@@ -138,7 +138,7 @@ class ContentNotificationTest extends TestCase
             'price' => 50, 'publish_mode' => 'ileri', 'scheduled_publish_at' => now()->addWeek()->format('Y-m-d\TH:i'),
         ]);
         Notification::assertSentTo($author, ContentApproved::class,
-            fn ($n) => $n->toArray($author)['url'] === route('panel.yayinlarim.index'));
+            fn ($n) => $n->toArray($author)['url'] === route('panel.yayinlarim.kitap.detay', $scheduled).'#surec');
 
         $published = Book::factory()->for($author, 'author')->create(['status' => ContentStatus::Gonderildi]);
         $this->actingAs($admin)->post(route('panel.adminpanel.onaylar.kitap.onayla', $published), ['price' => 50, 'publish_mode' => 'simdi']);

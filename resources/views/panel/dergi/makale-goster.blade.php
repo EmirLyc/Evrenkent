@@ -4,9 +4,17 @@
 
 @section('content')
     <div class="max-w-3xl mx-auto">
-        <a href="{{ route('panel.dergi.makale-havuzu') }}" class="text-sm text-slate-500 hover:text-slate-900 transition-colors">
-            &larr; Makale Havuzuna dön
-        </a>
+        <div class="flex items-center justify-between gap-3 flex-wrap">
+            <a href="{{ route('panel.dergi.makale-havuzu') }}" class="text-sm text-slate-500 hover:text-slate-900 transition-colors">
+                &larr; Makale Havuzuna dön
+            </a>
+            @can('converse', $article)
+                {{-- Faz G1: yazarla esere bağlı yazışma. --}}
+                <a href="{{ route('panel.mesajlar.makale', $article) }}" class="btn-outline btn-sm">
+                    <x-heroicon-o-chat-bubble-oval-left class="w-4 h-4" /> Yazarla Mesajlaş ({{ $article->messages()->count() }})
+                </a>
+            @endcan
+        </div>
 
         <div class="mt-4">
             <x-detail-header

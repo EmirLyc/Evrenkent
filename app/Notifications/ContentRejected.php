@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Models\Book;
 use App\Models\MagazineIssue;
 use App\Notifications\Concerns\DescribesContent;
 use Illuminate\Bus\Queueable;
@@ -34,9 +35,12 @@ class ContentRejected extends Notification
         return [
             'title' => $this->contentLabel($this->content).' reddedildi',
             'body' => "\"{$this->content->title}\" reddedildi: {$this->note}",
-            'url' => $this->content instanceof MagazineIssue
-                ? route('panel.dergi.sayilarim')
-                : route('panel.yayinlarim.geri-donenler'),
+            // Eserde ret gerekçesinin göründüğü detay sayfası (Faz G1; önceden Geri Dönenler listesi).
+            'url' => match (true) {
+                $this->content instanceof MagazineIssue => route('panel.dergi.sayilarim'),
+                $this->content instanceof Book => route('panel.yayinlarim.kitap.detay', $this->content),
+                default => route('panel.yayinlarim.makale.detay', $this->content),
+            },
         ];
     }
 }

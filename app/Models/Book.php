@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\ContentStatus;
 use App\Models\Concerns\HasDocuments;
+use App\Models\Concerns\IsPublication;
 use App\Support\PlatformSettings;
 use App\Support\VideoEmbed;
 use Database\Factories\BookFactory;
@@ -13,7 +14,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Support\Facades\Storage;
 
 class Book extends Model
 {
@@ -21,6 +24,18 @@ class Book extends Model
 
     /** @use HasFactory<BookFactory> */
     use HasFactory;
+
+    use IsPublication;
+
+    protected static function booted(): void
+    {
+        // Kapak dosyası ancak kalıcı silmede gider — çöp kutusundan geri alınabilsin (Faz G1).
+        static::forceDeleted(function (Book $book) {
+            if ($book->cover_image) {
+                Storage::disk(config('filesystems.covers_disk'))->delete($book->cover_image);
+            }
+        });
+    }
 
     protected $fillable = [
         'author_id', 'title', 'slug', 'description',
@@ -183,6 +198,12 @@ class Book extends Model
         return $this->hasMany(Chapter::class)->orderBy('order');
     }
 
+    /** En son düzenlenen bölüm — Taslaklarım kartındaki "Bölüm 7 – Sessizliğin Dili" satırı. */
+    public function latestChapter(): HasOne
+    {
+        return $this->hasOne(Chapter::class)->latestOfMany('updated_at');
+    }
+
     public function scopePublished(Builder $query): Builder
     {
         return $query->where('status', ContentStatus::Yayinda);
@@ -242,7 +263,7 @@ class Book extends Model
         $counts = ['document_count' => $documentCount ?: null, 'video_count' => $videoCount ?: null];
 
         // updated_at'e dokunmadan (kitabın "güncellenme" tarihi yazarın düzenlemesini göstersin).
-        static::whereKey($this->getKey())->toBase()->update($counts);
+        $this->newQueryWithoutScopes()->whereKey($this->getKey())->toBase()->update($counts);
         $this->forceFill($counts)->syncOriginalAttributes(array_keys($counts));
     }
 

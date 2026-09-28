@@ -234,7 +234,7 @@ class User extends Authenticatable
     /**
      * Girişten sonra role göre yönlendirilecek yol.
      * Süper Admin -> kendi dashboard'u, Dergi Editörü -> kendi dashboard'u,
-     * Yazar -> Yayınlarım, Okur -> Anasayfa (panele değil — sidebar zaten açık
+     * Yazar -> Taslaklarım, Okur -> Anasayfa (panele değil — sidebar zaten açık
      * geliyor, "Kitaplığım" bir tık uzakta, ayrıca kullanıcı doğrudan panele
      * düşürülmek istemedi).
      */
@@ -249,7 +249,7 @@ class User extends Authenticatable
         }
 
         if ($this->hasRole('yazar')) {
-            return '/panel/yayinlarim';
+            return '/panel/yayinlarim/taslaklarim';
         }
 
         return '/';

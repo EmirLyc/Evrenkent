@@ -63,19 +63,25 @@ class PermanentRejectionTest extends TestCase
         $this->actingAs($this->user('super_admin'))
             ->post(route('panel.adminpanel.onaylar.kitap.reddet', $book), ['decision' => 'ret', 'note' => 'Konu kapsam dışı.']);
 
-        $this->actingAs($author)->get(route('panel.yayinlarim.geri-donenler'))
+        // Faz G1: kalıcı reddedilen ayrı sekmede değil, Taslaklarım "Tümü"nde; gerekçe detay sayfasında.
+        $this->actingAs($author)->get(route('panel.yayinlarim.taslaklarim'))
             ->assertOk()
             ->assertSee('Reddedilen Roman')
-            ->assertSee('Ret gerekçesi:')
-            ->assertSee('Konu kapsam dışı.')
+            ->assertSee('Reddedildi')
             ->assertDontSee(route('panel.yayinlarim.kitap.gonder', $book), false)
+            ->assertDontSee(route('panel.yayinlarim.kitap.duzenle', $book), false);
+
+        $this->actingAs($author)->get(route('panel.yayinlarim.kitap.detay', $book))
+            ->assertOk()
+            ->assertSee('Ret gerekçesi')
+            ->assertSee('Konu kapsam dışı.')
             ->assertDontSee(route('panel.yayinlarim.kitap.duzenle', $book), false);
 
         $this->actingAs($author)->get(route('panel.yayinlarim.kitap.duzenle', $book))->assertForbidden();
         $this->actingAs($author)->post(route('panel.yayinlarim.kitap.gonder', $book))->assertForbidden();
 
         $this->actingAs($author)->delete(route('panel.yayinlarim.kitap.sil', $book));
-        $this->assertModelMissing($book);
+        $this->assertSoftDeleted($book);
     }
 
     public function test_revision_request_still_returns_the_content_for_editing(): void

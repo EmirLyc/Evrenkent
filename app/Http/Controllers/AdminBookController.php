@@ -8,7 +8,6 @@ use App\Models\Category;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -111,11 +110,9 @@ class AdminBookController extends Controller
     {
         $this->authorize('delete', $book);
 
-        if ($book->cover_image) {
-            Storage::disk(config('filesystems.covers_disk'))->delete($book->cover_image);
-        }
-
-        $book->delete();
+        // Admin silmesi kalıcı (kapak ve belgeler model olaylarında temizleniyor); yazarın
+        // silmesi çöp kutusuna gider (Faz G1).
+        $book->forceDelete();
 
         return redirect()->route('panel.adminpanel.kitaplar.index')->with('status', 'Kitap silindi.');
     }

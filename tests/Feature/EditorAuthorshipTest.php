@@ -38,7 +38,7 @@ class EditorAuthorshipTest extends TestCase
             ->assertSee('Dergi Yönetimi')
             ->assertSee(route('panel.yayinlarim.taslaklarim'), false);
 
-        foreach (['index', 'taslaklarim', 'taslaklarim.yeni', 'gonderilenler', 'geri-donenler', 'yayinlananlar'] as $page) {
+        foreach (['taslaklarim', 'taslaklarim.yeni', 'yayinlananlar', 'istatistiklerim', 'cop-kutusu'] as $page) {
             $this->actingAs($editor)->get(route('panel.yayinlarim.'.$page))->assertOk();
         }
     }

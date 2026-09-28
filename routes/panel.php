@@ -12,6 +12,7 @@ use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\ChapterController;
 use App\Http\Controllers\ContentApprovalController;
+use App\Http\Controllers\ContentMessageController;
 use App\Http\Controllers\DergiYonetimiController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\DocxImportController;
@@ -64,6 +65,15 @@ Route::middleware('auth')->prefix('panel')->as('panel.')->group(function () {
     Route::delete('/sepet/kitap/{book}', [CartController::class, 'destroy'])->name('sepet.kitap.sil');
     Route::post('/sepet/checkout', [CartController::class, 'checkout'])->name('sepet.checkout');
 
+    // Esere bağlı yazışma (Faz G1, Taslaklarım'daki "Sohbet / Mesajlar") — yazar, Süper Admin
+    // ve (makalede) sayının editörü; erişim ContentMessageController'da policy ile.
+    Route::prefix('mesajlar')->as('mesajlar.')->group(function () {
+        Route::get('/kitap/{book}', [ContentMessageController::class, 'showBook'])->name('kitap');
+        Route::post('/kitap/{book}', [ContentMessageController::class, 'storeBook'])->name('kitap.gonder');
+        Route::get('/makale/{article}', [ContentMessageController::class, 'showArticle'])->name('makale');
+        Route::post('/makale/{article}', [ContentMessageController::class, 'storeArticle'])->name('makale.gonder');
+    });
+
     // Yayın Yönetimi: Yazar ve Dergi Editörü (rol PDF'i: editör "Yazar'ın paneline ek olarak"
     // Dergi Yönetimi'ne sahip — bkz. User::AUTHOR_ROLES).
     Route::middleware('role:'.implode('|', User::AUTHOR_ROLES))->prefix('yayinlarim')->as('yayinlarim.')->group(function () {
@@ -83,6 +93,15 @@ Route::middleware('auth')->prefix('panel')->as('panel.')->group(function () {
         Route::get('/makale/{article}/duzenle', [PublicationController::class, 'editArticle'])->name('makale.duzenle');
         Route::put('/makale/{article}', [PublicationController::class, 'updateArticle'])->name('makale.guncelle');
         Route::delete('/makale/{article}', [PublicationController::class, 'destroyArticle'])->name('makale.sil');
+
+        // Faz G1: Gönderimi Gör / Detayları Gör / Yayın Sürecini Takip Et + iki kademeli silme (çöp kutusu).
+        Route::get('/kitap/{book}/detay', [PublicationController::class, 'bookDetail'])->name('kitap.detay');
+        Route::get('/makale/{article}/detay', [PublicationController::class, 'articleDetail'])->name('makale.detay');
+        Route::get('/cop-kutusu', [PublicationController::class, 'copKutusu'])->name('cop-kutusu');
+        Route::post('/cop-kutusu/kitap/{book}', [PublicationController::class, 'restoreBook'])->name('kitap.geri-al')->withTrashed();
+        Route::delete('/cop-kutusu/kitap/{book}', [PublicationController::class, 'forceDeleteBook'])->name('kitap.kalici-sil')->withTrashed();
+        Route::post('/cop-kutusu/makale/{article}', [PublicationController::class, 'restoreArticle'])->name('makale.geri-al')->withTrashed();
+        Route::delete('/cop-kutusu/makale/{article}', [PublicationController::class, 'forceDeleteArticle'])->name('makale.kalici-sil')->withTrashed();
 
         Route::get('/kitap/{book}/bolumler', [ChapterController::class, 'index'])->name('kitap.bolumler');
         Route::get('/kitap/{book}/bolumler/yeni', [ChapterController::class, 'create'])->name('kitap.bolumler.yeni');

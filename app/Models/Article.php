@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\ContentStatus;
 use App\Models\Concerns\HasDocuments;
 use App\Models\Concerns\HasRichContent;
+use App\Models\Concerns\IsPublication;
 use Database\Factories\ArticleFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -22,6 +23,7 @@ class Article extends Model
     use HasFactory;
 
     use HasRichContent;
+    use IsPublication;
 
     protected function contentDocuments(): Collection
     {

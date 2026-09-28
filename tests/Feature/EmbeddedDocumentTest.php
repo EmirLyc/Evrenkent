@@ -205,7 +205,13 @@ class EmbeddedDocumentTest extends TestCase
         $book = Book::factory()->create();
         $document = $this->storedDocument($book);
 
+        // Faz G1: çöp kutusuna atılan kitabın belgeleri geri alınabilsin diye kalır…
         $book->delete();
+        $this->assertModelExists($document);
+        Storage::disk(config('filesystems.documents_disk'))->assertExists('documents/belge.pdf');
+
+        // …kalıcı silmede dosyalarıyla birlikte gider.
+        $book->forceDelete();
 
         $this->assertModelMissing($document);
         Storage::disk(config('filesystems.documents_disk'))->assertMissing('documents/belge.pdf');

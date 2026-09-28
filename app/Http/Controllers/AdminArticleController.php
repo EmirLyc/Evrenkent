@@ -117,8 +117,8 @@ class AdminArticleController extends Controller
     {
         $this->authorize('delete', $article);
 
-        // Belgeleri (ve dosyaları) HasDocuments siliyor.
-        $article->delete();
+        // Admin silmesi kalıcı — belgeleri (ve dosyaları) HasDocuments siliyor.
+        $article->forceDelete();
 
         return redirect()->route('panel.adminpanel.makaleler.index')->with('status', 'Makale silindi.');
     }

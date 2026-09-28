@@ -51,6 +51,9 @@
                                                 <x-heroicon-o-check-circle class="w-4 h-4" /> Onayla
                                             </a>
                                         @endcan
+                                        <a href="{{ route('panel.mesajlar.kitap', $book) }}" class="inline-flex items-center gap-1.5 text-sm text-slate-600 hover:text-slate-900 transition-colors">
+                                            <x-heroicon-o-chat-bubble-oval-left class="w-4 h-4" /> Mesajlar
+                                        </a>
                                         @can('reject', $book)
                                             <a href="{{ route('panel.adminpanel.onaylar.kitap.reddet-form', $book) }}" class="inline-flex items-center gap-1.5 text-sm text-red-600 hover:text-red-700 transition-colors">
                                                 <x-heroicon-o-x-circle class="w-4 h-4" /> Reddet
@@ -175,6 +178,9 @@
                                                 <x-heroicon-o-check-circle class="w-4 h-4" /> Onayla
                                             </a>
                                         @endcan
+                                        <a href="{{ route('panel.mesajlar.makale', $article) }}" class="inline-flex items-center gap-1.5 text-sm text-slate-600 hover:text-slate-900 transition-colors">
+                                            <x-heroicon-o-chat-bubble-oval-left class="w-4 h-4" /> Mesajlar
+                                        </a>
                                         @can('reject', $article)
                                             <a href="{{ route('panel.adminpanel.onaylar.makale.reddet-form', $article) }}" class="inline-flex items-center gap-1.5 text-sm text-red-600 hover:text-red-700 transition-colors">
                                                 <x-heroicon-o-x-circle class="w-4 h-4" /> Reddet

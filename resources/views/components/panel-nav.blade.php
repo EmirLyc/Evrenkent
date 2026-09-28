@@ -50,15 +50,15 @@
     <div class="mb-7">
         <div class="{{ $groupHeading }} text-brand-700">Yayın Yönetimi</div>
         <div class="space-y-0.5">
+            {{-- "Yazarın Gözünden" (2026-09-28): 3 başlık. Yayınlarım kalktı (Yayınlananlar'la çakışıyordu);
+                 Gönderilenler / Geri Dönenler Taslaklarım'da durum sekmesi. Taslaklarım, eserin
+                 düzenleme / detay / mesaj / çöp kutusu sayfalarında da etkin görünür. --}}
             @foreach ([
-                'panel.yayinlarim.index' => ['Yayınlarım', route('panel.yayinlarim.index'), 'book-open'],
-                'panel.yayinlarim.taslaklarim' => ['Taslaklarım', route('panel.yayinlarim.taslaklarim'), 'document'],
-                'panel.yayinlarim.gonderilenler' => ['Gönderilenler', route('panel.yayinlarim.gonderilenler'), 'paper-airplane'],
-                'panel.yayinlarim.geri-donenler' => ['Geri Dönenler', route('panel.yayinlarim.geri-donenler'), 'arrow-uturn-left'],
-                'panel.yayinlarim.yayinlananlar' => ['Yayınlananlar', route('panel.yayinlarim.yayinlananlar'), 'check-circle'],
-                'panel.yayinlarim.istatistiklerim' => ['İstatistiklerim', route('panel.yayinlarim.istatistiklerim'), 'chart-bar'],
-            ] as $routeName => [$label, $href, $icon])
-                <a href="{{ $href }}" class="{{ $navLinkBase }} {{ request()->routeIs($routeName) ? $navLinkActive : $navLinkInactive }}">
+                'Taslaklarım' => [route('panel.yayinlarim.taslaklarim'), 'document-text', ['panel.yayinlarim.taslaklarim*', 'panel.yayinlarim.cop-kutusu', 'panel.yayinlarim.kitap.*', 'panel.yayinlarim.makale.*', 'panel.mesajlar.*']],
+                'Yayınlananlar' => [route('panel.yayinlarim.yayinlananlar'), 'book-open', ['panel.yayinlarim.yayinlananlar']],
+                'İstatistiklerim' => [route('panel.yayinlarim.istatistiklerim'), 'chart-bar', ['panel.yayinlarim.istatistiklerim']],
+            ] as $label => [$href, $icon, $patterns])
+                <a href="{{ $href }}" class="{{ $navLinkBase }} {{ request()->routeIs(...$patterns) ? $navLinkActive : $navLinkInactive }}">
                     @svg('heroicon-o-' . $icon, 'w-4 h-4 shrink-0')
                     <span class="ml-2.5 truncate">{{ $label }}</span>
                 </a>

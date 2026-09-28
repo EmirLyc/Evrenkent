@@ -52,14 +52,23 @@ class ArticlePolicy
             || ($article->author_id === $user->id && in_array($article->status, [ContentStatus::Taslak, ContentStatus::Reddedildi], true));
     }
 
+    /** Çöp kutusundan geri alma / kalıcı silme (Faz G1): yazar kendi çöpündekini. */
     public function restore(User $user, Article $article): bool
     {
-        return $user->hasRole('super_admin');
+        return $user->hasRole('super_admin') || ($article->trashed() && $article->author_id === $user->id);
     }
 
     public function forceDelete(User $user, Article $article): bool
     {
-        return $user->hasRole('super_admin');
+        return $user->hasRole('super_admin') || ($article->trashed() && $article->author_id === $user->id);
+    }
+
+    /** Esere bağlı yazışma (Sohbet / Mesajlar): yazar, Süper Admin ve sayının dergi editörü. */
+    public function converse(User $user, Article $article): bool
+    {
+        return $user->hasRole('super_admin')
+            || $article->author_id === $user->id
+            || ($user->hasRole('dergi_editoru') && $article->magazineIssue?->editor_id === $user->id);
     }
 
     /**

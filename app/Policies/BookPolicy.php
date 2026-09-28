@@ -44,14 +44,21 @@ class BookPolicy
             || ($book->author_id === $user->id && in_array($book->status, [ContentStatus::Taslak, ContentStatus::Reddedildi], true));
     }
 
+    /** Çöp kutusundan geri alma / kalıcı silme (Faz G1): yazar kendi çöpündekini. */
     public function restore(User $user, Book $book): bool
     {
-        return $user->hasRole('super_admin');
+        return $user->hasRole('super_admin') || ($book->trashed() && $book->author_id === $user->id);
     }
 
     public function forceDelete(User $user, Book $book): bool
     {
-        return $user->hasRole('super_admin');
+        return $user->hasRole('super_admin') || ($book->trashed() && $book->author_id === $user->id);
+    }
+
+    /** Esere bağlı yazışma (Sohbet / Mesajlar): yazar ve Süper Admin. */
+    public function converse(User $user, Book $book): bool
+    {
+        return $user->hasRole('super_admin') || $book->author_id === $user->id;
     }
 
     /**

@@ -11,7 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Book::query()->each(fn (Book $book) => $book->refreshContentCounts());
+        // withoutGlobalScopes: Book sonradan soft delete kullanıyor (Faz G1), bu migration
+        // çalışırken deleted_at sütunu henüz yok.
+        Book::withoutGlobalScopes()->each(fn (Book $book) => $book->refreshContentCounts());
     }
 
     public function down(): void {}

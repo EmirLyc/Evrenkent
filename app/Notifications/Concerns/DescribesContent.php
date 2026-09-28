@@ -27,7 +27,7 @@ trait DescribesContent
     /**
      * Bildirimin gönderildiği andaki duruma göre: yayındaysa herkese açık sayfası, sahibi
      * düzenleyebiliyorsa (taslak / revizyon) düzenleme sayfası, diğer durumlarda (onaylandı,
-     * zamanlandı) sahibinin listesi. Önceden hep düzenleme sayfasına gidiyordu — onaylanmış
+     * zamanlandı) eserin yayın süreci (sayıda editörün Sayılarım listesi). Önceden hep düzenleme sayfasına gidiyordu — onaylanmış
      * ya da yayındaki içerikte o sayfa 403 veriyordu; sayıda ise Filament'e gidiyordu.
      */
     protected function contentUrl(Model $content): string
@@ -45,9 +45,10 @@ trait DescribesContent
 
         $editable = in_array($status, [ContentStatus::Taslak, ContentStatus::RevizyonIstendi], true);
 
+        // Onaylı / zamanlı eserde yazar detay sayfasındaki "Yayın Süreci"ne gider (Faz G1).
         return match (true) {
-            $content instanceof Book => $editable ? route('panel.yayinlarim.kitap.duzenle', $content) : route('panel.yayinlarim.index'),
-            $content instanceof Article => $editable ? route('panel.yayinlarim.makale.duzenle', $content) : route('panel.yayinlarim.index'),
+            $content instanceof Book => $editable ? route('panel.yayinlarim.kitap.duzenle', $content) : route('panel.yayinlarim.kitap.detay', $content).'#surec',
+            $content instanceof Article => $editable ? route('panel.yayinlarim.makale.duzenle', $content) : route('panel.yayinlarim.makale.detay', $content).'#surec',
             $content instanceof MagazineIssue => $editable ? route('panel.dergi.sayilarim.duzenle', $content) : route('panel.dergi.sayilarim'),
             default => route('home'),
         };

@@ -42,7 +42,7 @@ class PublicationDraftEditTest extends TestCase
                 'body' => 'Güncellenmiş açıklama.',
                 'price' => 149.90,
             ])
-            ->assertRedirect(route('panel.yayinlarim.taslaklarim'));
+            ->assertRedirect(route('panel.yayinlarim.taslaklarim', ['durum' => 'taslak']));
 
         $book->refresh();
         $this->assertSame('Yeni Başlık', $book->title);
@@ -151,7 +151,8 @@ class PublicationDraftEditTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_rejection_note_is_shown_on_geri_donenler_page(): void
+    /** Faz G1: Geri Dönenler kalktı — düzeltme notu eserin detay sayfasında ve mesajlarda. */
+    public function test_revision_note_is_shown_on_the_detail_and_messages_pages(): void
     {
         $author = $this->yazar();
         $book = Book::factory()->for($author, 'author')->create(['status' => ContentStatus::RevizyonIstendi]);
@@ -162,7 +163,13 @@ class PublicationDraftEditTest extends TestCase
         ]);
 
         $this->actingAs($author)
-            ->get(route('panel.yayinlarim.geri-donenler'))
+            ->get(route('panel.yayinlarim.kitap.detay', $book))
+            ->assertOk()
+            ->assertSee('Düzeltme notu')
+            ->assertSee('Kapak görseli eksik, lütfen ekleyin.');
+
+        $this->actingAs($author)
+            ->get(route('panel.mesajlar.kitap', $book))
             ->assertOk()
             ->assertSee('Kapak görseli eksik, lütfen ekleyin.');
     }
@@ -173,8 +180,9 @@ class PublicationDraftEditTest extends TestCase
         Book::factory()->for($author, 'author')->create(['status' => ContentStatus::Gonderildi]);
 
         $this->actingAs($author)
-            ->get(route('panel.yayinlarim.gonderilenler'))
+            ->get(route('panel.yayinlarim.taslaklarim', ['durum' => 'incelemede']))
             ->assertOk()
+            ->assertSee('Gönderimi Gör')
             ->assertDontSee('Düzenle');
     }
 
@@ -194,7 +202,7 @@ class PublicationDraftEditTest extends TestCase
                 'body' => 'Güncellenmiş içerik.',
                 'magazine_issue_id' => $issue->id,
             ])
-            ->assertRedirect(route('panel.yayinlarim.taslaklarim'));
+            ->assertRedirect(route('panel.yayinlarim.taslaklarim', ['durum' => 'taslak']));
 
         $article->refresh();
         $this->assertSame('Yeni Makale', $article->title);
@@ -210,7 +218,8 @@ class PublicationDraftEditTest extends TestCase
             ->delete(route('panel.yayinlarim.kitap.sil', $book))
             ->assertRedirect(route('panel.yayinlarim.taslaklarim'));
 
-        $this->assertModelMissing($book);
+        // Faz G1: silme iki kademeli — önce çöp kutusu.
+        $this->assertSoftDeleted($book);
     }
 
     public function test_yazar_cannot_delete_a_submitted_book(): void
@@ -247,7 +256,7 @@ class PublicationDraftEditTest extends TestCase
             ->delete(route('panel.yayinlarim.makale.sil', $article))
             ->assertRedirect(route('panel.yayinlarim.taslaklarim'));
 
-        $this->assertModelMissing($article);
+        $this->assertSoftDeleted($article);
     }
 
     public function test_delete_button_only_appears_for_draft_items_in_taslaklarim(): void
@@ -258,7 +267,7 @@ class PublicationDraftEditTest extends TestCase
         $this->actingAs($author)
             ->get(route('panel.yayinlarim.taslaklarim'))
             ->assertOk()
-            ->assertSee('Sil');
+            ->assertSee('Çöp kutusuna taşı');
     }
 
     public function test_delete_button_does_not_appear_for_submitted_items(): void
@@ -267,8 +276,8 @@ class PublicationDraftEditTest extends TestCase
         Book::factory()->for($author, 'author')->create(['status' => ContentStatus::Gonderildi]);
 
         $this->actingAs($author)
-            ->get(route('panel.yayinlarim.gonderilenler'))
+            ->get(route('panel.yayinlarim.taslaklarim'))
             ->assertOk()
-            ->assertDontSee('Sil');
+            ->assertDontSee('Çöp kutusuna taşı');
     }
 }
