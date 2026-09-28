@@ -13,8 +13,7 @@ use Illuminate\Support\Carbon;
 
 /**
  * Yayınlama ve zamanlamanın tek adresi (Faz D, 2026-09-27). Kendi onay ekranımız
- * (ContentApprovalController), Filament'teki Yayınla aksiyonları ve zamanlayıcı
- * (content:publish-scheduled) hepsi buradan geçer — önceden aynı "durum güncelle + geçmiş
+ * (ContentApprovalController) ve zamanlayıcı (content:publish-scheduled) buradan geçer — önceden aynı "durum güncelle + geçmiş
  * kaydı + bildirim" üçlüsü her yerde ayrı ayrı yazılıydı, sayı→makale zincirlemesi gibi
  * yeni kurallar üç yere birden eklenmek zorunda kalırdı.
  *

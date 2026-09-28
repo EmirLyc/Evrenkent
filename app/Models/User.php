@@ -7,8 +7,6 @@ use App\Enums\NoteType;
 use App\Enums\SubscriptionPlan;
 use App\Support\PlatformSettings;
 use Database\Factories\UserFactory;
-use Filament\Models\Contracts\FilamentUser;
-use Filament\Panel;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Builder;
@@ -18,14 +16,21 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Collection;
 use Spatie\Permission\Traits\HasRoles;
 
 #[Fillable(['name', 'email', 'password', 'is_premium', 'premium_until'])]
 #[Hidden(['password', 'remember_token'])]
-class User extends Authenticatable implements FilamentUser
+class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, HasRoles, Notifiable;
+
+    /**
+     * Yazarlık (Yayın Yönetimi) yetkisi olan roller. Rol PDF'i: Dergi Editörü "Yazar'ın paneline
+     * ek olarak" Dergi Yönetimi'ne sahip — editöre ayrıca yazar rolü atamak gerekmiyor.
+     */
+    public const AUTHOR_ROLES = ['yazar', 'dergi_editoru'];
 
     /**
      * Get the attributes that should be cast.
@@ -67,6 +72,32 @@ class User extends Authenticatable implements FilamentUser
     public function authoredMagazines(): BelongsToMany
     {
         return $this->belongsToMany(Magazine::class, 'magazine_author');
+    }
+
+    /** Kitap/makale yazabilir mi (Yayın Yönetimi) — yazar ya da dergi editörü. */
+    public function canAuthor(): bool
+    {
+        return $this->hasAnyRole(self::AUTHOR_ROLES);
+    }
+
+    /** Yazarlık yetkisi olan kullanıcılar (canAuthor ile aynı koşul, sorgu olarak). */
+    public function scopeAuthors(Builder $query): Builder
+    {
+        return $query->role(self::AUTHOR_ROLES);
+    }
+
+    /**
+     * Makale gönderebildiği dergiler: yazar olarak atandıkları + editörü oldukları (editör kendi
+     * dergisine de yazar — mockup'taki "Editörün Makalesi").
+     *
+     * @return Collection<int, int>
+     */
+    public function writableMagazineIds(): Collection
+    {
+        return $this->authoredMagazines()->pluck('magazines.id')
+            ->merge($this->editedMagazines()->pluck('id'))
+            ->unique()
+            ->values();
     }
 
     public function favorites(): HasMany
@@ -200,15 +231,9 @@ class User extends Authenticatable implements FilamentUser
             ->first();
     }
 
-    public function canAccessPanel(Panel $panel): bool
-    {
-        return $this->hasAnyRole(['super_admin', 'dergi_editoru']);
-    }
-
     /**
      * Girişten sonra role göre yönlendirilecek yol.
-     * Süper Admin -> kendi dashboard'u, Dergi Editörü -> kendi dashboard'u
-     * (Filament hâlâ /admin'den tam erişilebilir ama zorunlu ilk durak değil),
+     * Süper Admin -> kendi dashboard'u, Dergi Editörü -> kendi dashboard'u,
      * Yazar -> Yayınlarım, Okur -> Anasayfa (panele değil — sidebar zaten açık
      * geliyor, "Kitaplığım" bir tık uzakta, ayrıca kullanıcı doğrudan panele
      * düşürülmek istemedi).

@@ -99,7 +99,8 @@ class AdminMagazineController extends Controller
         return [
             'magazine' => $magazine,
             'editors' => User::role('dergi_editoru')->orderBy('name')->get(),
-            'authors' => User::role('yazar')->orderBy('name')->get(),
+            // Dergi editörleri de yazar yetkisine sahip — başka bir dergiye yazar olarak atanabilir.
+            'authors' => User::authors()->orderBy('name')->get(),
         ];
     }
 
@@ -113,10 +114,10 @@ class AdminMagazineController extends Controller
             'slug' => ['required', 'string', 'max:255', 'alpha_dash', Rule::unique('magazines', 'slug')->ignore($magazine)],
             'description' => ['nullable', 'string'],
             'cover_image' => ['nullable', 'image', 'max:5120'],
-            // Editör sadece dergi editörü, yazarlar sadece yazar rolündeki kullanıcılardan seçilebilir.
+            // Editör sadece dergi editörü, yazarlar yazarlık yetkisi olan (yazar / dergi editörü) kullanıcılardan seçilebilir.
             'editor_id' => ['nullable', Rule::in(User::role('dergi_editoru')->pluck('id'))],
             'author_ids' => ['nullable', 'array'],
-            'author_ids.*' => [Rule::in(User::role('yazar')->pluck('id'))],
+            'author_ids.*' => [Rule::in(User::authors()->pluck('id'))],
         ];
     }
 }

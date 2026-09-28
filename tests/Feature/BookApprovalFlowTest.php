@@ -3,14 +3,15 @@
 namespace Tests\Feature;
 
 use App\Enums\ContentStatus;
-use App\Filament\Resources\BookResource\Pages\EditBook;
-use App\Filament\Resources\BookResource\Pages\ListBooks;
 use App\Models\Book;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Livewire\Livewire;
 use Tests\TestCase;
 
+/**
+ * Kitap onay akışı (Yazar → Süper Admin). 2026-09-28'e kadar Filament'in tablo aksiyonları
+ * üzerinden yazılmıştı; Filament kaldırılınca aynı senaryolar Süper Admin paneline taşındı.
+ */
 class BookApprovalFlowTest extends TestCase
 {
     use RefreshDatabase;
@@ -31,116 +32,93 @@ class BookApprovalFlowTest extends TestCase
         return $user;
     }
 
-    public function test_super_admin_can_approve_a_submitted_book(): void
+    public function test_author_submits_and_super_admin_approves_and_publishes_now(): void
     {
-        $admin = $this->superAdmin();
-        $book = Book::factory()->for($this->yazar(), 'author')->create([
-            'status' => ContentStatus::Gonderildi,
-        ]);
+        $author = $this->yazar();
+        $book = Book::factory()->for($author, 'author')->create(['status' => ContentStatus::Taslak]);
 
-        Livewire::actingAs($admin)
-            ->test(ListBooks::class)
-            ->callTableAction('approve', $book)
-            ->assertHasNoTableActionErrors();
+        $this->actingAs($author)->post(route('panel.yayinlarim.kitap.gonder', $book))->assertRedirect();
+        $this->assertSame(ContentStatus::Gonderildi, $book->refresh()->status);
+
+        $this->actingAs($this->superAdmin())
+            ->post(route('panel.adminpanel.onaylar.kitap.onayla', $book), ['price' => 75, 'publish_mode' => 'simdi'])
+            ->assertSessionHasNoErrors();
 
         $book->refresh();
-        $this->assertSame(ContentStatus::Onaylandi, $book->status);
-        $this->assertSame(1, $book->reviews()->count());
-        $this->assertSame('onaylandi', $book->reviews()->first()->action);
+        $this->assertSame(ContentStatus::Yayinda, $book->status);
+        $this->assertNotNull($book->published_at);
+        $this->assertSame(['gonderildi', 'onaylandi', 'yayinda'], $book->reviews()->orderBy('id')->pluck('action')->all());
     }
 
     public function test_super_admin_can_set_a_scheduled_publish_date_while_approving(): void
     {
-        $admin = $this->superAdmin();
-        $book = Book::factory()->for($this->yazar(), 'author')->create([
-            'status' => ContentStatus::Gonderildi,
-        ]);
+        $book = Book::factory()->for($this->yazar(), 'author')->create(['status' => ContentStatus::Gonderildi]);
         $target = now()->addDays(10)->startOfMinute();
 
-        Livewire::actingAs($admin)
-            ->test(ListBooks::class)
-            ->callTableAction('approve', $book, data: ['scheduled_publish_at' => $target])
-            ->assertHasNoTableActionErrors();
+        $this->actingAs($this->superAdmin())
+            ->post(route('panel.adminpanel.onaylar.kitap.onayla', $book), [
+                'price' => 60,
+                'publish_mode' => 'ileri',
+                'scheduled_publish_at' => $target->format('Y-m-d\TH:i'),
+            ])
+            ->assertSessionHasNoErrors();
 
         $book->refresh();
         $this->assertSame(ContentStatus::Onaylandi, $book->status);
         $this->assertTrue($target->equalTo($book->scheduled_publish_at));
     }
 
-    public function test_approve_action_is_hidden_for_a_draft_book(): void
+    public function test_a_draft_book_cannot_be_approved_and_is_not_listed(): void
     {
         $admin = $this->superAdmin();
-        $book = Book::factory()->for($this->yazar(), 'author')->create([
-            'status' => ContentStatus::Taslak,
-        ]);
+        $book = Book::factory()->for($this->yazar(), 'author')->create(['status' => ContentStatus::Taslak, 'title' => 'Taslaktaki Kitap']);
 
-        Livewire::actingAs($admin)
-            ->test(ListBooks::class)
-            ->assertTableActionHidden('approve', $book);
+        $this->actingAs($admin)->get(route('panel.adminpanel.onaylar.kitap.onayla-form', $book))->assertForbidden();
+        $this->actingAs($admin)->get(route('panel.adminpanel.onaylar.index', ['tur' => 'kitaplar']))->assertDontSee('Taslaktaki Kitap');
     }
 
-    public function test_super_admin_can_reject_a_submitted_book_with_a_note(): void
-    {
-        $admin = $this->superAdmin();
-        $book = Book::factory()->for($this->yazar(), 'author')->create([
-            'status' => ContentStatus::Gonderildi,
-        ]);
-
-        Livewire::actingAs($admin)
-            ->test(ListBooks::class)
-            ->callTableAction('reject', $book, data: ['note' => 'Kapak görseli eksik.'])
-            ->assertHasNoTableActionErrors();
-
-        $book->refresh();
-        $this->assertSame(ContentStatus::RevizyonIstendi, $book->status);
-        $this->assertSame('Kapak görseli eksik.', $book->reviews()->latest()->first()->note);
-    }
-
-    /** Filament (yedek panel) de kalıcı reddedebiliyor — kendi panelimizle aynı yol (ContentReviewer). */
-    public function test_super_admin_can_reject_a_book_permanently_from_the_backup_panel(): void
+    public function test_super_admin_can_reject_a_book_permanently(): void
     {
         $book = Book::factory()->for($this->yazar(), 'author')->create(['status' => ContentStatus::Gonderildi]);
 
-        Livewire::actingAs($this->superAdmin())
-            ->test(ListBooks::class)
-            ->callTableAction('reject', $book, data: ['decision' => 'ret', 'note' => 'Kapsam dışı.'])
-            ->assertHasNoTableActionErrors();
+        $this->actingAs($this->superAdmin())
+            ->post(route('panel.adminpanel.onaylar.kitap.reddet', $book), ['decision' => 'ret', 'note' => 'Kapsam dışı.'])
+            ->assertSessionHasNoErrors();
 
         $this->assertSame(ContentStatus::Reddedildi, $book->refresh()->status);
         $this->assertSame('reddedildi', $book->reviews()->latest('id')->first()->action);
     }
 
-    public function test_super_admin_can_publish_an_approved_book(): void
+    public function test_author_can_resubmit_after_a_revision_request(): void
     {
-        $admin = $this->superAdmin();
-        $book = Book::factory()->for($this->yazar(), 'author')->create([
-            'status' => ContentStatus::Onaylandi,
-            'published_at' => null,
-        ]);
+        $author = $this->yazar();
+        $book = Book::factory()->for($author, 'author')->create(['status' => ContentStatus::Gonderildi]);
 
-        Livewire::actingAs($admin)
-            ->test(ListBooks::class)
-            ->callTableAction('publish', $book)
-            ->assertHasNoTableActionErrors();
+        $this->actingAs($this->superAdmin())
+            ->post(route('panel.adminpanel.onaylar.kitap.reddet', $book), ['decision' => 'revizyon', 'note' => 'Kapak görseli eksik.']);
 
-        $book->refresh();
-        $this->assertSame(ContentStatus::Yayinda, $book->status);
-        $this->assertNotNull($book->published_at);
+        $this->assertSame(ContentStatus::RevizyonIstendi, $book->refresh()->status);
+
+        $this->actingAs($author)->post(route('panel.yayinlarim.kitap.gonder', $book))->assertRedirect();
+        $this->assertSame(ContentStatus::Gonderildi, $book->refresh()->status);
     }
 
-    public function test_status_field_is_locked_on_edit_and_cannot_be_tampered_via_form(): void
+    public function test_status_cannot_be_tampered_via_the_admin_edit_form(): void
     {
-        $admin = $this->superAdmin();
-        $book = Book::factory()->for($this->yazar(), 'author')->create([
-            'status' => ContentStatus::Taslak,
-        ]);
+        $author = $this->yazar();
+        $book = Book::factory()->for($author, 'author')->create(['status' => ContentStatus::Taslak, 'price' => 40]);
 
-        Livewire::actingAs($admin)
-            ->test(EditBook::class, ['record' => $book->getRouteKey()])
-            ->set('data.status', ContentStatus::Yayinda->value)
-            ->call('save');
+        $this->actingAs($this->superAdmin())
+            ->put(route('panel.adminpanel.kitaplar.guncelle', $book), [
+                'author_id' => $author->id,
+                'title' => $book->title,
+                'slug' => $book->slug,
+                'price' => 40,
+                'status' => ContentStatus::Yayinda->value,
+            ])
+            ->assertSessionHasNoErrors();
 
-        // status alanı disabled+dehydrated(false) olduğu için formdan gelen değer yok sayılır.
+        // Durum sadece İçerik Onayları akışıyla değişir; formdan gelen değer yok sayılır.
         $this->assertSame(ContentStatus::Taslak, $book->fresh()->status);
     }
 }

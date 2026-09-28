@@ -50,10 +50,10 @@
 
             <div class="border-t border-slate-100 pt-5">
                 <div class="text-sm font-medium text-slate-700 mb-1">Yazarlar</div>
-                <p class="text-xs text-slate-400 mb-3">Sadece işaretli yazarlar bu dergiye makale gönderebilir. Listede "Yazar" rolündeki kullanıcılar var.</p>
+                <p class="text-xs text-slate-400 mb-3">Sadece işaretli yazarlar bu dergiye makale gönderebilir (derginin editörü ayrıca işaretlenmeden gönderebilir). Listede "Yazar" ve "Dergi Editörü" rolündeki kullanıcılar var.</p>
                 @php $selectedAuthors = collect(old('author_ids', $magazine?->authors->pluck('id') ?? []))->map(fn ($id) => (int) $id); @endphp
                 @if ($authors->isEmpty())
-                    <p class="text-sm text-slate-400">Henüz "Yazar" rolünde kullanıcı yok.</p>
+                    <p class="text-sm text-slate-400">Henüz "Yazar" ya da "Dergi Editörü" rolünde kullanıcı yok.</p>
                 @else
                     <div class="max-h-64 overflow-y-auto rounded-md border border-slate-200 divide-y divide-slate-100">
                         @foreach ($authors as $author)

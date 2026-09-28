@@ -1,12 +1,13 @@
 <?php
 
+use App\Http\Controllers\AdminArticleController;
 use App\Http\Controllers\AdminBookController;
 use App\Http\Controllers\AdminCategoryController;
 use App\Http\Controllers\AdminDiscountController;
 use App\Http\Controllers\AdminMagazineController;
+use App\Http\Controllers\AdminMagazineIssueController;
 use App\Http\Controllers\AdminPremiumController;
 use App\Http\Controllers\AdminRejectedController;
-use App\Http\Controllers\AdminMagazineIssueController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\ChapterController;
@@ -23,6 +24,7 @@ use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\ReadingListController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\SuperAdminController;
+use App\Models\User;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth')->prefix('panel')->as('panel.')->group(function () {
@@ -62,8 +64,9 @@ Route::middleware('auth')->prefix('panel')->as('panel.')->group(function () {
     Route::delete('/sepet/kitap/{book}', [CartController::class, 'destroy'])->name('sepet.kitap.sil');
     Route::post('/sepet/checkout', [CartController::class, 'checkout'])->name('sepet.checkout');
 
-    // Yayın Yönetimi: sadece Yazar rolündeki kullanıcılar erişebilir.
-    Route::middleware('role:yazar')->prefix('yayinlarim')->as('yayinlarim.')->group(function () {
+    // Yayın Yönetimi: Yazar ve Dergi Editörü (rol PDF'i: editör "Yazar'ın paneline ek olarak"
+    // Dergi Yönetimi'ne sahip — bkz. User::AUTHOR_ROLES).
+    Route::middleware('role:'.implode('|', User::AUTHOR_ROLES))->prefix('yayinlarim')->as('yayinlarim.')->group(function () {
         Route::get('/', [PublicationController::class, 'index'])->name('index');
         Route::get('/taslaklarim', [PublicationController::class, 'taslaklarim'])->name('taslaklarim');
         Route::get('/taslaklarim/yeni', [PublicationController::class, 'yeniTaslakForm'])->name('taslaklarim.yeni');
@@ -102,9 +105,8 @@ Route::middleware('auth')->prefix('panel')->as('panel.')->group(function () {
     });
 
     // Dergi Yönetimi: sadece Dergi Editörü rolündeki kullanıcılar erişebilir. Sayı
-    // oluşturma/düzenleme/onaya gönderme ve makale inceleme burada gerçek — sadece
-    // Süper Admin'in onayla/reddet/yayınla aksiyonları (policy'de zaten sadece ona
-    // açık) Filament'te kalıyor.
+    // oluşturma/düzenleme/onaya gönderme ve makale inceleme; onayla/reddet/yayınla
+    // Süper Admin'in İçerik Onayları'nda.
     Route::middleware('role:dergi_editoru')->prefix('dergi')->as('dergi.')->group(function () {
         Route::get('/', [DergiYonetimiController::class, 'index'])->name('index');
 
@@ -123,10 +125,8 @@ Route::middleware('auth')->prefix('panel')->as('panel.')->group(function () {
         Route::get('/yayin-takvimi', [DergiYonetimiController::class, 'yayinTakvimi'])->name('yayin-takvimi');
     });
 
-    // Süper Admin dashboard'u: gerçek verili özet. Kullanıcı/rol yönetimi ve
-    // Kitaplar/Dergiler tam listeleri gibi henüz taşınmamış bölümler (adım adım
-    // taşınıyor, bkz. UI_RESTYLE_NOTES.md) hâlâ Filament'e link veriyor —
-    // içerik onay akışı (bkz. altındaki "onaylar" grubu) artık taşındı.
+    // Süper Admin paneli: tüm yönetim burada (Filament 2026-09-28'de kaldırıldı).
+    // Altyapısı olmayan bölümler "yakında" sayfasına gider.
     Route::middleware('role:super_admin')->prefix('admin-panel')->as('adminpanel.')->group(function () {
         Route::get('/', [SuperAdminController::class, 'index'])->name('index');
         Route::get('/yakinda/{section}', [SuperAdminController::class, 'placeholder'])->name('placeholder');
@@ -139,8 +139,8 @@ Route::middleware('auth')->prefix('panel')->as('panel.')->group(function () {
             Route::post('/makale/{article}/geri-ac', [AdminRejectedController::class, 'reopenArticle'])->name('makale.geri-ac');
         });
 
-        // İçerik Onayları: Filament'teki BookResource/ArticleResource/MagazineIssueResource
-        // approve/reject/publish action'larının kendi panelimizdeki paraleli.
+        // İçerik Onayları: kitap / dergi sayısı / makale için onayla (şimdi ya da ileri
+        // tarihte yayınla), revizyon iste / kalıcı reddet, yayınla.
         Route::prefix('onaylar')->as('onaylar.')->group(function () {
             Route::get('/', [ContentApprovalController::class, 'index'])->name('index');
 
@@ -163,8 +163,7 @@ Route::middleware('auth')->prefix('panel')->as('panel.')->group(function () {
             Route::post('/makale/{article}/yayinla', [ContentApprovalController::class, 'publishArticle'])->name('makale.yayinla');
         });
 
-        // Kitaplar: Filament'teki BookResource'un list/create/edit/delete'inin
-        // birebir aynısı (Faz 2 — bkz. UI_RESTYLE_NOTES.md).
+        // Kitaplar: liste/oluştur/düzenle/sil (Faz 2 — bkz. UI_RESTYLE_NOTES.md).
         Route::prefix('kitaplar')->as('kitaplar.')->group(function () {
             Route::get('/', [AdminBookController::class, 'index'])->name('index');
             Route::get('/yeni', [AdminBookController::class, 'create'])->name('yeni');
@@ -184,8 +183,7 @@ Route::middleware('auth')->prefix('panel')->as('panel.')->group(function () {
             Route::delete('/{magazine}', [AdminMagazineController::class, 'destroy'])->name('sil');
         });
 
-        // Dergi Sayıları: Filament'teki MagazineIssueResource'un list/create/edit/delete'inin
-        // karşılığı (Faz 3). Faz E'de "dergiler"den "sayilar"a taşındı — "Dergiler" artık dergi
+        // Dergi Sayıları: liste/oluştur/düzenle/sil (Faz 3). Faz E'de "dergiler"den "sayilar"a taşındı — "Dergiler" artık dergi
         // tanımlarını yönetiyor, sayılar ayrı bir menüde.
         Route::prefix('sayilar')->as('sayilar.')->group(function () {
             Route::get('/', [AdminMagazineIssueController::class, 'index'])->name('index');
@@ -196,8 +194,17 @@ Route::middleware('auth')->prefix('panel')->as('panel.')->group(function () {
             Route::delete('/{magazineIssue}', [AdminMagazineIssueController::class, 'destroy'])->name('sil');
         });
 
-        // Kategoriler: Filament'teki CategoryResource'un list/create/edit/delete'inin
-        // birebir aynısı (Faz 4 — bkz. UI_RESTYLE_NOTES.md).
+        // Makaleler (2026-09-28): liste/oluştur/düzenle/sil — içerik zengin editörle.
+        Route::prefix('makaleler')->as('makaleler.')->group(function () {
+            Route::get('/', [AdminArticleController::class, 'index'])->name('index');
+            Route::get('/yeni', [AdminArticleController::class, 'create'])->name('yeni');
+            Route::post('/', [AdminArticleController::class, 'store'])->name('store');
+            Route::get('/{article}/duzenle', [AdminArticleController::class, 'edit'])->name('duzenle');
+            Route::put('/{article}', [AdminArticleController::class, 'update'])->name('guncelle');
+            Route::delete('/{article}', [AdminArticleController::class, 'destroy'])->name('sil');
+        });
+
+        // Kategoriler (Faz 4 — bkz. UI_RESTYLE_NOTES.md).
         Route::prefix('kategoriler')->as('kategoriler.')->group(function () {
             Route::get('/', [AdminCategoryController::class, 'index'])->name('index');
             Route::get('/yeni', [AdminCategoryController::class, 'create'])->name('yeni');
@@ -221,8 +228,7 @@ Route::middleware('auth')->prefix('panel')->as('panel.')->group(function () {
         Route::put('/premium', [AdminPremiumController::class, 'update'])->name('premium.guncelle');
 
         // Kullanıcılar/Yazarlar/Dergi Editörleri (?rol= filtresiyle aynı liste) + Roller
-        // ve Yetkiler: Filament'teki UserResource'un list/create/edit/delete'inin
-        // birebir aynısı (Faz 5 — bkz. UI_RESTYLE_NOTES.md).
+        // ve Yetkiler (Faz 5 — bkz. UI_RESTYLE_NOTES.md).
         Route::prefix('kullanicilar')->as('kullanicilar.')->group(function () {
             Route::get('/', [AdminUserController::class, 'index'])->name('index');
             Route::get('/roller', [AdminUserController::class, 'roles'])->name('roller');

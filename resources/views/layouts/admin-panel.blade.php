@@ -97,7 +97,6 @@
 
                                 <div x-show="open" x-cloak x-transition.origin.top.right class="absolute right-0 top-full mt-3 w-48 card py-1 z-30">
                                     <a href="{{ route('profile.edit') }}" class="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">Ayarlar</a>
-                                    <a href="{{ url('/admin') }}" data-turbo="false" class="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">Filament Yönetim Paneli</a>
                                     <form method="POST" action="{{ route('logout') }}">
                                         @csrf
                                         <button type="submit" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">Çıkış Yap</button>

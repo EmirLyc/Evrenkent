@@ -3,9 +3,6 @@
 namespace Tests\Feature;
 
 use App\Enums\ContentStatus;
-use App\Filament\Resources\ArticleResource\Pages\ListArticles;
-use App\Filament\Resources\BookResource\Pages\ListBooks;
-use App\Filament\Resources\MagazineIssueResource\Pages\ListMagazineIssues;
 use App\Models\Article;
 use App\Models\Book;
 use App\Models\MagazineIssue;
@@ -15,12 +12,12 @@ use App\Notifications\ContentPublished;
 use App\Notifications\ContentRevisionRequested;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
-use Livewire\Livewire;
 use Tests\TestCase;
 
 /**
- * Filament'teki Onayla/Reddet/Yayınla aksiyonlarının gerçekten bildirim gönderdiğini
- * doğrular — header'daki zilin (x-notifications-bell) beslendiği yer burası.
+ * Onay ekranındaki Onayla/Reddet/Yayınla kararlarının gerçekten bildirim gönderdiğini ve
+ * bildirimin doğru sayfaya bağlandığını doğrular — header'daki zilin (x-notifications-bell)
+ * beslendiği yer burası.
  */
 class ContentNotificationTest extends TestCase
 {
@@ -53,46 +50,41 @@ class ContentNotificationTest extends TestCase
     public function test_approving_a_book_notifies_its_author(): void
     {
         Notification::fake();
-
-        $admin = $this->superAdmin();
         $author = $this->yazar();
         $book = Book::factory()->for($author, 'author')->create(['status' => ContentStatus::Gonderildi]);
 
-        Livewire::actingAs($admin)->test(ListBooks::class)->callTableAction('approve', $book);
+        $this->actingAs($this->superAdmin())->post(route('panel.adminpanel.onaylar.kitap.onayla', $book), [
+            'price' => 50,
+            'publish_mode' => 'ileri',
+            'scheduled_publish_at' => now()->addWeek()->format('Y-m-d\TH:i'),
+        ]);
 
         Notification::assertSentTo($author, ContentApproved::class);
     }
 
-    public function test_rejecting_a_book_notifies_its_author_with_the_note(): void
+    public function test_requesting_a_revision_notifies_the_author_with_the_note(): void
     {
         Notification::fake();
-
-        $admin = $this->superAdmin();
         $author = $this->yazar();
         $book = Book::factory()->for($author, 'author')->create(['status' => ContentStatus::Gonderildi]);
 
-        Livewire::actingAs($admin)->test(ListBooks::class)
-            ->callTableAction('reject', $book, data: ['note' => 'Kapak eksik.']);
+        $this->actingAs($this->superAdmin())
+            ->post(route('panel.adminpanel.onaylar.kitap.reddet', $book), ['decision' => 'revizyon', 'note' => 'Kapak eksik.']);
 
         Notification::assertSentTo(
             $author,
             ContentRevisionRequested::class,
-            fn ($notification, $channels) => $notification->toArray($author)['body'] === "\"{$book->title}\" için revizyon istendi: Kapak eksik."
+            fn ($notification) => $notification->toArray($author)['body'] === "\"{$book->title}\" için revizyon istendi: Kapak eksik."
         );
     }
 
     public function test_publishing_a_book_notifies_its_author(): void
     {
         Notification::fake();
-
-        $admin = $this->superAdmin();
         $author = $this->yazar();
-        $book = Book::factory()->for($author, 'author')->create([
-            'status' => ContentStatus::Onaylandi,
-            'published_at' => null,
-        ]);
+        $book = Book::factory()->for($author, 'author')->create(['status' => ContentStatus::Onaylandi, 'published_at' => null]);
 
-        Livewire::actingAs($admin)->test(ListBooks::class)->callTableAction('publish', $book);
+        $this->actingAs($this->superAdmin())->post(route('panel.adminpanel.onaylar.kitap.yayinla', $book));
 
         Notification::assertSentTo($author, ContentPublished::class);
     }
@@ -100,12 +92,10 @@ class ContentNotificationTest extends TestCase
     public function test_approving_an_article_notifies_its_author(): void
     {
         Notification::fake();
-
-        $admin = $this->superAdmin();
         $author = $this->yazar();
         $article = Article::factory()->for($author, 'author')->create(['status' => ContentStatus::Incelemede]);
 
-        Livewire::actingAs($admin)->test(ListArticles::class)->callTableAction('approve', $article);
+        $this->actingAs($this->superAdmin())->post(route('panel.adminpanel.onaylar.makale.onayla', $article));
 
         Notification::assertSentTo($author, ContentApproved::class);
     }
@@ -113,33 +103,53 @@ class ContentNotificationTest extends TestCase
     public function test_approving_a_magazine_issue_notifies_its_editor_not_the_admin(): void
     {
         Notification::fake();
-
         $admin = $this->superAdmin();
         $editor = $this->dergiEditoru();
         $issue = MagazineIssue::factory()->for($editor, 'editor')->create(['status' => ContentStatus::Gonderildi]);
         // Onaylı makalesi olmayan sayı onaylanamıyor (Faz D kuralı 2).
         Article::factory()->for($issue, 'magazineIssue')->create(['status' => ContentStatus::Onaylandi]);
 
-        Livewire::actingAs($admin)->test(ListMagazineIssues::class)->callTableAction('approve', $issue);
+        $this->actingAs($admin)->post(route('panel.adminpanel.onaylar.dergi.onayla', $issue), [
+            'publish_mode' => 'ileri',
+            'scheduled_publish_at' => now()->addWeek()->format('Y-m-d\TH:i'),
+        ]);
 
         Notification::assertSentTo($editor, ContentApproved::class);
         Notification::assertNotSentTo($admin, ContentApproved::class);
     }
 
-    public function test_notification_links_to_the_authors_own_edit_page(): void
+    /**
+     * Bağlantı içeriğin durumuna göre: revizyonda düzenleme sayfası, onaylı/zamanlı içerikte
+     * sahibinin listesi (düzenleme sayfası orada 403 verirdi), yayında herkese açık sayfa.
+     */
+    public function test_notification_links_depend_on_the_content_status(): void
     {
         Notification::fake();
-
         $admin = $this->superAdmin();
         $author = $this->yazar();
-        $book = Book::factory()->for($author, 'author')->create(['status' => ContentStatus::Gonderildi]);
 
-        Livewire::actingAs($admin)->test(ListBooks::class)->callTableAction('approve', $book);
+        $revised = Book::factory()->for($author, 'author')->create(['status' => ContentStatus::Gonderildi]);
+        $this->actingAs($admin)->post(route('panel.adminpanel.onaylar.kitap.reddet', $revised), ['decision' => 'revizyon', 'note' => 'Düzeltin.']);
+        Notification::assertSentTo($author, ContentRevisionRequested::class,
+            fn ($n) => $n->toArray($author)['url'] === route('panel.yayinlarim.kitap.duzenle', $revised));
 
-        Notification::assertSentTo(
-            $author,
-            ContentApproved::class,
-            fn ($notification) => $notification->toArray($author)['url'] === route('panel.yayinlarim.kitap.duzenle', $book)
-        );
+        $scheduled = Book::factory()->for($author, 'author')->create(['status' => ContentStatus::Gonderildi]);
+        $this->actingAs($admin)->post(route('panel.adminpanel.onaylar.kitap.onayla', $scheduled), [
+            'price' => 50, 'publish_mode' => 'ileri', 'scheduled_publish_at' => now()->addWeek()->format('Y-m-d\TH:i'),
+        ]);
+        Notification::assertSentTo($author, ContentApproved::class,
+            fn ($n) => $n->toArray($author)['url'] === route('panel.yayinlarim.index'));
+
+        $published = Book::factory()->for($author, 'author')->create(['status' => ContentStatus::Gonderildi]);
+        $this->actingAs($admin)->post(route('panel.adminpanel.onaylar.kitap.onayla', $published), ['price' => 50, 'publish_mode' => 'simdi']);
+        Notification::assertSentTo($author, ContentPublished::class,
+            fn ($n) => $n->toArray($author)['url'] === route('kitaplar.show', $published));
+
+        // Sayının bağlantısı önceden Filament'in düzenleme sayfasına gidiyordu.
+        $editor = $this->dergiEditoru();
+        $issue = MagazineIssue::factory()->for($editor, 'editor')->create(['status' => ContentStatus::Gonderildi]);
+        $this->actingAs($admin)->post(route('panel.adminpanel.onaylar.dergi.reddet', $issue), ['decision' => 'revizyon', 'note' => 'Kapak eksik.']);
+        Notification::assertSentTo($editor, ContentRevisionRequested::class,
+            fn ($n) => $n->toArray($editor)['url'] === route('panel.dergi.sayilarim.duzenle', $issue));
     }
 }

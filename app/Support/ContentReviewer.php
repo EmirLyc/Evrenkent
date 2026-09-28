@@ -13,8 +13,8 @@ use App\Notifications\ContentRevisionRequested;
 use Illuminate\Support\Carbon;
 
 /**
- * Onay ekranındaki kararların tek adresi — kendi panelimiz (ContentApprovalController) ve
- * Filament (acil durum paneli) aynı yoldan geçer, kurallar tek yerde değişir:
+ * Onay ekranındaki kararların tek adresi (ContentApprovalController, Reddedilenler'deki
+ * geri açma) — kurallar tek yerde değişir:
  *
  *  - approve() / approveAndPublish(): onay (yayın ve zamanlama ContentPublisher'da).
  *
@@ -26,14 +26,12 @@ use Illuminate\Support\Carbon;
  *  - reopen(): Süper Admin'in yanlışlıkla reddettiği içeriği revizyona geri açması.
  *
  * Önceden "Reddet" her yerde revizyona düşürüyordu; Reddedildi durumu hiç atanmıyor, Dergi
- * Editörü'nün "Reddedilen" sekmesi hep boş kalıyordu. Kendi panelimiz ve Filament aynı
- * yoldan geçer (bkz. ContentPublisher — yayınlama tarafının eşi).
+ * Editörü'nün "Reddedilen" sekmesi hep boş kalıyordu. Yayınlama tarafının eşi: ContentPublisher.
  */
 class ContentReviewer
 {
     /**
-     * Onayla, yayına almadan: sayısı yayında olmayan makale (sayıyla birlikte yayınlanır) ya
-     * da Filament'teki tarihsiz onay (sonra "Yayınla" ile yayınlanır).
+     * Onayla, yayına almadan: sayısı yayında olmayan makale (sayıyla birlikte yayınlanır).
      */
     public static function approve(Book|Article|MagazineIssue $content, ?User $by, ?string $note = null): void
     {
@@ -44,8 +42,7 @@ class ContentReviewer
 
     /**
      * Onayla ve yayınla: $at verilirse o tarihe zamanlanır (Yakında Çıkacaklar'da geri sayım),
-     * verilmezse hemen yayına girer (sayı onaylı makaleleriyle birlikte). Kendi onay ekranımız
-     * ve Filament aynı yoldan (ContentPublisher).
+     * verilmezse hemen yayına girer (sayı onaylı makaleleriyle birlikte) — ContentPublisher üzerinden.
      */
     public static function approveAndPublish(Book|Article|MagazineIssue $content, ?User $by, ?Carbon $at = null): void
     {

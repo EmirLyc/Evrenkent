@@ -16,8 +16,8 @@ use Illuminate\View\View;
 
 /**
  * Süper Admin'in içerik onay akışı (Kitap/Dergi Sayısı/Makale onayla/reddet/yayınla),
- * kendi panelimizde. Yayınlama ve zamanlama ContentPublisher'dan geçiyor (Filament ve
- * zamanlayıcı da aynı sınıfı kullanıyor).
+ * kendi panelimizde. Yayınlama ve zamanlama ContentPublisher'dan geçiyor (zamanlayıcı da
+ * aynı sınıfı kullanıyor).
  *
  * Faz D (2026-09-27 revizesi — "süper admin yayınla dediğinde vakit seçebilmeli"): onay
  * ekranında iki seçenek var — "Şimdi Yayınla" ya da "İleri Tarihte Yayınla" (Yakında
@@ -278,8 +278,7 @@ class ContentApprovalController extends Controller
 
     /**
      * Onay ekranındaki olumsuz karar (2026-09-27, karar A): "Revizyon iste" içeriği sahibine
-     * geri gönderir, "Kalıcı olarak reddet" kapatır. İkisi de ContentReviewer'dan geçer
-     * (Filament'teki Reddet aksiyonları da).
+     * geri gönderir, "Kalıcı olarak reddet" kapatır. İkisi de ContentReviewer'dan geçer.
      */
     private function decide(Request $request, Book|Article|MagazineIssue $content, string $tab, string $label): RedirectResponse
     {

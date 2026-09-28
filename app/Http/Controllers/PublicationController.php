@@ -63,8 +63,8 @@ class PublicationController extends Controller
 
     /**
      * Bir makalenin gönderilebileceği dergi sayıları — yazarın atandığı dergilerin
-     * (Faz E: "dergide yazarı süper admin yapacak") henüz yayınlanmamış sayıları.
-     * Önceden her yazar açık olan her sayıya gönderebiliyordu.
+     * (Faz E: "dergide yazarı süper admin yapacak") ve editörü olduğu dergilerin henüz
+     * yayınlanmamış sayıları. Önceden her yazar açık olan her sayıya gönderebiliyordu.
      *
      * @return Collection<int, MagazineIssue>
      */
@@ -72,7 +72,7 @@ class PublicationController extends Controller
     {
         // Yayındaki ve kalıcı reddedilmiş sayılara makale gönderilemez.
         return MagazineIssue::whereNotIn('status', [ContentStatus::Yayinda, ContentStatus::Reddedildi])
-            ->whereIn('magazine_id', auth()->user()->authoredMagazines()->pluck('magazines.id'))
+            ->whereIn('magazine_id', auth()->user()->writableMagazineIds())
             ->with('magazine')
             ->orderBy('title')
             ->get();
@@ -165,7 +165,7 @@ class PublicationController extends Controller
      */
     private function issueMessages(): array
     {
-        return ['magazine_issue_id.in' => 'Bu sayıya makale gönderemezsiniz — sadece atandığınız dergilerin açık sayılarına gönderebilirsiniz.'];
+        return ['magazine_issue_id.in' => 'Bu sayıya makale gönderemezsiniz — sadece yazar ya da editör olarak atandığınız dergilerin açık sayılarına gönderebilirsiniz.'];
     }
 
     /**

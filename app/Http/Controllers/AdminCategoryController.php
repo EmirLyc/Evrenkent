@@ -9,11 +9,9 @@ use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 /**
- * Süper Admin'in Kategoriler yönetimi — Filament'teki CategoryResource'un
- * list/create/edit/delete'inin birebir aynısı, kendi panelimizde. CategoryResource
- * silinmedi/değişmedi — bu, onunla paralel çalışan ikinci bir arayüz. (Faz 4 —
- * bkz. UI_RESTYLE_NOTES.md; AdminBookController'daki desenle tutarlı, ama
- * kategori sadece iki alanlı olduğu için çok daha basit.)
+ * Süper Admin'in Kategoriler yönetimi (liste/oluştur/düzenle/sil — Faz 4, bkz.
+ * UI_RESTYLE_NOTES.md; AdminBookController'daki desenle tutarlı, ama kategori
+ * sadece iki alanlı olduğu için çok daha basit).
  */
 class AdminCategoryController extends Controller
 {

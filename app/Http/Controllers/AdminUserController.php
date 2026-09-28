@@ -11,10 +11,8 @@ use Illuminate\View\View;
 use Spatie\Permission\Models\Role;
 
 /**
- * Süper Admin'in Kullanıcı/Rol yönetimi — Filament'teki UserResource'un
- * list/create/edit/delete'inin birebir aynısı, kendi panelimizde. UserResource
- * silinmedi/değişmedi — bu, onunla paralel çalışan ikinci bir arayüz. (Faz 5 —
- * bkz. UI_RESTYLE_NOTES.md.) Sidebar'daki "Kullanıcılar"/"Yazarlar"/"Dergi
+ * Süper Admin'in Kullanıcı/Rol yönetimi (liste/oluştur/düzenle/sil — Faz 5, bkz.
+ * UI_RESTYLE_NOTES.md). Sidebar'daki "Kullanıcılar"/"Yazarlar"/"Dergi
  * Editörleri" hepsi aynı listeye, sadece ?rol= filtresiyle geliyor.
  */
 class AdminUserController extends Controller
@@ -59,7 +57,7 @@ class AdminUserController extends Controller
             ],
             'dergi_editoru' => [
                 'label' => 'Dergi Editörü',
-                'description' => 'Kendi dergi sayılarını oluşturur/düzenler, sayıyı onaya gönderir; kendi sayısındaki makaleleri inceleyip Süper Admin onayına havale eder.',
+                'description' => 'Yazarın tüm yetkilerine (Yayın Yönetimi) ek olarak: kendi dergi sayılarını oluşturur/düzenler, sayıyı onaya gönderir; kendi sayısındaki makaleleri inceleyip Süper Admin onayına havale eder. Kendi dergisine ayrıca atanmadan makale yazabilir.',
             ],
             'yazar' => [
                 'label' => 'Yazar',

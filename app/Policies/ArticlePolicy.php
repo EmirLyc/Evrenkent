@@ -27,7 +27,8 @@ class ArticlePolicy
 
     public function create(User $user): bool
     {
-        return $user->hasAnyRole(['super_admin', 'yazar']);
+        // Dergi Editörü de yazar yetkilerine sahip (User::AUTHOR_ROLES).
+        return $user->hasRole('super_admin') || $user->canAuthor();
     }
 
     public function update(User $user, Article $article): bool

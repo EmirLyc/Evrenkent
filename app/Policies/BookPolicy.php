@@ -13,7 +13,7 @@ class BookPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->hasAnyRole(['super_admin', 'yazar']);
+        return $user->hasRole('super_admin') || $user->canAuthor();
     }
 
     public function view(User $user, Book $book): bool
@@ -23,7 +23,8 @@ class BookPolicy
 
     public function create(User $user): bool
     {
-        return $user->hasAnyRole(['super_admin', 'yazar']);
+        // Dergi Editörü de yazar yetkilerine sahip (User::AUTHOR_ROLES).
+        return $user->hasRole('super_admin') || $user->canAuthor();
     }
 
     public function update(User $user, Book $book): bool

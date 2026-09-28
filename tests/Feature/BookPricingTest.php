@@ -3,11 +3,9 @@
 namespace Tests\Feature;
 
 use App\Enums\ContentStatus;
-use App\Filament\Resources\BookResource\Pages\ListBooks;
 use App\Models\Book;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Livewire\Livewire;
 use Tests\TestCase;
 
 /**
@@ -104,26 +102,6 @@ class BookPricingTest extends TestCase
             ->assertOk()
             ->assertSee('Satış Fiyatı')
             ->assertSee('Bu kitap ücretsiz');
-    }
-
-    public function test_filament_approval_also_requires_a_price_or_the_free_flag(): void
-    {
-        $admin = $this->user('super_admin');
-        $book = Book::factory()->create(['status' => ContentStatus::Gonderildi, 'price' => 0]);
-
-        Livewire::actingAs($admin)->test(ListBooks::class)
-            ->callTableAction('approve', $book, data: ['price' => null, 'is_free' => false])
-            ->assertHasTableActionErrors(['price']);
-
-        $this->assertSame(ContentStatus::Gonderildi, $book->refresh()->status);
-
-        Livewire::actingAs($admin)->test(ListBooks::class)
-            ->callTableAction('approve', $book, data: ['price' => 89.90, 'is_free' => false])
-            ->assertHasNoTableActionErrors();
-
-        $book->refresh();
-        $this->assertSame(ContentStatus::Onaylandi, $book->status);
-        $this->assertSame('89.90', $book->price);
     }
 
     public function test_admin_book_form_requires_the_free_flag_for_a_zero_price(): void

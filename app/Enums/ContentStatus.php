@@ -26,8 +26,7 @@ enum ContentStatus: string
     }
 
     /**
-     * Panel/public tarafta durum rozetleri için tutarlı renk sınıfları
-     * (Filament tarafı kendi badge renklerini ayrıca yönetir, bu sadece Blade tarafı içindir).
+     * Panel/public tarafta durum rozetleri için tutarlı renk sınıfları.
      */
     public function badgeClasses(): string
     {

@@ -25,7 +25,13 @@
                         <td class="px-5 py-3 whitespace-nowrap">
                             <div class="flex items-center gap-2.5">
                                 <x-avatar :name="$article->author->name" :id="$article->author->id" />
-                                <span class="font-medium text-slate-900">{{ $article->author->name }}</span>
+                                <div>
+                                    <div class="font-medium text-slate-900">{{ $article->author->name }}</div>
+                                    {{-- Mockup 2.3: editörün kendi yazdığı makale (editör yazar yetkilerine de sahip). --}}
+                                    @if ($article->author_id === $article->magazineIssue?->editor_id)
+                                        <span class="inline-block mt-0.5 rounded bg-navy/10 px-1.5 py-px text-[11px] font-medium text-navy">Editörün Makalesi</span>
+                                    @endif
+                                </div>
                             </div>
                         </td>
                         <td class="px-5 py-3 max-w-xs">

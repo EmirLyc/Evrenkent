@@ -63,7 +63,6 @@ class MagazineIssuePolicy
      * Onaylama/reddetme/zamanlama sadece Süper Admin yetkisindedir. Onay artık "şimdi yayınla"
      * ya da "ileri tarihte yayınla" demek — bu yüzden sayı, içinde en az bir onaylı makale
      * olmadan onaylanamaz (2026-09-27 kararı: boş sayı yayınlanamaz/zamanlanamaz).
-     * Hem kendi panelimiz hem Filament bu policy'den geçtiği için kural ikisinde de geçerli.
      */
     public function approve(User $user, MagazineIssue $magazineIssue): bool
     {

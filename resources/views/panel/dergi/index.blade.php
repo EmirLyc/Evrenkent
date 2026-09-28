@@ -57,10 +57,8 @@
                         @endforeach
                     </div>
 
-                    {{-- Sayı oluşturma/düzenleme/onaya gönderme kendi panelimizde — sadece Süper
-                         Admin'in onayla/reddet/yayınla aksiyonları (policy'de zaten sadece ona
-                         açık) Filament'te kalıyor, dergi editörünün kendi akışında hiç Filament
-                         linki yok. --}}
+                    {{-- Sayı oluşturma/düzenleme/onaya gönderme burada; onayla/reddet/yayınla
+                         Süper Admin'in İçerik Onayları'nda (policy'de zaten sadece ona açık). --}}
                     <div class="flex flex-wrap gap-3 mt-5">
                         <a href="{{ route('dergiler.show', $activeIssue) }}" class="btn-outline btn-sm">
                             <x-heroicon-o-eye class="w-4 h-4" /> Sayıyı Önizle

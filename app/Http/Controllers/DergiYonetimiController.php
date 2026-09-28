@@ -166,8 +166,7 @@ class DergiYonetimiController extends Controller
         ], ['magazine_id.in' => 'Sadece editörü olduğunuz bir dergiye sayı açabilirsiniz.']);
 
         if ($request->hasFile('cover_image')) {
-            // Filament'in FileUpload'ıyla aynı disk/dizin — x-magazine-cover bileşeni
-            // ikisinde de aynı şekilde okuyor. Disk adı config'ten (covers_disk).
+            // x-magazine-cover bileşeni bu disk/dizinden okuyor. Disk adı config'ten (covers_disk).
             $data['cover_image'] = $request->file('cover_image')->store('covers/magazine-issues', config('filesystems.covers_disk'));
         }
 

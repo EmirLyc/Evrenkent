@@ -9,7 +9,7 @@ use Illuminate\Support\Collection;
 
 /**
  * `content` sütunu zengin metin (Faz F1): her kayıtta RichText::normalize'dan geçiyor —
- * bizim editör, DOCX içe aktarma, Filament formu, factory/seeder fark etmeksizin DB'ye
+ * bizim editör, DOCX/EPUB içe aktarma, factory/seeder fark etmeksizin DB'ye
  * sadece temizlenmiş HTML giriyor.
  */
 trait HasRichContent

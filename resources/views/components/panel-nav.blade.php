@@ -45,7 +45,8 @@
 
 {{-- Ziyaretçide (auth()->user() null) rol grupları hiç görünmez, sadece okur grupları görünür —
      linkleri auth korumalı olduğu için tıklanınca giriş ekranına yönlenir. --}}
-@if (auth()->user()?->hasRole('yazar'))
+{{-- Dergi Editörü de Yayın Yönetimi'ni görür (rol PDF'i: "Yazar'ın paneline ek olarak" Dergi Yönetimi). --}}
+@if (auth()->user()?->canAuthor())
     <div class="mb-7">
         <div class="{{ $groupHeading }} text-brand-700">Yayın Yönetimi</div>
         <div class="space-y-0.5">

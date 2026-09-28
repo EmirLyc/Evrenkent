@@ -163,7 +163,7 @@ class DergiYonetimiTest extends TestCase
         $this->actingAs($okur)->get(route('panel.dergi.index'))->assertForbidden();
     }
 
-    public function test_dergi_editoru_is_redirected_to_own_dashboard_not_filament(): void
+    public function test_dergi_editoru_is_redirected_to_own_dashboard(): void
     {
         $editor = $this->dergiEditoru();
 

@@ -2,7 +2,7 @@
 
 namespace App\Notifications\Concerns;
 
-use App\Filament\Resources\MagazineIssueResource;
+use App\Enums\ContentStatus;
 use App\Models\Article;
 use App\Models\Book;
 use App\Models\MagazineIssue;
@@ -24,12 +24,31 @@ trait DescribesContent
         };
     }
 
+    /**
+     * Bildirimin gönderildiği andaki duruma göre: yayındaysa herkese açık sayfası, sahibi
+     * düzenleyebiliyorsa (taslak / revizyon) düzenleme sayfası, diğer durumlarda (onaylandı,
+     * zamanlandı) sahibinin listesi. Önceden hep düzenleme sayfasına gidiyordu — onaylanmış
+     * ya da yayındaki içerikte o sayfa 403 veriyordu; sayıda ise Filament'e gidiyordu.
+     */
     protected function contentUrl(Model $content): string
     {
+        $status = $content->status ?? null;
+
+        if ($status === ContentStatus::Yayinda) {
+            return match (true) {
+                $content instanceof Book => route('kitaplar.show', $content),
+                $content instanceof Article => route('makaleler.show', $content),
+                $content instanceof MagazineIssue => route('dergiler.show', $content),
+                default => route('home'),
+            };
+        }
+
+        $editable = in_array($status, [ContentStatus::Taslak, ContentStatus::RevizyonIstendi], true);
+
         return match (true) {
-            $content instanceof Book => route('panel.yayinlarim.kitap.duzenle', $content),
-            $content instanceof Article => route('panel.yayinlarim.makale.duzenle', $content),
-            $content instanceof MagazineIssue => MagazineIssueResource::getUrl('edit', ['record' => $content]),
+            $content instanceof Book => $editable ? route('panel.yayinlarim.kitap.duzenle', $content) : route('panel.yayinlarim.index'),
+            $content instanceof Article => $editable ? route('panel.yayinlarim.makale.duzenle', $content) : route('panel.yayinlarim.index'),
+            $content instanceof MagazineIssue => $editable ? route('panel.dergi.sayilarim.duzenle', $content) : route('panel.dergi.sayilarim'),
             default => route('home'),
         };
     }

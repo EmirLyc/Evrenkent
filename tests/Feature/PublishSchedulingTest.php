@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Enums\ContentStatus;
-use App\Filament\Resources\MagazineIssueResource\Pages\ListMagazineIssues;
 use App\Models\Article;
 use App\Models\Book;
 use App\Models\MagazineIssue;
@@ -12,7 +11,6 @@ use App\Notifications\ContentPublished;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Notification;
-use Livewire\Livewire;
 use Tests\TestCase;
 
 /**
@@ -117,19 +115,6 @@ class PublishSchedulingTest extends TestCase
             ->get(route('panel.adminpanel.onaylar.index', ['tur' => 'dergiler']))
             ->assertOk()
             ->assertSee('Onaylı makale yok');
-    }
-
-    public function test_filament_issue_publish_also_cascades_to_articles(): void
-    {
-        $issue = MagazineIssue::factory()->create(['status' => ContentStatus::Onaylandi]);
-        $article = Article::factory()->for($issue, 'magazineIssue')->create(['status' => ContentStatus::Onaylandi]);
-
-        Livewire::actingAs($this->superAdmin())
-            ->test(ListMagazineIssues::class)
-            ->callTableAction('publish', $issue)
-            ->assertHasNoTableActionErrors();
-
-        $this->assertSame(ContentStatus::Yayinda, $article->refresh()->status);
     }
 
     public function test_article_in_an_unpublished_issue_is_only_approved_and_waits_for_the_issue(): void

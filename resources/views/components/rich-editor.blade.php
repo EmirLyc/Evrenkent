@@ -6,14 +6,16 @@
     import-url verilirse "Word'den Aktar" düğmesi çıkar (panel.yayinlarim.word-aktar);
     title-input o formdaki başlık alanının id'si — boşsa Word'deki başlıkla doldurulur.
 
-    documents-url verilirse (Faz F2) kar tanesi "Belge" düğmesi çıkar: documents listesinden
+    documents verilirse (Faz F2) kar tanesi "Belge" düğmesi çıkar: documents listesinden
     (kitabın/makalenin belgeleri) seçilen belge imlecin olduğu yere eklenir. Belge yükleme
-    ayrı sayfada (Belgeler), documents-url oraya gider.
+    ayrı sayfada (Belgeler), documents-url oraya gider — verilmezse (Süper Admin'in makale
+    formu) sadece mevcut belgeler eklenebilir, yönetim bağlantısı çıkmaz.
 --}}
 @props(['name', 'value' => '', 'label' => 'İçerik', 'importUrl' => null, 'titleInput' => null, 'id' => null, 'documents' => null, 'documentsUrl' => null])
 
 @php
     $id ??= $name;
+    $withDocuments = $documents !== null || $documentsUrl;
     $documentOptions = collect($documents)->map(fn ($document) => ['id' => $document->id, 'caption' => $document->caption()])->values();
 
     // [etiket, ikon, komut, argüman, aktif durum adı, aktif durum özellikleri]
@@ -83,7 +85,7 @@
         <button type="button" class="rich-editor-btn" title="Video ekle (YouTube / Vimeo; seçili videoyu düzenler)" aria-label="Video" :class="(panel === 'video' || isActive('videoLink')) && 'is-active'" :disabled="!ready" @click="panel === 'video' ? closePanel() : openPanel('video')">
             <x-heroicon-o-play-circle class="w-5 h-5" />
         </button>
-        @if ($documentsUrl)
+        @if ($withDocuments)
             <button type="button" class="rich-editor-btn" title="Belge ekle (kar tanesi)" aria-label="Belge ekle" :class="panel === 'document' && 'is-active'" :disabled="!ready" @click="panel === 'document' ? closePanel() : openPanel('document')">
                 <x-snowflake-icon class="w-5 h-5" />
             </button>
@@ -101,7 +103,7 @@
     </div>
 
     {{-- Belge seçme paneli (Faz F2) --}}
-    @if ($documentsUrl)
+    @if ($withDocuments)
         {{-- mousedown.prevent: seçimden sonra odak editörde kalsın — kalmazsa hemen ardından basılan
              Enter gizlenen düğmeyi yeniden tetikleyip belgeyi iki kez ekliyordu. --}}
         <div x-show="panel === 'document'" x-cloak class="border-b border-slate-200 bg-slate-50 px-3 py-3" @keydown.escape.prevent="closePanel()" @mousedown="$event.target.closest('button') && $event.preventDefault()">
@@ -120,9 +122,13 @@
             </template>
             <p x-show="!documents.length" class="text-sm text-slate-600">Henüz belge yüklenmedi.</p>
             <div class="flex flex-wrap items-center gap-3 mt-2">
-                {{-- Yeni sekmede: editördeki kaydedilmemiş metin kaybolmasın. --}}
-                <a href="{{ $documentsUrl }}" target="_blank" class="text-sm font-medium text-brand-700 hover:text-brand-600">Belge yükle / yönet ↗</a>
-                <span class="text-xs text-slate-400">Yeni yüklenen belge için bu sayfayı kaydedip yeniden açın.</span>
+                @if ($documentsUrl)
+                    {{-- Yeni sekmede: editördeki kaydedilmemiş metin kaybolmasın. --}}
+                    <a href="{{ $documentsUrl }}" target="_blank" class="text-sm font-medium text-brand-700 hover:text-brand-600">Belge yükle / yönet ↗</a>
+                    <span class="text-xs text-slate-400">Yeni yüklenen belge için bu sayfayı kaydedip yeniden açın.</span>
+                @else
+                    <span class="text-xs text-slate-400">Belgeler yazarın Belgeler sayfasından yüklenir.</span>
+                @endif
                 <button type="button" class="btn-ghost btn-sm ml-auto" @click="closePanel()">Kapat</button>
             </div>
         </div>

@@ -12,10 +12,8 @@ use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 /**
- * Süper Admin'in Dergi Sayıları yönetimi — Filament'teki MagazineIssueResource'un
- * list/create/edit/delete'inin birebir aynısı, kendi panelimizde. MagazineIssueResource
- * silinmedi/değişmedi — bu, onunla paralel çalışan ikinci bir arayüz. (Faz 3 — bkz.
- * UI_RESTYLE_NOTES.md; AdminBookController'daki desenle birebir tutarlı.)
+ * Süper Admin'in Dergi Sayıları yönetimi (liste/oluştur/düzenle/sil). Faz 3 — bkz.
+ * UI_RESTYLE_NOTES.md; AdminBookController'daki desenle birebir tutarlı.
  */
 class AdminMagazineIssueController extends Controller
 {
@@ -55,8 +53,7 @@ class AdminMagazineIssueController extends Controller
         $data = $this->withMagazineEditor($request->validate($this->validationRules(create: true)));
 
         if ($request->hasFile('cover_image')) {
-            // Filament'in FileUpload'ıyla aynı disk/dizin — x-magazine-cover bileşeni
-            // ikisinde de aynı şekilde okuyor. Disk adı config'ten (covers_disk).
+            // x-magazine-cover bileşeni bu disk/dizinden okuyor. Disk adı config'ten (covers_disk).
             $data['cover_image'] = $request->file('cover_image')->store('covers/magazine-issues', config('filesystems.covers_disk'));
         }
 

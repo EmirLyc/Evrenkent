@@ -13,9 +13,8 @@ use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 /**
- * Süper Admin'in Kitaplar yönetimi — Filament'teki BookResource'un list/create/edit/
- * delete'inin birebir aynısı (aynı alanlar, aynı policy'ler), kendi panelimizde.
- * BookResource silinmedi/değişmedi — bu, onunla paralel çalışan ikinci bir arayüz.
+ * Süper Admin'in Kitaplar yönetimi (liste/oluştur/düzenle/sil). Durum sadece İçerik
+ * Onayları akışıyla değişir.
  */
 class AdminBookController extends Controller
 {
@@ -46,7 +45,7 @@ class AdminBookController extends Controller
 
         return view('panel.admin.kitaplar.form', [
             'book' => null,
-            'authors' => User::role('yazar')->orderBy('name')->get(),
+            'authors' => User::authors()->orderBy('name')->get(),
             'categories' => Category::orderBy('name')->get(),
         ]);
     }
@@ -58,8 +57,7 @@ class AdminBookController extends Controller
         $data = $this->bookData($request, $this->validationRules(create: true));
 
         if ($request->hasFile('cover_image')) {
-            // Filament'in FileUpload'ıyla aynı disk/dizin — x-book-cover bileşeni
-            // ikisinde de aynı şekilde okuyor. Disk adı sabit değil, config'ten
+            // x-book-cover bileşeni bu disk/dizinden okuyor. Disk adı sabit değil, config'ten
             // (bkz. config/filesystems.php -> covers_disk) — S3'e geçiş tek satırlık env değişikliği olsun diye.
             $data['cover_image'] = $request->file('cover_image')->store('covers/books', config('filesystems.covers_disk'));
         }
@@ -81,7 +79,7 @@ class AdminBookController extends Controller
 
         return view('panel.admin.kitaplar.form', [
             'book' => $book,
-            'authors' => User::role('yazar')->orderBy('name')->get(),
+            'authors' => User::authors()->orderBy('name')->get(),
             'categories' => Category::orderBy('name')->get(),
         ]);
     }

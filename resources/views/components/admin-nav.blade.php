@@ -1,11 +1,11 @@
 {{--
     Süper Admin sidebar'ı — mockup'ın (dosyalar/2.4-)...png) sol menü gruplamasıyla
     birebir. Her kalem iki türden biri:
-    1) Gerçek ve Filament'te zaten çalışan bir liste/form → doğrudan o Filament
-       sayfasına link (Kitaplar, Dergiler, Kategoriler, Kullanıcılar...).
-    2) Hiç altyapısı olmayan bir özellik (Sözlükler, Abonelikler, Gelir Merkezi,
-       Premium Sistemi, Sistem Ayarları vb.) → tek bir generic "Yakında" sayfasına
-       link (panel.adminpanel.placeholder), sahte veri/işlevsellik üretilmiyor.
+    1) Kendi panelimizdeki gerçek bir liste/form (Kitaplar, Dergiler, Makaleler,
+       Kategoriler, Kullanıcılar, Premium Sistemi, İndirimler...).
+    2) Hiç altyapısı olmayan bir özellik (Sözlükler, Gelir Merkezi, Sistem Ayarları
+       vb.) → tek bir generic "Yakında" sayfasına link (panel.adminpanel.placeholder),
+       sahte veri/işlevsellik üretilmiyor.
 --}}
 @php
     $pendingTotal = \App\Models\Book::whereIn('status', [\App\Enums\ContentStatus::Gonderildi, \App\Enums\ContentStatus::Incelemede])->count()
@@ -17,6 +17,7 @@
             ['label' => 'Kitaplar', 'icon' => 'book-open', 'href' => route('panel.adminpanel.kitaplar.index')],
             ['label' => 'Dergiler', 'icon' => 'newspaper', 'href' => route('panel.adminpanel.dergiler.index')],
             ['label' => 'Dergi Sayıları', 'icon' => 'document-duplicate', 'href' => route('panel.adminpanel.sayilar.index')],
+            ['label' => 'Makaleler', 'icon' => 'document-text', 'href' => route('panel.adminpanel.makaleler.index')],
             ['label' => 'Sözlükler', 'icon' => 'language', 'href' => route('panel.adminpanel.placeholder', 'sozlukler')],
             ['label' => 'Tüm Yayınlar', 'icon' => 'rectangle-stack', 'href' => route('panel.adminpanel.placeholder', 'tum-yayinlar')],
             ['label' => 'Onay Bekleyenler', 'icon' => 'clock', 'href' => route('panel.adminpanel.onaylar.index'), 'badge' => $pendingTotal],
@@ -85,11 +86,7 @@
         <div class="{{ $groupHeading }}">{{ $group }}</div>
         <div class="space-y-0.5">
             @foreach ($links as $link)
-                {{-- Filament, Turbo'nun yönettiği sayfalarla aynı SPA akışına dahil değil (kendi
-                     Livewire/Alpine JS'i ayrı <head> varlıklarına bağımlı) — Turbo bu linki bir
-                     body-only swap ile "ziyaret" etmeye çalışırsa Filament'in JS'i bozuk bir
-                     ortamda çalışır (çift Alpine instance'ı, tanımsız $store.sidebar vb.).
-                     data-turbo="false" tam sayfa yüklemeye zorlayıp bunu önlüyor. --}}
+                {{-- external: Turbo'nun SPA akışı dışındaki bir sayfa — data-turbo="false" tam sayfa yükler. --}}
                 {{-- request()->routeIs() değil fullUrlIs() kullanılıyor: aynı route birden fazla
                      linkte farklı query string ile tekrar ediyor (ör. Kullanıcılar/Yazarlar/Dergi
                      Editörleri hepsi panel.adminpanel.kullanicilar.index, sadece ?rol= değişiyor) —
@@ -110,10 +107,6 @@
 @endforeach
 
 <div class="pt-3 mt-1 mr-5 border-t border-slate-800">
-    <a href="{{ url('/admin') }}" data-turbo="false" class="flex items-center gap-2 pl-4 pr-3 py-1.5 rounded-lg text-sm text-slate-400 hover:bg-slate-800 transition-colors">
-        <x-heroicon-o-arrow-top-right-on-square class="w-4 h-4" />
-        Filament Yönetim Paneli
-    </a>
     <form method="POST" action="{{ route('logout') }}">
         @csrf
         <button type="submit" class="w-full flex items-center gap-2 pl-4 pr-3 py-1.5 rounded-lg text-sm text-red-400 hover:bg-red-950/50 transition-colors">
