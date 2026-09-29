@@ -124,6 +124,31 @@
                 <div class="h-0.5 origin-left bg-gold/70 transition-transform duration-100" :style="`transform: scaleX(${$store.pager.active ? $store.pager.progress : progress})`" aria-hidden="true"></div>
             </header>
 
+            {{-- Dipnot / kaynak (Faz H2, "Okuma modu 3–6"): üstüne gelince kart, tıklayınca pencere. --}}
+            <div x-show="hoverRef" x-cloak class="reader-panel pointer-events-none fixed z-40 w-72 max-w-[calc(100vw-1rem)] rounded-lg px-4 py-3 font-reading shadow-xl"
+                 :class="hoverRef?.above && '-translate-y-full'" :style="hoverRef && { left: hoverRef.x + 'px', top: hoverRef.y + 'px' }" role="tooltip">
+                <p class="whitespace-pre-line leading-snug" :class="hoverRef?.kind === 'dipnot' ? 'text-[0.95rem]' : 'text-base'" x-text="hoverRef?.text"></p>
+            </div>
+
+            <div x-show="popRef" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" @keydown.escape.window="popRef = null" @pager-navigated.window="popRef = null">
+                <div class="absolute inset-0 bg-slate-950/45" x-show="popRef" x-transition.opacity @click="popRef = null"></div>
+                <div class="reader-panel relative w-[25rem] max-w-full px-7 pb-6 pt-5 font-reading" x-show="popRef" x-transition role="dialog" aria-modal="true" :aria-label="popRef?.title">
+                    <button type="button" x-ref="refClose" class="reader-icon-btn absolute right-3 top-3" @click="popRef = null" aria-label="Kapat"><x-heroicon-o-x-mark class="w-6 h-6" /></button>
+                    <p class="flex items-start gap-1.5 pr-10">
+                        <sup class="mt-2 text-base text-gold" x-text="popRef?.label"></sup>
+                        <span class="reader-heading text-[1.75rem] leading-tight" x-text="popRef?.title"></span>
+                    </p>
+                    <x-reader-ornament class="mt-3" />
+                    <p class="mt-4 whitespace-pre-line text-[1.08rem] leading-relaxed" x-text="popRef?.text"></p>
+                    <div class="reader-rule mt-5 border-t pt-4 text-center">
+                        <a :href="popRef?.href" class="reader-card inline-flex items-center gap-3 rounded-full border px-6 py-2 font-sans text-sm font-medium hover:opacity-80" @click="popRef = null">
+                            <span x-text="popRef?.kind === 'dipnot' ? 'Dipnota Git' : 'Kaynakçaya Git'"></span>
+                            <x-heroicon-o-arrow-right class="w-4 h-4" />
+                        </a>
+                    </div>
+                </div>
+            </div>
+
             @hasSection('reader_paged')
                 <main class="flex-1 px-2 py-4 sm:px-6 sm:py-8">
                     @if (session('status'))

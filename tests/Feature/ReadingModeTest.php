@@ -162,6 +162,23 @@ class ReadingModeTest extends TestCase
             ->assertSee('left: 96px; top: 56px; width: 544px; height: 1020px', false);
     }
 
+    public function test_footnotes_and_sources_open_in_a_window_with_a_way_to_their_list(): void
+    {
+        // Faz H2 ("Okuma modu 3–6"): dipnot harf, kaynak rakam; tıklayınca "Dipnot" / "Kaynak"
+        // penceresi ve "Dipnota Git" / "Kaynakçaya Git".
+        $book = Book::factory()->create(['status' => ContentStatus::Yayinda, 'price' => 0]);
+        Chapter::factory()->for($book)->create([
+            'order' => 1,
+            'content' => '<p>Egemenlik<span data-cite="Krasner, Stephen D. Sovereignty. 1999."></span> sınırlıdır<span data-footnote="Westphalia sonrası."></span>.</p><section data-bibliography="true"></section>',
+        ]);
+
+        $this->get(route('kitaplar.oku', $book))->assertOk()
+            ->assertSee('<sup class="cite-ref"><a href="#kaynak-1" aria-label="Kaynak 1" data-ref="kaynak" data-ref-label="1" data-ref-text="Krasner, Stephen D. Sovereignty. 1999.">1</a></sup>', false)
+            ->assertSee('aria-label="Dipnot a" data-ref="dipnot" data-ref-label="a" data-ref-text="Westphalia sonrası.">a</a>', false)
+            ->assertSee('role="tooltip"', false)
+            ->assertSee("'Dipnota Git' : 'Kaynakçaya Git'", false);
+    }
+
     public function test_article_contents_come_from_its_headings(): void
     {
         $issue = MagazineIssue::factory()->create(['status' => ContentStatus::Yayinda]);

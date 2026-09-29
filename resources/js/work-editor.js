@@ -154,7 +154,7 @@ const Citation = Node.create({
             dom.className = 'cite-marker';
             dom.dataset.cite = node.attrs.text;
             dom.title = node.attrs.text;
-            dom.textContent = '[·]';
+            dom.textContent = '·';
             return { dom, ignoreMutation: () => true };
         };
     },
@@ -465,7 +465,8 @@ export function refreshNumbers(editor, numbering) {
     const root = editor.view.dom;
     const sources = citations(editor.state.doc);
     root.querySelectorAll('.cite-marker').forEach((marker) => {
-        marker.textContent = `[${sources.indexOf(marker.dataset.cite) + 1 || '·'}]`;
+        // Okumadaki gibi köşeli parantezsiz rakam (dipnot harfle — Faz H2).
+        marker.textContent = String(sources.indexOf(marker.dataset.cite) + 1 || '·');
     });
 
     const escape = (text) => text.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);

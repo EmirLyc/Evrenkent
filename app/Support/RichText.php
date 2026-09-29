@@ -18,12 +18,16 @@ use Symfony\Component\HtmlSanitizer\HtmlSanitizerConfig;
  *
  * - normalize(): kayıt öncesi — düz metni paragraflara çevirir, HTML'i izinli etiketlere
  *   indirger (editör, DOCX içe aktarma, Filament ve eski düz metin kayıtlar hep buradan geçer).
- * - render(): okuma sayfası — dipnot işaretlerini numaralı üst simgelere ve sayfa sonundaki
- *   dipnot listesine çevirir.
+ * - render(): okuma sayfası — dipnot işaretlerini harfli üst simgelere (a, b, c… — Faz H2,
+ *   "Okuma moduna dair": dipnot harfle, kaynak rakamla) ve bölüm sonundaki dipnot listesine çevirir.
  *
  * Dipnot saklama biçimi: <span data-footnote="Dipnot metni"></span> — metin işaretin olduğu
- * yerde duruyor, numaralar render sırasında sırayla veriliyor (dipnot eklenip silinince
- * numaraları elle düzeltmek gerekmiyor).
+ * yerde duruyor, harfler render sırasında sırayla veriliyor (dipnot eklenip silinince
+ * harfleri elle düzeltmek gerekmiyor).
+ *
+ * Okuma sayfasında dipnot ve kaynak işaretleri data-ref / data-ref-label / data-ref-text taşıyor:
+ * üstüne gelince kart, tıklayınca pencere (layouts/reader) metni buradan okuyor — kaynakça başka
+ * sayfadaysa da.
  */
 class RichText
 {
@@ -289,13 +293,17 @@ class RichText
             /** @var DOMElement $marker */
             $number = count($notes) + 1;
             $notes[$number] = $marker->getAttribute('data-footnote');
+            $letter = self::footnoteLetter($number);
 
             $sup = $dom->createElement('sup');
             $sup->setAttribute('class', 'footnote-ref');
-            $link = $dom->createElement('a', (string) $number);
+            $link = $dom->createElement('a', $letter);
             $link->setAttribute('href', "#{$idPrefix}-{$number}");
             $link->setAttribute('id', "{$idPrefix}-ref-{$number}");
-            $link->setAttribute('aria-label', "Dipnot {$number}");
+            $link->setAttribute('aria-label', "Dipnot {$letter}");
+            $link->setAttribute('data-ref', 'dipnot');
+            $link->setAttribute('data-ref-label', $letter);
+            $link->setAttribute('data-ref-text', $notes[$number]);
             $sup->appendChild($link);
             $marker->parentNode->replaceChild($sup, $marker);
         }
@@ -312,6 +320,19 @@ class RichText
         ))->implode('');
 
         return $body.'<section class="footnotes" aria-label="Dipnotlar"><ol>'.$list.'</ol></section>';
+    }
+
+    /** Dipnot harfi: 1 → a, 26 → z, 27 → aa (CSS lower-alpha ile aynı; bölüm sonundaki liste de böyle). */
+    public static function footnoteLetter(int $number): string
+    {
+        $letters = '';
+        while ($number > 0) {
+            $number--;
+            $letters = chr(97 + $number % 26).$letters;
+            $number = intdiv($number, 26);
+        }
+
+        return $letters;
     }
 
     /** Yazı tipi / punto (span[data-font|data-size]) ve hizalama (data-align) → stil ve sınıf. */
@@ -458,8 +479,9 @@ class RichText
     }
 
     /**
-     * "1 Kaynak No.": <span data-cite="kaynak metni"> → [n]; aynı kaynak aynı numarayı alır.
-     * Eser genelinde numaralanır (context.sources), kaynakçaya bağlanır.
+     * "1 Kaynak No.": <span data-cite="kaynak metni"> → üst simge rakam (Faz H2: köşeli parantez
+     * yok, dipnot harfle); aynı kaynak aynı numarayı alır. Eser genelinde numaralanır
+     * (context.sources), kaynakçaya bağlanır.
      *
      * @param  array<string, mixed>  $context
      */
@@ -485,9 +507,12 @@ class RichText
             $number = $position + 1;
             $sup = $dom->createElement('sup');
             $sup->setAttribute('class', 'cite-ref');
-            $link = $dom->createElement('a', '['.$number.']');
+            $link = $dom->createElement('a', (string) $number);
             $link->setAttribute('href', $bibliographyUrl.'#kaynak-'.$number);
-            $link->setAttribute('title', $sources[$position]);
+            $link->setAttribute('aria-label', "Kaynak {$number}");
+            $link->setAttribute('data-ref', 'kaynak');
+            $link->setAttribute('data-ref-label', (string) $number);
+            $link->setAttribute('data-ref-text', $sources[$position]);
             $sup->appendChild($link);
             $marker->parentNode->replaceChild($sup, $marker);
         }

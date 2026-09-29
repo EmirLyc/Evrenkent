@@ -179,8 +179,23 @@ Alpine.data('reader', () => ({
     aa: false,
     prefs: { ...READER_DEFAULTS },
     chromeTimer: null,
+    // Dipnot / kaynak işareti (Faz H2): üstüne gelince kart, tıklayınca pencere.
+    hoverRef: null,
+    popRef: null,
+    refTimer: null,
 
     init() {
+        // Tıklama yakalama aşamasında ve sayfalı okumadan (paged-reader.js) önce kaydediliyor:
+        // işaret kendi çapasına (bölüm sonundaki dipnot / kaynakça) atlamadan pencere açılsın.
+        this.onRefClick = (event) => this.refClicked(event);
+        this.onRefOver = (event) => this.refHovered(event, true);
+        this.onRefOut = (event) => this.refHovered(event, false);
+        window.addEventListener('click', this.onRefClick, true);
+        window.addEventListener('pointerover', this.onRefOver);
+        window.addEventListener('pointerout', this.onRefOut);
+        window.addEventListener('focusin', this.onRefOver);
+        window.addEventListener('focusout', this.onRefOut);
+
         try {
             const saved = JSON.parse(localStorage.getItem(READER_PREFS_KEY)) || {};
             this.prefs = {
@@ -201,6 +216,59 @@ Alpine.data('reader', () => ({
     destroy() {
         this.darkQuery?.removeEventListener?.('change', this.onScheme);
         clearTimeout(this.chromeTimer);
+        clearTimeout(this.refTimer);
+        window.removeEventListener('click', this.onRefClick, true);
+        window.removeEventListener('pointerover', this.onRefOver);
+        window.removeEventListener('pointerout', this.onRefOut);
+        window.removeEventListener('focusin', this.onRefOver);
+        window.removeEventListener('focusout', this.onRefOut);
+    },
+
+    // --- Dipnot ve kaynak -------------------------------------------------------------------
+    refOf(event) {
+        return event.target?.closest?.('.rich-content a[data-ref]') ?? null;
+    },
+    refData(link) {
+        const kind = link.dataset.ref;
+        return {
+            kind,
+            label: link.dataset.refLabel,
+            title: kind === 'dipnot' ? 'Dipnot' : 'Kaynak',
+            text: link.dataset.refText,
+            href: link.getAttribute('href'),
+        };
+    },
+    refClicked(event) {
+        const link = this.refOf(event);
+        if (!this.$root.isConnected || !link || event.button > 0 || event.metaKey || event.ctrlKey || event.shiftKey) return;
+        event.preventDefault();
+        clearTimeout(this.refTimer);
+        this.hoverRef = null;
+        this.popRef = this.refData(link);
+        this.$nextTick(() => this.$refs.refClose?.focus());
+    },
+    // Fareyle (dokunmatikte değil — orada dokunuş doğrudan pencereyi açar) ya da klavyeyle
+    // odaklanınca: işaretin altında kısa bir kart; ekranın altındaysa üstünde.
+    refHovered(event, entering) {
+        if (!this.$root.isConnected) return;
+        const link = this.refOf(event);
+        if (!link || (event.pointerType && event.pointerType !== 'mouse')) return;
+        clearTimeout(this.refTimer);
+        if (!entering || this.popRef) {
+            this.refTimer = setTimeout(() => (this.hoverRef = null), 120);
+            return;
+        }
+        this.refTimer = setTimeout(() => {
+            const rect = link.getBoundingClientRect();
+            const width = Math.min(288, window.innerWidth - 16);
+            const below = rect.bottom + 180 < window.innerHeight;
+            this.hoverRef = {
+                ...this.refData(link),
+                x: Math.max(8, Math.min(rect.left - 24, window.innerWidth - width - 8)),
+                y: below ? rect.bottom + 8 : rect.top - 8,
+                above: !below,
+            };
+        }, 150);
     },
     applyPrefs() {
         const dark = this.prefs.auto && this.darkQuery?.matches;

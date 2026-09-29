@@ -138,14 +138,17 @@
     .rich-content hr {
         @apply border-slate-200 my-8;
     }
-    .rich-content sup.footnote-ref a {
-        @apply no-underline font-semibold text-brand-700 px-0.5 scroll-mt-24;
+    /* Dipnot harfle (a, b…), kaynak rakamla (Faz H2, "Okuma moduna dair"): ikisi de lacivert üst simge. */
+    .rich-content sup.footnote-ref a,
+    .rich-content sup.cite-ref a {
+        @apply no-underline font-medium text-navy px-0.5 scroll-mt-24 hover:text-brand-700;
     }
     .rich-content .footnotes {
         @apply mt-10 pt-5 border-t border-slate-200 text-sm text-slate-600;
     }
     .rich-content .footnotes ol {
         @apply space-y-1.5;
+        list-style-type: lower-alpha;
     }
     .rich-content .footnotes li {
         @apply scroll-mt-24;
@@ -272,10 +275,7 @@
     .rich-content .rt-align-right { text-align: right; }
     .rich-content .rt-align-justify { text-align: justify; }
 
-    /* Kaynak numarası ve Kaynakça */
-    .rich-content sup.cite-ref a {
-        @apply no-underline font-semibold text-brand-700 px-0.5;
-    }
+    /* Kaynakça */
     .rich-content .rt-bibliography,
     .rich-content .rt-toc {
         @apply rounded-md border border-slate-200 bg-slate-50/70 px-5 py-4;
@@ -509,7 +509,7 @@
         counter-increment: footnote;
     }
     .rt-editor-surface .footnote-marker::after {
-        content: counter(footnote);
+        content: counter(footnote, lower-alpha);
     }
     .rt-editor-surface .cite-marker {
         @apply cursor-pointer rounded px-0.5 text-[0.75em] font-semibold text-brand-700 bg-brand-50 align-super;

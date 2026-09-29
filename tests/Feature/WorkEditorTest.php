@@ -158,11 +158,12 @@ class WorkEditorTest extends TestCase
 
         $first = $this->actingAs($author)->get(route('kitaplar.oku', [$book, 1]))->assertOk();
         $bibliographyPage = route('kitaplar.oku', [$book, 2]);
-        $first->assertSee('<a href="'.$bibliographyPage.'#kaynak-1" title="Arendt">[1]</a>', false);
+        // Faz H2: köşeli parantezsiz rakam; pencere kaynağın metnini işaretten okuyor.
+        $first->assertSee('<a href="'.$bibliographyPage.'#kaynak-1" aria-label="Kaynak 1" data-ref="kaynak" data-ref-label="1" data-ref-text="Arendt">1</a>', false);
 
         $this->actingAs($author)->get($bibliographyPage)->assertOk()
-            ->assertSee('<a href="#kaynak-2" title="Weber">[2]</a>', false)
-            ->assertSee('<a href="#kaynak-1" title="Arendt">[1]</a>', false)
+            ->assertSee('<a href="#kaynak-2" aria-label="Kaynak 2" data-ref="kaynak" data-ref-label="2" data-ref-text="Weber">2</a>', false)
+            ->assertSee('<a href="#kaynak-1" aria-label="Kaynak 1" data-ref="kaynak" data-ref-label="1" data-ref-text="Arendt">1</a>', false)
             ->assertSeeInOrder(['Kaynakça', 'Arendt', 'Weber'])
             // İçindekiler: bölümler (II.) ve alt başlık (2.1.) bağlantılarıyla.
             ->assertSeeInOrder(['İçindekiler', 'I.', 'Bir', 'II.', 'İki', '2.1.', 'Alt'])

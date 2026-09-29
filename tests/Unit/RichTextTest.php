@@ -76,14 +76,20 @@ class RichTextTest extends TestCase
         $this->assertStringContainsString('<span class="rt-num">2.1.</span>Yeni', $html);
     }
 
-    public function test_footnotes_render_as_numbered_references_with_a_list(): void
+    public function test_footnotes_render_as_lettered_references_with_a_list(): void
     {
+        // Faz H2 ("Okuma moduna dair"): dipnot harfle, kaynak rakamla; işaret pencere için metnini taşır.
         $html = RichText::render('<p>Bir<span data-footnote="İlk &lt;kaynak&gt;"></span> iki<span data-footnote="İkinci"></span></p>', 'bolum-2');
 
-        $this->assertStringContainsString('<sup class="footnote-ref"><a href="#bolum-2-1" id="bolum-2-ref-1"', $html);
-        $this->assertStringContainsString('<a href="#bolum-2-2" id="bolum-2-ref-2"', $html);
+        $this->assertStringContainsString('<sup class="footnote-ref"><a href="#bolum-2-1" id="bolum-2-ref-1" aria-label="Dipnot a" data-ref="dipnot" data-ref-label="a"', $html);
+        $this->assertStringContainsString('<a href="#bolum-2-2" id="bolum-2-ref-2" aria-label="Dipnot b" data-ref="dipnot" data-ref-label="b" data-ref-text="İkinci">b</a>', $html);
         $this->assertStringContainsString('<li id="bolum-2-1">İlk &lt;kaynak&gt; <a href="#bolum-2-ref-1"', $html);
         $this->assertStringNotContainsString('data-footnote', $html);
+    }
+
+    public function test_footnote_letters_continue_after_z_like_css_lower_alpha(): void
+    {
+        $this->assertSame(['a', 'b', 'z', 'aa', 'az', 'ba'], array_map(RichText::footnoteLetter(...), [1, 2, 26, 27, 52, 53]));
     }
 
     public function test_empty_editor_output_has_no_text(): void
