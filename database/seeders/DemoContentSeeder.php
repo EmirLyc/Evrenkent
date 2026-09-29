@@ -411,6 +411,9 @@ class DemoContentSeeder extends Seeder
             ]);
         }
 
+        // Dolu içerikli kitaplar ve dergiler + okurun bu eserlerdeki işaretleri, defterleri (2026-09-29).
+        $this->call(LibraryDemoSeeder::class);
+
         $this->command?->info('Demo içerik oluşturuldu: '.count($categories).' kategori, '.count($books).' kitap, '.count($issues).' dergi sayısı, '.count($articles).' makale.');
     }
 

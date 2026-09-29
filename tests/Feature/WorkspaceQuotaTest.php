@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\ContentStatus;
+use App\Enums\NoteType;
 use App\Models\Book;
 use App\Models\User;
 use App\Support\PlatformSettings;
@@ -106,6 +107,44 @@ class WorkspaceQuotaTest extends TestCase
         $this->actingAs($premium)->followingRedirects()->get(route('panel.defterim'))->assertOk()
             ->assertDontSee('Ücretsiz hesapta')
             ->assertDontSee('/ 1.000');
+    }
+
+    public function test_account_specific_limits_replace_the_general_ones_and_are_still_shown(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('super_admin');
+        $user = $this->reader();
+
+        // Süper Admin → Kullanıcılar → Düzenle: boş bırakılan alan genel ayarda kalır.
+        $this->actingAs($admin)->put(route('panel.adminpanel.kullanicilar.guncelle', $user), [
+            'name' => $user->name, 'email' => $user->email, 'roles' => ['okur'],
+            'quota' => ['defter' => 5, 'not' => 30, 'alinti' => '', 'defter_words' => 3000],
+        ])->assertSessionHasNoErrors();
+
+        $user->refresh();
+        $this->assertSame(['defter' => 5, 'defter_words' => 3000, 'not' => 30], $user->quota_overrides);
+        $this->assertSame(5, $user->noteQuota(NoteType::Defter));
+        $this->assertSame(30, $user->noteQuota(NoteType::Not));
+        $this->assertSame(10, $user->noteQuota(NoteType::Alinti));
+        $this->assertSame(3000, $user->notebookWordLimit());
+
+        // Sınır yine yazıyor — sadece daha yüksek.
+        $this->fillDefter($user, 2);
+        $this->actingAs($user)->post(route('panel.defterim.yeni'))->assertSessionMissing('quota');
+        $this->actingAs($user)->get(route('panel.notlarim'))->assertSee('0 / 30 kayıt');
+        $this->actingAs($user)->get(route('panel.aboneligim'))->assertSee('3 / 5');
+        $this->actingAs($user)->followingRedirects()->get(route('panel.defterim'))->assertSee('/ 3.000');
+
+        // Premium üyede özel sınır da yok.
+        $user->update(['is_premium' => true]);
+        $this->assertNull($user->noteQuota(NoteType::Not));
+        $this->assertNull($user->notebookWordLimit());
+
+        // Hepsi boşaltılınca alan temizlenir.
+        $this->actingAs($admin)->put(route('panel.adminpanel.kullanicilar.guncelle', $user), [
+            'name' => $user->name, 'email' => $user->email, 'roles' => ['okur'], 'quota' => ['defter' => '', 'not' => ''],
+        ])->assertSessionHasNoErrors();
+        $this->assertNull($user->refresh()->quota_overrides);
     }
 
     public function test_favorites_are_unlimited_for_free_accounts(): void

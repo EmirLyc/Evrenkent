@@ -105,6 +105,7 @@ class AdminUserController extends Controller
             'password' => Hash::make($data['password']),
             'is_premium' => $request->boolean('is_premium'),
             'premium_until' => $data['premium_until'] ?? null,
+            'quota_overrides' => $this->quotaOverrides($data),
         ]);
         $user->syncRoles($data['roles'] ?? []);
 
@@ -134,6 +135,7 @@ class AdminUserController extends Controller
             'email' => $data['email'],
             'is_premium' => $request->boolean('is_premium'),
             'premium_until' => $data['premium_until'] ?? null,
+            'quota_overrides' => $this->quotaOverrides($data),
             ...(filled($data['password'] ?? null) ? ['password' => Hash::make($data['password'])] : []),
         ]);
         $user->syncRoles($data['roles'] ?? []);
@@ -166,6 +168,30 @@ class AdminUserController extends Controller
             'roles.*' => ['exists:roles,name'],
             'is_premium' => ['nullable', 'boolean'],
             'premium_until' => ['nullable', 'date'],
+            'quota' => ['nullable', 'array'],
+            'quota.defter' => ['nullable', 'integer', 'min:1', 'max:1000'],
+            'quota.not' => ['nullable', 'integer', 'min:1', 'max:1000'],
+            'quota.alinti' => ['nullable', 'integer', 'min:1', 'max:1000'],
+            'quota.defter_words' => ['nullable', 'integer', 'min:100', 'max:1000000'],
         ];
+    }
+
+    /**
+     * Hesaba özel çalışma alanı sınırları — boş bırakılan genel ayarı (Premium Sistemi) kullanır;
+     * hepsi boşsa alan tamamen temizlenir.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, int>|null
+     */
+    private function quotaOverrides(array $data): ?array
+    {
+        $overrides = collect(User::QUOTA_OVERRIDES)
+            ->keys()
+            ->mapWithKeys(fn (string $key) => [$key => $data['quota'][$key] ?? null])
+            ->filter(fn ($value) => $value !== null && $value !== '')
+            ->map(fn ($value) => (int) $value)
+            ->all();
+
+        return $overrides ?: null;
     }
 }

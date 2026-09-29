@@ -66,6 +66,24 @@
                 </div>
             </div>
 
+            {{-- Hesaba özel çalışma alanı sınırları (ücretsiz hesap). Boş = Premium Sistemi'ndeki genel ayar. --}}
+            <div class="border-t border-slate-100 pt-5">
+                <div class="text-sm font-medium text-slate-700">Hesaba özel sınırlar</div>
+                <p class="text-xs text-slate-400 mt-0.5 mb-3">Ücretsiz hesapta geçerli. Boş bıraktığınız sınır Premium Sistemi'ndeki genel ayarı kullanır; premium üyede sınır yoktur.</p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    @foreach (\App\Models\User::QUOTA_OVERRIDES as $key => $label)
+                        @php $default = $key === 'defter_words' ? \App\Support\PlatformSettings::get('quota_defter_words') : \App\Support\PlatformSettings::noteQuota(\App\Enums\NoteType::from($key)); @endphp
+                        <div>
+                            <label for="quota_{{ $key }}" class="block text-sm text-slate-700 mb-1">{{ $label }}</label>
+                            <input id="quota_{{ $key }}" name="quota[{{ $key }}]" type="number" min="1" inputmode="numeric"
+                                   value="{{ old('quota.'.$key, $user?->quota_overrides[$key] ?? null) }}" placeholder="Genel: {{ number_format($default, 0, ',', '.') }}"
+                                   class="w-full rounded-md border-slate-300 text-sm focus:border-slate-500 focus:ring-slate-500">
+                            @error('quota.'.$key) <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+
             <div class="flex items-center gap-4 pt-1">
                 <button type="submit" class="btn-brand">{{ $user ? 'Değişiklikleri Kaydet' : 'Kullanıcıyı Oluştur' }}</button>
                 <a href="{{ route('panel.adminpanel.kullanicilar.index') }}" class="text-sm text-slate-500 hover:text-slate-900 transition-colors">Vazgeç</a>

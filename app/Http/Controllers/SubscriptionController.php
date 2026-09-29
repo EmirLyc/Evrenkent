@@ -35,7 +35,9 @@ class SubscriptionController extends Controller
             'quotaUsage' => collect(NoteType::quotaTypes())->map(fn (NoteType $type) => (object) [
                 'label' => $type->label(),
                 'used' => $user->notes()->where('type', $type)->count(),
-                'quota' => PlatformSettings::noteQuota($type),
+                // Hesaba özel sınır varsa o (Süper Admin → Kullanıcılar); premiumda da genel sınır
+                // gösteriliyor ("abonelik biterse" bilgisi olarak) — sayfa premium durumunu ayrıca yazar.
+                'quota' => $user->isPremium() ? PlatformSettings::noteQuota($type) : $user->noteQuota($type),
             ]),
         ]);
     }

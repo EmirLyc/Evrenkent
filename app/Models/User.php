@@ -19,7 +19,7 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Collection;
 use Spatie\Permission\Traits\HasRoles;
 
-#[Fillable(['name', 'email', 'password', 'is_premium', 'premium_until'])]
+#[Fillable(['name', 'email', 'password', 'is_premium', 'premium_until', 'quota_overrides'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -44,7 +44,26 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_premium' => 'boolean',
             'premium_until' => 'datetime',
+            'quota_overrides' => 'array',
         ];
+    }
+
+    /**
+     * Süper Admin'in bu hesaba özel verebildiği sınırlar (ücretsiz hesap) — anahtar → etiket.
+     * Boş olan genel ayarı (Premium Sistemi) kullanır.
+     */
+    public const QUOTA_OVERRIDES = [
+        'defter' => 'Defter sayısı',
+        'defter_words' => 'Defter başına kelime',
+        'not' => 'Not',
+        'alinti' => 'Alıntı',
+    ];
+
+    private function quotaOverride(string $key): ?int
+    {
+        $value = $this->quota_overrides[$key] ?? null;
+
+        return $value === null ? null : (int) $value;
     }
 
     public function books(): HasMany
@@ -183,7 +202,7 @@ class User extends Authenticatable
             return null;
         }
 
-        return PlatformSettings::noteQuota($type);
+        return $this->quotaOverride($type->value) ?? PlatformSettings::noteQuota($type);
     }
 
     /**
@@ -205,10 +224,10 @@ class User extends Authenticatable
             ->all();
     }
 
-    /** Bir defterin kelime sınırı — ücretsiz hesapta Süper Admin'in ayarı (varsayılan 1.000), premiumda yok. */
+    /** Bir defterin kelime sınırı — ücretsiz hesapta Süper Admin'in ayarı (varsayılan 1.000; hesaba özel verilebilir), premiumda yok. */
     public function notebookWordLimit(): ?int
     {
-        return $this->isPremium() ? null : (int) PlatformSettings::get('quota_defter_words');
+        return $this->isPremium() ? null : ($this->quotaOverride('defter_words') ?? (int) PlatformSettings::get('quota_defter_words'));
     }
 
     public function canCreateNote(NoteType $type): bool
