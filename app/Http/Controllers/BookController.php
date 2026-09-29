@@ -80,9 +80,13 @@ class BookController extends Controller
         $chapters = $book->chapters;
         $readingListItem = $user?->readingListItemFor($book);
 
+        // Kaldığı bölüm sonradan silinmiş olabilir (editör kitabı her kayıtta bölümlere yeniden
+        // ayırıyor, fazla bölümler gidiyor) — o zaman kitabın başından açılır, 404 değil.
         if ($chapterNumber === null) {
-            $chapterNumber = $readingListItem?->last_chapter_number
-                ?? $chapters->first()?->order;
+            $saved = $readingListItem?->last_chapter_number;
+            $chapterNumber = $saved !== null && $chapters->contains('order', $saved)
+                ? $saved
+                : $chapters->first()?->order;
         }
 
         $chapter = $chapterNumber ? $chapters->firstWhere('order', $chapterNumber) : null;

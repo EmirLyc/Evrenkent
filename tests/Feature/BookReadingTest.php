@@ -97,6 +97,38 @@ class BookReadingTest extends TestCase
         $this->assertSame(2, $item->last_chapter_number);
     }
 
+    public function test_saved_position_in_a_removed_chapter_falls_back_to_first_chapter(): void
+    {
+        $user = $this->okur();
+        $book = Book::factory()->create(['status' => ContentStatus::Yayinda, 'price' => 0]);
+        Chapter::factory()->for($book)->create(['order' => 1, 'title' => 'İlk Bölüm']);
+        $user->readingListItems()->create([
+            'readable_type' => Book::class,
+            'readable_id' => $book->id,
+            'status' => ReadingStatus::Listede,
+            'last_chapter_number' => 5,
+        ]);
+
+        $this->actingAs($user)->get(route('kitaplar.oku', $book))->assertOk()->assertSee('İlk Bölüm');
+
+        $this->assertSame(1, $user->readingListItemFor($book)->last_chapter_number);
+    }
+
+    public function test_author_can_preview_book_without_chapters_despite_stale_position(): void
+    {
+        $author = User::factory()->create();
+        $author->assignRole('yazar');
+        $book = Book::factory()->for($author, 'author')->create(['status' => ContentStatus::Taslak]);
+        $author->readingListItems()->create([
+            'readable_type' => Book::class,
+            'readable_id' => $book->id,
+            'status' => ReadingStatus::Listede,
+            'last_chapter_number' => 2,
+        ]);
+
+        $this->actingAs($author)->get(route('kitaplar.oku', $book))->assertOk();
+    }
+
     public function test_nonexistent_chapter_number_returns_404(): void
     {
         $book = Book::factory()->create(['status' => ContentStatus::Yayinda, 'price' => 0]);
