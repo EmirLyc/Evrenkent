@@ -205,6 +205,12 @@ class User extends Authenticatable
             ->all();
     }
 
+    /** Bir defterin kelime sınırı — ücretsiz hesapta Süper Admin'in ayarı (varsayılan 1.000), premiumda yok. */
+    public function notebookWordLimit(): ?int
+    {
+        return $this->isPremium() ? null : (int) PlatformSettings::get('quota_defter_words');
+    }
+
     public function canCreateNote(NoteType $type): bool
     {
         $quota = $this->noteQuota($type);

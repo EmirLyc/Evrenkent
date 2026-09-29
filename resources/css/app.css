@@ -871,6 +871,92 @@
     .rt-note-pin:focus-visible::after {
         opacity: 1;
     }
+    /* --- Faz H5: Defterim ("Defterim 1") — açık / koyu (başlıktaki güneş), tam ekranda liste gizli. */
+    .notebook-app {
+        --nb-bg: #FBF9F4;
+        --nb-side: #FBF9F4;
+        --nb-panel: #FFFFFF;
+        --nb-ink: #0F172A;
+        --nb-muted: #64748B;
+        --nb-rule: #E7E2D8;
+        --nb-hover: rgba(15, 23, 42, 0.05);
+        --nb-active: #FDF1E3;
+        --nb-quote: #A8843F;
+        background-color: var(--nb-bg);
+        color: var(--nb-ink);
+    }
+    .notebook-app.nb-dark {
+        --nb-bg: #07131F;
+        --nb-side: #0B1A2A;
+        --nb-panel: #0E2034;
+        --nb-ink: #E5E0D5;
+        --nb-muted: #93A1B3;
+        --nb-rule: rgba(255, 255, 255, 0.1);
+        --nb-hover: rgba(255, 255, 255, 0.06);
+        --nb-active: rgba(226, 121, 14, 0.18);
+        --nb-quote: #C9A55C;
+        color-scheme: dark;
+    }
+    .notebook-app.nb-dark .text-navy { color: #EAD9B0; }
+    .notebook-app.nb-dark .bg-navy { background-color: #C9A55C; color: #0B1A2A; }
+    .notebook-app.nb-focus [data-nb-side] { display: none; }
+    .nb-side { background-color: var(--nb-side); border-color: var(--nb-rule); }
+    .nb-panel { background-color: var(--nb-panel); border-color: var(--nb-rule); color: var(--nb-ink); }
+    .nb-ink { color: var(--nb-ink); }
+    .nb-muted { color: var(--nb-muted); }
+    .nb-rule { border-color: var(--nb-rule); }
+    .nb-active { background-color: var(--nb-active); color: var(--nb-ink); }
+    .nb-chip { background-color: var(--nb-active); color: var(--nb-ink); }
+    .nb-title { color: var(--nb-ink); }
+    .nb-title::placeholder { color: var(--nb-muted); }
+    .nb-input {
+        background-color: var(--nb-panel);
+        border: 1px solid var(--nb-rule);
+        color: var(--nb-ink);
+    }
+    .nb-input:focus { border-color: #E2790E; box-shadow: 0 0 0 1px #E2790E; outline: none; }
+    .nb-input::placeholder { color: var(--nb-muted); }
+    .nb-btn {
+        @apply inline-flex h-9 min-w-9 items-center justify-center gap-1 rounded-md px-1.5 transition-colors disabled:opacity-35;
+        border-color: var(--nb-rule);
+        color: var(--nb-ink);
+    }
+    .nb-btn:hover:not(:disabled) { background-color: var(--nb-hover); }
+    .nb-btn.is-active { background-color: var(--nb-ink); color: var(--nb-panel); }
+    .nb-theme { background-color: var(--nb-active); color: #C86A0C; }
+    .nb-menu-item {
+        @apply flex w-full items-center gap-2 rounded-md px-3 py-2 text-left;
+    }
+    .nb-menu-item:hover { background-color: var(--nb-hover); }
+    .nb-start {
+        @apply inline-flex items-center gap-2.5 rounded-lg border px-6 py-3 font-reading text-lg shadow-sm transition-colors;
+        background-color: var(--nb-panel);
+        border-color: var(--nb-rule);
+    }
+    .nb-start:hover { background-color: var(--nb-hover); }
+    .nb-editor .notebook-surface {
+        @apply min-h-[20rem] outline-none font-reading;
+        font-size: 1.15rem;
+        line-height: 1.75;
+        color: var(--nb-ink);
+    }
+    .nb-editor .notebook-surface > * + * { margin-top: 0.8em; }
+    .nb-editor .notebook-surface h1 { @apply font-serif text-[1.9em] font-semibold leading-tight; }
+    .nb-editor .notebook-surface h2 { @apply font-serif text-[1.5em] font-semibold leading-tight; }
+    .nb-editor .notebook-surface h3 { @apply font-serif text-[1.22em] font-semibold; }
+    .nb-editor .notebook-surface ul { @apply list-disc pl-7; }
+    .nb-editor .notebook-surface ol { @apply list-decimal pl-7; }
+    .nb-editor .notebook-surface li > p { margin: 0; }
+    .nb-editor .notebook-surface blockquote {
+        border-left: 3px solid var(--nb-quote);
+        background-color: var(--nb-active);
+        @apply rounded-r-md py-2 pl-4 pr-3;
+    }
+    .nb-editor .notebook-surface blockquote > * + * { margin-top: 0.35em; }
+    .nb-editor .notebook-surface a { @apply text-brand-700 underline underline-offset-2; }
+    .nb-editor .notebook-surface img { @apply mx-auto max-h-[28rem] max-w-full rounded-md; }
+    .nb-editor .notebook-surface img.ProseMirror-selectednode { @apply ring-2 ring-brand-400; }
+
     .reader-search-mark {
         @apply rounded-sm font-semibold;
         color: inherit;

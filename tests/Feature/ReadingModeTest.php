@@ -10,6 +10,8 @@ use App\Models\Chapter;
 use App\Models\Magazine;
 use App\Models\MagazineIssue;
 use App\Models\User;
+use App\Support\BookDocument;
+use App\Support\WorkOutline;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -70,7 +72,7 @@ class ReadingModeTest extends TestCase
     {
         // G4 denemesinde bulundu: ilk Başlık 1'den önce sadece İçindekiler varsa giriş bölümü
         // "metinsiz" sayılıp atılıyordu (mockup'ta İçindekiler kitabın başında).
-        $sections = \App\Support\BookDocument::split('<nav data-toc="true"></nav><h1>Birinci</h1><p>Metin.</p>');
+        $sections = BookDocument::split('<nav data-toc="true"></nav><h1>Birinci</h1><p>Metin.</p>');
 
         $this->assertCount(2, $sections);
         $this->assertTrue($sections[0]['preface']);
@@ -191,7 +193,7 @@ class ReadingModeTest extends TestCase
             'content' => '<h2>Giriş</h2><p>Metin.</p><h1>Sefaretnameler</h1><h2>Paris</h2><p>Metin.</p>',
         ]);
 
-        $contents = \App\Support\WorkOutline::for($article)->contents;
+        $contents = WorkOutline::for($article)->contents;
         // Başlık 1'den önceki başlık kendi başına; Başlık 1 altındakileri toplar.
         $this->assertSame(['Giriş', 'Sefaretnameler'], array_column($contents, 'text'));
         $this->assertSame([[], ['#b-3']], array_map(fn ($group) => array_column($group['items'], 'url'), $contents));

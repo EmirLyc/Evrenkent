@@ -16,13 +16,14 @@ use App\Http\Controllers\DergiYonetimiController;
 use App\Http\Controllers\DictionaryController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\FavoriteController;
+use App\Http\Controllers\NotebookController;
 use App\Http\Controllers\NoteController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PanelController;
 use App\Http\Controllers\PublicationController;
 use App\Http\Controllers\PurchaseController;
-use App\Http\Controllers\ReadingMarkController;
 use App\Http\Controllers\ReadingListController;
+use App\Http\Controllers\ReadingMarkController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\SuperAdminController;
 use App\Http\Controllers\WorkController;
@@ -52,7 +53,14 @@ Route::middleware('auth')->prefix('panel')->as('panel.')->group(function () {
     Route::patch('/okuma-listesi/{readingListItem}/listeye-al', [ReadingListController::class, 'reopen'])->name('okuma-listesi.listeye-al');
     Route::delete('/okuma-listesi/{readingListItem}', [ReadingListController::class, 'destroy'])->name('okuma-listesi.sil');
 
-    Route::get('/defterim', [NoteController::class, 'defterim'])->name('defterim');
+    // Faz H5: Defterim — zengin metinli defterler (sol sütunda liste, sağda editör, otomatik kayıt).
+    Route::get('/defterim', [NotebookController::class, 'index'])->name('defterim');
+    Route::post('/defterim', [NotebookController::class, 'store'])->name('defterim.yeni');
+    Route::get('/defterim/kaynaklar', [NotebookController::class, 'sources'])->name('defterim.kaynaklar');
+    Route::get('/defterim/{note}', [NotebookController::class, 'show'])->whereNumber('note')->name('defterim.goster');
+    Route::put('/defterim/{note}', [NotebookController::class, 'update'])->whereNumber('note')->name('defterim.kaydet');
+    Route::delete('/defterim/{note}', [NotebookController::class, 'destroy'])->whereNumber('note')->name('defterim.sil');
+    Route::post('/defterim/{note}/gorsel', [NotebookController::class, 'uploadImage'])->whereNumber('note')->name('defterim.gorsel');
     Route::get('/notlarim', [NoteController::class, 'notlarim'])->name('notlarim');
     Route::get('/alintilarim', [NoteController::class, 'alintilarim'])->name('alintilarim');
     Route::get('/alintilarim/{tur}/{id}', [NoteController::class, 'seckim'])->whereIn('tur', ['kitap', 'makale'])->whereNumber('id')->name('alintilarim.seckim');

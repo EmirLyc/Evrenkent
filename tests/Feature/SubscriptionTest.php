@@ -103,10 +103,11 @@ class SubscriptionTest extends TestCase
         $free = $this->reader();
         $free->notes()->create(['type' => 'defter', 'content' => 'x']);
 
+        // Faz H5: ücretsiz hesapta 1 defter ("Bazı Prensipler").
         $this->actingAs($free)->get(route('panel.aboneligim'))
             ->assertOk()
             ->assertSee('Ücretsiz hesap')
-            ->assertSee('1 / 10')
+            ->assertSee('1 / 1')
             ->assertSee("Premium'a Geç");
 
         $member = $this->reader();

@@ -35,6 +35,7 @@ class AdminPremiumController extends Controller
             'premium_yearly_price' => ['required', 'numeric', 'min:0', 'max:100000'],
             'premium_discount_percent' => ['required', 'integer', 'min:0', 'max:90'],
             'quota_defter' => ['required', 'integer', 'min:1', 'max:1000'],
+            'quota_defter_words' => ['required', 'integer', 'min:100', 'max:1000000'],
             'quota_not' => ['required', 'integer', 'min:1', 'max:1000'],
             'quota_alinti' => ['required', 'integer', 'min:1', 'max:1000'],
         ]);

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\ContentStatus;
+use App\Models\Article;
 use App\Models\Book;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -20,22 +21,17 @@ class NoteTest extends TestCase
         return $user;
     }
 
-    public function test_defter_entry_does_not_require_a_related_content(): void
+    public function test_notebooks_are_created_on_their_own_page_not_through_the_note_form(): void
     {
+        // Faz H5: Defterim kendi sayfasında (NotebookController); not formu sadece not / alıntı.
         $user = $this->okur();
 
         $this->actingAs($user)
-            ->post(route('panel.notlar.ekle'), [
-                'type' => 'defter',
-                'content' => 'Serbest günlük girdisi.',
-            ])
-            ->assertRedirect(route('panel.defterim'));
+            ->post(route('panel.notlar.ekle'), ['type' => 'defter', 'content' => 'Serbest günlük girdisi.'])
+            ->assertSessionHasErrors('type');
 
-        $this->assertDatabaseHas('notes', [
-            'user_id' => $user->id,
-            'type' => 'defter',
-            'noteable_type' => null,
-        ]);
+        $this->actingAs($user)->post(route('panel.defterim.yeni'))->assertRedirect();
+        $this->assertDatabaseHas('notes', ['user_id' => $user->id, 'type' => 'defter', 'noteable_type' => null, 'title' => 'Yeni Defter']);
     }
 
     public function test_not_requires_a_noteable(): void
@@ -103,7 +99,7 @@ class NoteTest extends TestCase
         $this->actingAs($user)
             ->post(route('panel.notlar.ekle'), [
                 'type' => 'alinti',
-                'noteable_type' => \App\Models\Article::class,
+                'noteable_type' => Article::class,
                 'noteable_id' => 999999,
                 'content' => 'Olmayan bir makaleye alıntı.',
             ])
@@ -133,9 +129,9 @@ class NoteTest extends TestCase
     public function test_each_type_is_listed_on_its_own_page(): void
     {
         $user = $this->okur();
-        $user->notes()->create(['type' => 'defter', 'content' => 'Defter içeriği benzersiz metni']);
+        $user->notes()->create(['type' => 'defter', 'title' => 'Günlük', 'content' => '<p>Defter içeriği benzersiz metni</p>']);
 
-        $this->actingAs($user)->get(route('panel.defterim'))->assertSee('Defter içeriği benzersiz metni');
+        $this->actingAs($user)->followingRedirects()->get(route('panel.defterim'))->assertSee('Defter içeriği benzersiz metni', false);
         $this->actingAs($user)->get(route('panel.notlarim'))->assertDontSee('Defter içeriği benzersiz metni');
         $this->actingAs($user)->get(route('panel.alintilarim'))->assertDontSee('Defter içeriği benzersiz metni');
     }

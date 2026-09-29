@@ -2,6 +2,7 @@ import '@hotwired/turbo';
 import Alpine from 'alpinejs';
 import workEditor from './work-editor-component.js';
 import pagedReader from './paged-reader.js';
+import notebook from './notebook-component.js';
 
 window.Alpine = Alpine;
 
@@ -72,6 +73,9 @@ Alpine.data('countdown', (iso) => ({
 
 // Yeni Yayın editörü (x-work-editor, Faz G2) — bkz. work-editor-component.js.
 Alpine.data('workEditor', workEditor);
+
+// Defterim (Faz H5) — bkz. notebook-component.js.
+Alpine.data('notebook', notebook);
 
 // Gömülü belge ve video görüntüleyici (x-document-viewer, Faz F2/F3 — mockup 3.1 "tıklayınca
 // belge açılır"). Okuma sayfasındaki kar tanesi işaretleri ve panelin Belgeler listesindeki

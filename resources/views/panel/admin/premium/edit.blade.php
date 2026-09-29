@@ -59,12 +59,12 @@
 
         <div class="border-t border-slate-100 pt-5">
             <div class="text-sm font-medium text-slate-700 mb-1">Ücretsiz Hesap — Çalışma Alanı Sınırları</div>
-            <p class="text-xs text-slate-400 mb-3">Her alan ayrı sayılır. Premium üyede sınır yoktur. Favoriler her zaman sınırsızdır.</p>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:max-w-lg">
-                @foreach (['quota_defter' => 'Defterim', 'quota_not' => 'Notlarım', 'quota_alinti' => 'Alıntılarım'] as $key => $label)
+            <p class="text-xs text-slate-400 mb-3">Her alan ayrı sayılır. Premium üyede sınır yoktur. Favoriler her zaman sınırsızdır; fosforun sınırı yoktur.</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:max-w-2xl">
+                @foreach (['quota_defter' => ['Defterim (defter sayısı)', 1, 1000], 'quota_defter_words' => ['Defter uzunluğu (kelime)', 100, 1000000], 'quota_not' => ['Notlarım', 1, 1000], 'quota_alinti' => ['Alıntılarım', 1, 1000]] as $key => [$label, $min, $max])
                     <div>
                         <label for="{{ $key }}" class="block text-xs text-slate-500 mb-1">{{ $label }}</label>
-                        <input id="{{ $key }}" name="{{ $key }}" type="number" min="1" max="1000" value="{{ $field($key) }}" class="{{ $inputClass }}">
+                        <input id="{{ $key }}" name="{{ $key }}" type="number" min="{{ $min }}" max="{{ $max }}" value="{{ $field($key) }}" class="{{ $inputClass }}">
                         @error($key) <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
                     </div>
                 @endforeach

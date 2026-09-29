@@ -15,11 +15,6 @@ use Illuminate\View\View;
 
 class NoteController extends Controller
 {
-    public function defterim(): View
-    {
-        return $this->listView(NoteType::Defter, 'panel.notlar.defterim');
-    }
-
     /**
      * Notlarım (Faz H4, "Notlarım sayfası 1"): solda notların olduğu eserler (arama, tür,
      * sıralama), sağda seçilen eserin notları — Tüm Notlar / Bölümlere Göre / Tarihe Göre. Her
@@ -124,38 +119,32 @@ class NoteController extends Controller
             : route('makaleler.show', $work).$anchor;
     }
 
+    /**
+     * Esere bağlı not / alıntı (form ile). Okuma sayfası artık metinde seçerek ekliyor
+     * (ReadingMarkController, Faz H3); defter kendi sayfasında (NotebookController, Faz H5).
+     */
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'type' => ['required', 'in:defter,not,alinti'],
+            'type' => ['required', 'in:not,alinti'],
             'title' => ['nullable', 'string', 'max:255'],
             'content' => ['required', 'string'],
             'location' => ['nullable', 'string', 'max:255'],
-            'noteable_type' => ['nullable', 'in:App\\Models\\Book,App\\Models\\Article'],
-            'noteable_id' => ['nullable', 'integer'],
+            'noteable_type' => ['required', 'in:App\\Models\\Book,App\\Models\\Article'],
+            'noteable_id' => ['required', 'integer'],
         ]);
 
         $type = NoteType::from($data['type']);
 
-        if ($type === NoteType::Defter) {
-            $data['noteable_type'] = null;
-            $data['noteable_id'] = null;
-        } else {
-            $request->validate([
-                'noteable_type' => ['required', 'in:App\\Models\\Book,App\\Models\\Article'],
-                'noteable_id' => ['required', 'integer'],
+        // Not, kullanıcının zaten görebildiği bir içeriğe bağlanabilir — aksi halde istek elle
+        // düzenlenerek başka bir yazarın taslağına not eklenip Notlarım listesinde o taslağın
+        // başlığı görülebiliyordu.
+        $noteable = $data['noteable_type']::find($data['noteable_id']);
+
+        if (! $noteable || ! $noteable->isVisibleTo($request->user())) {
+            throw ValidationException::withMessages([
+                'noteable_id' => 'Not eklemek istediğiniz içerik bulunamadı.',
             ]);
-
-            // Not, kullanıcının zaten görebildiği bir içeriğe bağlanabilir — aksi halde
-            // istek elle düzenlenerek başka bir yazarın taslağına not eklenip Notlarım
-            // listesinde o taslağın başlığı görülebiliyordu.
-            $noteable = $data['noteable_type']::find($data['noteable_id']);
-
-            if (! $noteable || ! $noteable->isVisibleTo($request->user())) {
-                throw ValidationException::withMessages([
-                    'noteable_id' => 'Not eklemek istediğiniz içerik bulunamadı.',
-                ]);
-            }
         }
 
         // Çalışma alanı kotası (2026-09-27 kararı): ücretsiz hesapta her alan (Defter/Not/
@@ -290,16 +279,5 @@ class NoteController extends Controller
         $needle = Str::lower(str_replace(['I', 'İ'], ['ı', 'i'], $query));
 
         return collect($haystacks)->filter()->contains(fn ($text) => Str::contains(Str::lower(str_replace(['I', 'İ'], ['ı', 'i'], (string) $text)), $needle));
-    }
-
-    private function listView(NoteType $type, string $view): View
-    {
-        $notes = auth()->user()->notes()
-            ->with('noteable')
-            ->where('type', $type)
-            ->latest()
-            ->get();
-
-        return view($view, compact('notes'));
     }
 }

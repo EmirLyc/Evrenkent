@@ -20,7 +20,7 @@ class Note extends Model
     use HasFactory;
 
     protected $fillable = [
-        'user_id', 'type', 'noteable_type', 'noteable_id', 'title', 'content', 'quote', 'anchor', 'page', 'location',
+        'user_id', 'type', 'noteable_type', 'noteable_id', 'title', 'subtitle', 'content', 'quote', 'anchor', 'page', 'tags', 'info', 'location',
     ];
 
     protected function casts(): array
@@ -28,6 +28,7 @@ class Note extends Model
         return [
             'type' => NoteType::class,
             'anchor' => 'array',
+            'tags' => 'array',
         ];
     }
 

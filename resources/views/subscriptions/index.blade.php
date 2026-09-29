@@ -35,11 +35,7 @@
                         <div class="font-serif text-lg">Sınırsız çalışma alanı</div>
                         <p class="text-sm text-slate-300 mt-1">
                             Defter, not ve alıntılarınızı dilediğiniz kadar biriktirin.
-                            @if ($quotas->unique()->count() === 1)
-                                Ücretsiz hesapta her alan {{ $quotas->first() }} kayıtla sınırlı.
-                            @else
-                                Ücretsiz hesapta her alanın bir kayıt sınırı var.
-                            @endif
+                            Ücretsiz hesapta {{ $quotas['Defter'] }} defter (defter başına en fazla {{ number_format($notebookWords, 0, ',', '.') }} kelime), {{ $quotas['Not'] }} not ve {{ $quotas['Alıntı'] }} alıntı; fosfor her hesapta sınırsız.
                         </p>
                     </div>
                 </div>

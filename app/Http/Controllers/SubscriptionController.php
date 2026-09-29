@@ -21,6 +21,7 @@ class SubscriptionController extends Controller
         return view('subscriptions.index', [
             'discountPercent' => PlatformSettings::get('premium_discount_percent'),
             'quotas' => collect(NoteType::quotaTypes())->mapWithKeys(fn (NoteType $type) => [$type->label() => PlatformSettings::noteQuota($type)]),
+            'notebookWords' => PlatformSettings::get('quota_defter_words'),
         ]);
     }
 

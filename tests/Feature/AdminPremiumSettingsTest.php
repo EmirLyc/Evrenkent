@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\NoteType;
 use App\Enums\SubscriptionPlan;
 use App\Models\User;
 use App\Support\PlatformSettings;
@@ -27,6 +28,7 @@ class AdminPremiumSettingsTest extends TestCase
             'premium_yearly_price' => 1100,
             'premium_discount_percent' => 20,
             'quota_defter' => 5,
+            'quota_defter_words' => 2500,
             'quota_not' => 15,
             'quota_alinti' => 25,
         ], $overrides);
@@ -52,8 +54,8 @@ class AdminPremiumSettingsTest extends TestCase
         $this->assertSame(120.0, SubscriptionPlan::Aylik->price());
         $this->assertSame(1100.0, SubscriptionPlan::Yillik->price());
         $this->assertSame(20, PlatformSettings::get('premium_discount_percent'));
-        $this->assertSame(5, PlatformSettings::noteQuota(\App\Enums\NoteType::Defter));
-        $this->assertSame(25, PlatformSettings::noteQuota(\App\Enums\NoteType::Alinti));
+        $this->assertSame(5, PlatformSettings::noteQuota(NoteType::Defter));
+        $this->assertSame(25, PlatformSettings::noteQuota(NoteType::Alinti));
     }
 
     public function test_settings_are_validated(): void

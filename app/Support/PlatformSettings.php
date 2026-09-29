@@ -20,7 +20,9 @@ class PlatformSettings
         'premium_monthly_price' => 99.0,
         'premium_yearly_price' => 990.0,
         'premium_discount_percent' => 30,
-        'quota_defter' => 10,
+        // "Bazı Prensipler" (Okurun Gözünden): ücretsiz hesapta 1 defter, defter uzunluğu örn. 1.000 kelime.
+        'quota_defter' => 1,
+        'quota_defter_words' => 1000,
         'quota_not' => 10,
         'quota_alinti' => 10,
     ];

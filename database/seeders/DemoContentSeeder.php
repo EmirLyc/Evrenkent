@@ -379,9 +379,12 @@ class DemoContentSeeder extends Seeder
                 'completed_at' => now()->subDays(5),
             ]);
 
+            // Faz H5: defter başlıklı, zengin metinli bir belge.
             $reader->notes()->firstOrCreate([
                 'type' => NoteType::Defter,
-                'content' => 'Bugün güzel bir gün, yeni bir kitaba başlamalıyım.',
+                'title' => 'Okuma günlüğüm',
+            ], [
+                'content' => '<p>Bugün güzel bir gün, yeni bir kitaba başlamalıyım.</p>',
             ]);
             $reader->notes()->firstOrCreate([
                 'type' => NoteType::Not,
