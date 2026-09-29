@@ -9,9 +9,11 @@
 
 const RATIOS = { '13x20': [13, 20], '13x21': [13, 21], '16x24': [16, 24], '21x27.5': [21, 27.5] };
 // Sayfa ölçüsü her cihazda aynı (belge: dizgi okurun ekranına göre bozulmasın): 736 px genişlik,
-// 56 px kenar boşluğu → 624 px metin genişliği. Okuma sayfası (Faz G4) da bu ölçüyle sayfalar.
+// yanlarda 96, üstte ve altta 56 px boşluk → 544 px metin genişliği. Okuma sayfası (Faz G4) da bu
+// ölçüyle sayfalar. Yan boşluk Faz H1'de 56'dan 96'ya çıktı ("Bazı Prensipler": satır 65–75 karakter).
 export const PAGE_WIDTH = 736;
-export const PAGE_PADDING = 56;
+export const PAGE_MARGIN_X = 96;
+export const PAGE_MARGIN_Y = 56;
 
 export default function workEditor(config) {
     let editor = null;
@@ -137,9 +139,9 @@ export default function workEditor(config) {
             const pageHeight = PAGE_WIDTH * (h / w);
             const target = this.$refs.measurer.firstElementChild;
             target.innerHTML = editor.view.dom.innerHTML;
-            const { pages, breaks } = module.paginate(target, pageHeight - PAGE_PADDING * 2);
+            const { pages, breaks } = module.paginate(target, pageHeight - PAGE_MARGIN_Y * 2);
             this.stats.pages = pages;
-            const exact = Math.abs(editor.view.dom.clientWidth - (PAGE_WIDTH - PAGE_PADDING * 2)) < 2;
+            const exact = Math.abs(editor.view.dom.clientWidth - (PAGE_WIDTH - PAGE_MARGIN_X * 2)) < 2;
             this.pageBreaks = exact ? breaks.map((item, index) => ({ top: item.top, label: `Sayfa ${index + 2}`, forced: item.forced })) : [];
         },
         setRatio(ratio) {

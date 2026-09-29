@@ -113,7 +113,9 @@ class BookController extends Controller
             'html' => $item->renderedIn($outline),
         ]);
 
-        return view('books.read', compact('book', 'chapters', 'chapter', 'sections', 'readingListItem'));
+        $contents = $outline->contents;
+
+        return view('books.read', compact('book', 'chapters', 'chapter', 'sections', 'readingListItem', 'contents'));
     }
 
     /**

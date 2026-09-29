@@ -12,30 +12,9 @@
 @section('reader_back_label', $book->title)
 @section('reader_paged', '1')
 
-@if ($chapters->isNotEmpty())
-    @section('reader_drawer')
-        <div class="space-y-0.5">
-            @foreach ($sections as $section)
-                @php $c = $section['chapter']; @endphp
-                <a
-                    href="{{ route('kitaplar.oku', [$book, $c->order]) }}"
-                    class="flex gap-2 rounded-md px-3 py-2 font-reading text-[1.05rem] leading-snug"
-                    :class="$store.pager.chapter === {{ $c->order }} ? 'bg-navy text-white' : 'text-slate-700 hover:bg-white/70'"
-                    :aria-current="$store.pager.chapter === {{ $c->order }} ? 'page' : null"
-                >
-                    @if ($section['number'])
-                        <span class="shrink-0 tabular-nums opacity-70">{{ $section['number'] }}</span>
-                    @endif
-                    <span class="min-w-0 break-words">{{ $c->title }}</span>
-                </a>
-            @endforeach
-        </div>
-    @endsection
-@endif
-
 @section('content')
     @if ($chapters->isEmpty())
-        <div class="reader-paper mx-auto max-w-[46rem] rounded-sm px-5 py-16 text-center font-reading text-lg text-slate-500 shadow-xl shadow-slate-900/10">
+        <div class="reader-paper reader-muted mx-auto max-w-[46rem] rounded-sm px-5 py-16 text-center font-reading text-lg shadow-xl shadow-slate-900/10">
             <x-reader-ornament class="mb-6" />
             Bu kitap için henüz bölüm eklenmedi.
         </div>
@@ -51,10 +30,11 @@
             :read-base="route('kitaplar.oku', $book)"
             :position-url="auth()->check() ? route('kitaplar.konum', $book) : null"
             :initial-chapter="$chapter?->order"
+            :contents="$contents"
         >
             @foreach ($sections as $section)
                 @php $c = $section['chapter']; @endphp
-                <section class="rt-chapter rich-content rt-editor-surface" data-chapter="{{ $c->order }}" data-title="{{ $c->is_preface ? $book->title : $c->title }}">
+                <section class="rt-chapter rich-content rt-editor-surface" data-chapter="{{ $c->order }}" data-title="{{ $c->is_preface ? $book->title : $c->title }}" @if ($c->is_preface) data-preface @endif>
                     @unless ($c->is_preface)
                         <header class="rt-opener">
                             <x-reader-ornament />
@@ -76,7 +56,7 @@
                             <form method="POST" action="{{ route('panel.okuma-listesi.tamamla', $readingListItem) }}">
                                 @csrf
                                 @method('PATCH')
-                                <button type="submit" class="rounded-lg bg-navy px-4 py-2 text-sm text-white hover:bg-navy/90">
+                                <button type="submit" class="reader-btn-primary px-4">
                                     Tamamlandı Olarak İşaretle
                                 </button>
                             </form>
@@ -86,7 +66,7 @@
                     @auth
                         {{-- Metnin akışını bölmesin diye kapalı; doğrulama hatasıyla dönülürse açık gelir. --}}
                         <section x-data="{ open: @js($errors->has('content') || $errors->has('noteable_id')) }">
-                            <button type="button" class="inline-flex items-center gap-2 text-sm font-medium text-navy hover:text-brand-700" @click="open = !open" :aria-expanded="open">
+                            <button type="button" class="reader-heading inline-flex items-center gap-2 text-sm font-medium hover:opacity-75" @click="open = !open" :aria-expanded="open">
                                 <x-heroicon-o-pencil-square class="w-4 h-4" /> Not / Alıntı Ekle
                             </button>
                             <div x-show="open" x-cloak class="mt-3">

@@ -330,7 +330,7 @@
 
     {{-- Kâğıt: seçilen sayfa oranında otomatik sayfa çizgileri; Sayfa Sonu yeni sayfa. --}}
     <div class="border-x border-slate-200 bg-slate-100/70 px-2 py-6 sm:px-6 sm:py-8">
-        <div x-ref="paper" class="relative mx-auto w-full max-w-[46rem] rounded-sm bg-white shadow-[0_1px_3px_rgba(15,23,42,0.12)] px-5 py-10 sm:px-14 sm:py-14" :class="numbering && 'rt-numbered'">
+        <div x-ref="paper" class="relative mx-auto w-full max-w-[46rem] rounded-sm bg-white shadow-[0_1px_3px_rgba(15,23,42,0.12)] px-5 py-10 sm:px-[96px] sm:py-14" :class="numbering && 'rt-numbered'">
             @if ($heading)
                 <header class="text-center mb-8 pb-6 border-b border-slate-200">
                     <h2 class="font-reading text-3xl sm:text-4xl font-semibold text-navy leading-tight">{{ $heading }}</h2>
@@ -357,7 +357,7 @@
             <div class="relative">
                 {{-- Otomatik sayfa çizgileri (sayfa oranına göre) --}}
                 <template x-for="line in pageBreaks" :key="line.top + line.label">
-                    <div class="pointer-events-none absolute -left-5 -right-5 sm:-left-14 sm:-right-14 border-t border-dashed" :class="line.forced ? 'border-transparent' : 'border-slate-300'" :style="`top:${line.top - 14}px`" aria-hidden="true">
+                    <div class="pointer-events-none absolute -left-5 -right-5 sm:-left-[96px] sm:-right-[96px] border-t border-dashed" :class="line.forced ? 'border-transparent' : 'border-slate-300'" :style="`top:${line.top - 14}px`" aria-hidden="true">
                         <span x-show="!line.forced" class="absolute right-2 -top-2.5 bg-white px-1.5 text-[10px] uppercase tracking-wider text-slate-400" x-text="line.label"></span>
                     </div>
                 </template>
@@ -366,8 +366,8 @@
         </div>
     </div>
 
-    {{-- Sayfa hesabı için gizli ölçüm kutusu: sabit metin genişliği (736 − 2×56 px), bkz. measure(). --}}
-    <div x-ref="measurer" aria-hidden="true" class="pointer-events-none invisible fixed -left-[9999px] top-0" :class="numbering && 'rt-numbered'"><div class="rich-content rt-editor-surface" style="width: 624px"></div></div>
+    {{-- Sayfa hesabı için gizli ölçüm kutusu: sabit metin genişliği (736 − 2×96 px), bkz. measure(). --}}
+    <div x-ref="measurer" aria-hidden="true" class="pointer-events-none invisible fixed -left-[9999px] top-0" :class="numbering && 'rt-numbered'"><div class="rich-content rt-editor-surface" style="width: 544px"></div></div>
 
     {{-- Durum çubuğu (mockup: Sayfa · Kelime · Karakter · Tüm değişiklikler kaydedildi) --}}
     <div class="flex flex-wrap items-center gap-x-5 gap-y-1 rounded-b-lg border border-t-0 border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-600">

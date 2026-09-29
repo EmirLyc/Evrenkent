@@ -13,7 +13,7 @@
         <div class="mb-4 flex justify-center font-sans"><x-status-badge :status="$article->status" /></div>
     @endunless
 
-    <x-paged-reader :ratio="$article->page_ratio" :storage-key="'makale-'.$article->id">
+    <x-paged-reader :ratio="$article->page_ratio" :storage-key="'makale-'.$article->id" :contents="$contents">
         <section class="rt-chapter rich-content rt-editor-surface" data-chapter="1" data-title="{{ $article->title }}">
             <header class="rt-opener">
                 <x-reader-ornament />
@@ -31,7 +31,7 @@
             <div class="mx-auto mt-6 w-full max-w-[46rem] px-1 font-sans">
                 @auth
                     <section x-data="{ open: @js($errors->has('content') || $errors->has('noteable_id')) }">
-                        <button type="button" class="inline-flex items-center gap-2 text-sm font-medium text-navy hover:text-brand-700" @click="open = !open" :aria-expanded="open">
+                        <button type="button" class="reader-heading inline-flex items-center gap-2 text-sm font-medium hover:opacity-75" @click="open = !open" :aria-expanded="open">
                             <x-heroicon-o-pencil-square class="w-4 h-4" /> Not / Alıntı Ekle
                         </button>
                         <div x-show="open" x-cloak class="mt-3">
@@ -43,8 +43,8 @@
                         </div>
                     </section>
                 @else
-                    <p class="text-center text-sm text-slate-500">
-                        Not veya alıntı eklemek için <a href="{{ route('login') }}" class="text-navy underline">giriş yapın</a>.
+                    <p class="reader-muted text-center text-sm">
+                        Not veya alıntı eklemek için <a href="{{ route('login') }}" class="reader-heading underline">giriş yapın</a>.
                     </p>
                 @endauth
             </div>

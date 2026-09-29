@@ -95,6 +95,92 @@ class ReadingModeTest extends TestCase
         $this->actingAs($reader)->postJson(route('kitaplar.konum', $paid), ['bolum' => 1])->assertForbidden();
     }
 
+    public function test_contents_drawer_lists_the_preface_chapters_and_their_headings(): void
+    {
+        // Faz H1 ("Okuma modu 9"): İçindekiler soldan; bölümler, altlarında başlıklar, sayfaya git.
+        $book = Book::factory()->create(['status' => ContentStatus::Yayinda, 'price' => 0, 'heading_numbering' => true]);
+        Chapter::factory()->for($book)->create(['order' => 1, 'title' => 'Giriş', 'is_preface' => true, 'content' => '<p>Önsöz.</p>']);
+        Chapter::factory()->for($book)->create(['order' => 2, 'title' => 'Modern Devletin Doğuşu', 'content' => '<h2>Tarihsel Arka Plan</h2><p>Metin.</p><h3>Westphalia</h3><p>Metin.</p>']);
+        Chapter::factory()->for($book)->create(['order' => 3, 'title' => 'Uluslararası Sistem', 'content' => '<p>Metin.</p>']);
+
+        $response = $this->get(route('kitaplar.oku', $book))->assertOk();
+
+        // Giriş bölümü (sayfaları roma rakamıyla) işaretli, diğerleri değil.
+        $this->assertSame(1, substr_count($response->getContent(), 'data-preface'));
+        $response
+            ->assertSee('aria-label="İçindekiler"', false)
+            ->assertSeeInOrder(['data-chapter="1"', 'data-preface', 'data-chapter="2"'], false)
+            ->assertSeeInOrder([
+                'href="'.route('kitaplar.oku', [$book, 1]).'"', 'Giriş',
+                'href="'.route('kitaplar.oku', [$book, 2]).'"', 'I.', 'Modern Devletin Doğuşu',
+                'href="'.route('kitaplar.oku', [$book, 2]).'#b2-1"', '1.1', 'Tarihsel Arka Plan',
+                'href="'.route('kitaplar.oku', [$book, 2]).'#b2-2"', '1.1.1', 'Westphalia',
+                'href="'.route('kitaplar.oku', [$book, 3]).'"', 'II.', 'Uluslararası Sistem',
+            ], false)
+            ->assertSee('Sayfaya git:')
+            ->assertSee('Okumanın yeni bir evreni var.');
+    }
+
+    public function test_reading_appearance_menu_offers_themes_and_dictionary_highlight_but_no_font_choice(): void
+    {
+        // Faz H1 ("Okuma modu 8 / 14"). Yazı tipi seçimi bilerek yok: dizgi ve sayfa numaraları sabit.
+        $book = Book::factory()->create(['status' => ContentStatus::Yayinda, 'price' => 0]);
+        Chapter::factory()->for($book)->create(['order' => 1]);
+
+        $this->get(route('kitaplar.oku', $book))->assertOk()
+            ->assertSee('Okuma Görünümü')
+            ->assertSeeInOrder(['Açık', 'Sepya', 'Koyu'])
+            ->assertSee('Sayfa Büyüklüğü')
+            ->assertSee('Gece Modunu Otomatik Aç')
+            ->assertSee('Sözlük Kavramlarını Göster')
+            ->assertSee('Varsayılanlara Dön')
+            ->assertSee('data-concepts="off"', false)
+            ->assertDontSee('Yazı Tipi');
+    }
+
+    public function test_searching_inside_the_text_needs_an_account(): void
+    {
+        $book = Book::factory()->create(['status' => ContentStatus::Yayinda, 'price' => 0]);
+        Chapter::factory()->for($book)->create(['order' => 1]);
+
+        $this->get(route('kitaplar.oku', $book))->assertOk()
+            ->assertSee('Metnin içinde arama yapmak için giriş yapın.')
+            ->assertDontSee('Bu metinde ara…');
+
+        $this->actingAs(User::factory()->create())->get(route('kitaplar.oku', $book))->assertOk()
+            ->assertSee('Bu metinde ara…')
+            ->assertDontSee('Metnin içinde arama yapmak için giriş yapın.');
+    }
+
+    public function test_text_column_is_narrow_enough_for_65_to_75_characters_a_line(): void
+    {
+        // "Bazı Prensipler": satır 65–75 karakter. 736 px sayfada yanlarda 96 px → 544 px metin.
+        $book = Book::factory()->create(['status' => ContentStatus::Yayinda, 'price' => 0, 'page_ratio' => '13x20']);
+        Chapter::factory()->for($book)->create(['order' => 1]);
+
+        $this->get(route('kitaplar.oku', $book))->assertOk()
+            ->assertSee('left: 96px; top: 56px; width: 544px; height: 1020px', false);
+    }
+
+    public function test_article_contents_come_from_its_headings(): void
+    {
+        $issue = MagazineIssue::factory()->create(['status' => ContentStatus::Yayinda]);
+        $article = Article::factory()->create([
+            'magazine_issue_id' => $issue->id,
+            'status' => ContentStatus::Yayinda,
+            'heading_numbering' => false,
+            'content' => '<h2>Giriş</h2><p>Metin.</p><h1>Sefaretnameler</h1><h2>Paris</h2><p>Metin.</p>',
+        ]);
+
+        $contents = \App\Support\WorkOutline::for($article)->contents;
+        // Başlık 1'den önceki başlık kendi başına; Başlık 1 altındakileri toplar.
+        $this->assertSame(['Giriş', 'Sefaretnameler'], array_column($contents, 'text'));
+        $this->assertSame([[], ['#b-3']], array_map(fn ($group) => array_column($group['items'], 'url'), $contents));
+
+        $this->get(route('makaleler.show', $article))->assertOk()
+            ->assertSeeInOrder(['href="#b-1"', 'Giriş', 'href="#b-2"', 'Sefaretnameler', 'href="#b-3"', 'Paris'], false);
+    }
+
     public function test_article_is_read_as_pages_in_the_magazine_ratio(): void
     {
         $magazine = Magazine::factory()->create(['name' => 'Tarih Dergisi']);

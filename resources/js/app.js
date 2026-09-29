@@ -159,18 +159,104 @@ Alpine.store('pager', {
     last: false,
     progress: 0,
     location: '',
+    // Başlık ve sayfa düğmeleri görünür mü (Faz H1: okurken arayüz çekiliyor).
+    chrome: true,
 });
 Alpine.data('pagedReader', pagedReader);
 
-// Okuma modu (layouts/reader, Faz F4): okuma ilerleme çubuğu, bölümler çekmecesi ve ←/→ ile
-// önceki/sonraki bölüm. Okurun yazı boyutu ayarı Faz G4'te kalktı (belge: "punto üzerinde
+// Okuma modu (layouts/reader, Faz F4 / H1): okuma ilerleme çubuğu, Aa menüsü (Okuma Görünümü) ve
+// ←/→ ile önceki/sonraki bölüm. Okurun yazı boyutu ayarı Faz G4'te kalktı (belge: "punto üzerinde
 // değişiklik hakkı olursa tüm kitap dizgisini bozar") — sayfalı okumada sayfa büyütülüyor.
+//
+// Görünüm tercihleri (tema, gece modu, sözlük kavramları) bu cihazda hatırlanıyor; ilk boyamadan
+// önce layouts/reader'daki satır içi betik uyguluyor, burası değişiklikleri.
+const READER_PREFS_KEY = 'evrenkent.reader.prefs';
+const READER_DEFAULTS = { theme: 'acik', auto: false, concepts: false };
+const CHROME_IDLE = 2500;
+
 Alpine.data('reader', () => ({
     progress: 0,
-    drawer: false,
+    aa: false,
+    prefs: { ...READER_DEFAULTS },
+    chromeTimer: null,
 
     init() {
+        try {
+            const saved = JSON.parse(localStorage.getItem(READER_PREFS_KEY)) || {};
+            this.prefs = {
+                theme: ['acik', 'sepya', 'koyu'].includes(saved.theme) ? saved.theme : READER_DEFAULTS.theme,
+                auto: saved.auto === true,
+                concepts: saved.concepts === true,
+            };
+        } catch {
+            // depolama yok: varsayılanlar
+        }
+        this.darkQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        this.onScheme = () => this.applyPrefs();
+        this.darkQuery.addEventListener?.('change', this.onScheme);
+        this.applyPrefs();
+        this.$store.pager.chrome = true;
         this.$nextTick(() => this.trackProgress());
+    },
+    destroy() {
+        this.darkQuery?.removeEventListener?.('change', this.onScheme);
+        clearTimeout(this.chromeTimer);
+    },
+    applyPrefs() {
+        const dark = this.prefs.auto && this.darkQuery?.matches;
+        document.body.dataset.readerTheme = dark ? 'koyu' : this.prefs.theme;
+        document.body.dataset.concepts = this.prefs.concepts ? 'on' : 'off';
+    },
+    savePrefs() {
+        try {
+            localStorage.setItem(READER_PREFS_KEY, JSON.stringify(this.prefs));
+        } catch {
+            // yok say
+        }
+        this.applyPrefs();
+    },
+    setTheme(theme) {
+        this.prefs.theme = theme;
+        this.savePrefs();
+    },
+    setPref(key, value) {
+        this.prefs[key] = value;
+        this.savePrefs();
+    },
+    resetPrefs() {
+        this.prefs = { ...READER_DEFAULTS };
+        this.savePrefs();
+        window.dispatchEvent(new CustomEvent('pager-zoom-reset'));
+    },
+
+    // --- Arayüzün çekilmesi (sadece sayfalı okumada) --------------------------------------------
+    showChrome() {
+        this.$store.pager.chrome = true;
+        clearTimeout(this.chromeTimer);
+    },
+    hideChrome() {
+        if (!this.$root.isConnected || !this.$store.pager.active || this.aa) return;
+        clearTimeout(this.chromeTimer);
+        this.$store.pager.chrome = false;
+    },
+    toggleChrome() {
+        if (!this.$root.isConnected) return;
+        this.$store.pager.chrome ? this.hideChrome() : this.showChrome();
+    },
+    // Fare kıpırdayınca arayüz geri gelir, bir süre durunca çekilir; menü açıkken ya da imleç
+    // başlığın / sayfa düğmelerinin üzerindeyken kalır.
+    pointerMoved(event) {
+        if (!this.$root.isConnected || event.pointerType !== 'mouse' || !this.$store.pager.active) return;
+        this.showChrome();
+        this.scheduleHide();
+    },
+    scheduleHide() {
+        clearTimeout(this.chromeTimer);
+        this.chromeTimer = setTimeout(() => {
+            const busy = this.aa || Array.from(document.querySelectorAll('[data-reader-chrome]'))
+                .some((element) => element.matches(':hover') || element.contains(document.activeElement));
+            busy ? this.scheduleHide() : this.hideChrome();
+        }, CHROME_IDLE);
     },
     trackProgress() {
         if (!this.$root.isConnected) return;
@@ -180,8 +266,9 @@ Alpine.data('reader', () => ({
     keyNav(event) {
         // Turbo sonrası temizlenmemiş eski örnek (bkz. documentViewer) olayı almasın.
         // Sayfalı okumada oklar sayfa çeviriyor (paged-reader.js).
-        if (!this.$root.isConnected || this.$store.pager.active || event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || this.drawer) return;
-        if (event.target.closest?.('input, textarea, select, [contenteditable]') || document.querySelector('[role=dialog]:not([style*="display: none"])')) return;
+        if (!this.$root.isConnected || this.$store.pager.active || event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || this.aa) return;
+        if (event.target.closest?.('input, textarea, select, [contenteditable]')) return;
+        if (Array.from(document.querySelectorAll('[role=dialog]')).some((dialog) => dialog.getClientRects().length > 0)) return;
 
         const link = event.key === 'ArrowLeft'
             ? document.querySelector('[data-reader-prev]')

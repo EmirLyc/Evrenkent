@@ -370,17 +370,18 @@
     }
 
     /* --- Faz G4: Sayfalı okuma (x-paged-reader) --------------------------------------------------
-       Metin editörle aynı dizgide (.rt-editor-surface: Georgia 16, 624 px) CSS sütunlarına akıyor;
-       her sütun bir sayfa. Sütun aralığı = iki kenar boşluğu (2 × 56 px) → bir sayfa kaydırması
-       tam sayfa genişliği (736 px). Ölçüler sabit px: ekran genişliğine göre değişen (sm:, md:)
-       hiçbir kural sayfanın içinde kullanılmamalı, yoksa sayfalar cihaza göre kayar. */
+       Metin editörle aynı dizgide (.rt-editor-surface: Georgia 16, 544 px) CSS sütunlarına akıyor;
+       her sütun bir sayfa. Sütun aralığı = iki yan kenar boşluğu (2 × 96 px) → bir sayfa kaydırması
+       tam sayfa genişliği (736 px). Yan boşluk Faz H1'de 56'dan 96'ya çıktı ("Bazı Prensipler":
+       satır 65–75 karakter; 624 px'te 78–87'ydi). Ölçüler sabit px: ekran genişliğine göre
+       değişen (sm:, md:) hiçbir kural sayfanın içinde kullanılmamalı, yoksa sayfalar cihaza göre kayar. */
     .rt-page {
         @apply rounded-sm shadow-xl shadow-slate-900/10;
     }
     .rt-flow {
-        width: 624px;
-        column-width: 624px;
-        column-gap: 112px;
+        width: 544px;
+        column-width: 544px;
+        column-gap: 192px;
         column-fill: auto;
         orphans: 2;
         widows: 2;
@@ -555,5 +556,202 @@
     .rt-editor-surface p.is-editor-empty:first-child::before {
         @apply pointer-events-none float-left h-0 text-slate-400;
         content: attr(data-placeholder);
+    }
+
+    /* --- Faz H1: Okuma görünümü ("Okurun Gözünden" — Okuma modu 7, 8, 9, 14) ---------------------
+       Aa menüsündeki tema (Açık / Sepya / Koyu) body'deki data-reader-theme'den; okuma düzeninin
+       bütün renkleri bu değişkenlerden okunuyor. Açık tema önceki (G4) görünümle aynı. */
+    .reader-body {
+        --rd-desk: #E9E0CC;
+        --rd-paper: #F7F1E4;
+        --rd-ink: #0F172A;
+        --rd-soft: #334155;
+        --rd-muted: #64748B;
+        --rd-heading: #03192F;
+        --rd-accent: #A8843F;
+        --rd-rule: rgba(168, 132, 63, 0.3);
+        --rd-box: rgba(255, 255, 255, 0.55);
+        --rd-chrome: rgba(247, 241, 228, 0.95);
+        --rd-link: #03192F;
+        --rd-concept: #F8E2A6;
+        --rd-primary: #03192F;
+        --rd-primary-ink: #FFFFFF;
+        --rd-mark: rgba(226, 121, 14, 0.28);
+        background-color: var(--rd-desk);
+        color: var(--rd-ink);
+    }
+    .reader-body[data-reader-theme="sepya"] {
+        --rd-desk: #D8C6A2;
+        --rd-paper: #EFDFBF;
+        --rd-ink: #3A2A1A;
+        --rd-soft: #574130;
+        --rd-muted: #7A6450;
+        --rd-heading: #4A2F17;
+        --rd-accent: #9A6F2E;
+        --rd-rule: rgba(122, 86, 40, 0.3);
+        --rd-box: rgba(255, 246, 225, 0.45);
+        --rd-chrome: rgba(239, 223, 191, 0.95);
+        --rd-link: #5B3715;
+        --rd-concept: #EAC878;
+        --rd-primary: #4A2F17;
+        --rd-primary-ink: #FFF8EA;
+    }
+    /* Koyu: gece okuması — mockup'taki lacivert. */
+    .reader-body[data-reader-theme="koyu"] {
+        --rd-desk: #020D19;
+        --rd-paper: #0B1F33;
+        --rd-ink: #DDD6C8;
+        --rd-soft: #C4BCAD;
+        --rd-muted: #9A9384;
+        --rd-heading: #EAD9B0;
+        --rd-accent: #C9A55C;
+        --rd-rule: rgba(201, 165, 92, 0.28);
+        --rd-box: rgba(255, 255, 255, 0.05);
+        --rd-chrome: rgba(11, 31, 51, 0.95);
+        --rd-link: #EAD9B0;
+        --rd-concept: rgba(201, 165, 92, 0.38);
+        --rd-primary: #C9A55C;
+        --rd-primary-ink: #0B1F33;
+        --rd-mark: rgba(201, 165, 92, 0.4);
+        color-scheme: dark;
+    }
+    .reader-body .reader-paper {
+        background-color: var(--rd-paper);
+    }
+    .reader-body[data-reader-theme="koyu"] .reader-paper {
+        background-image: linear-gradient(90deg, rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0) 2.25rem);
+    }
+    .reader-body .rt-editor-surface,
+    .reader-body .reader-page .rich-content {
+        color: var(--rd-ink);
+    }
+    .reader-body .rich-content :is(h1, h2, h3, h4, .rt-toc-title, .rt-bibliography-title, p.rt-concept, th),
+    .reader-body :is(.rt-opener-number, .rt-opener-title, .rt-page-number, .reader-title, .reader-kicker, .text-navy),
+    .reader-body .rich-content :is(a.document-marker, p.video-link a) {
+        color: var(--rd-heading);
+    }
+    .reader-body :is(.rt-opener-byline, .rich-content .rt-toc-num, .rich-content figcaption, .rich-content .footnotes, .reader-byline) {
+        color: var(--rd-muted);
+    }
+    .reader-body .text-gold,
+    .reader-body .rt-opener-kicker {
+        color: var(--rd-accent);
+    }
+    .reader-body .rich-content :is(blockquote, .rt-toc, .rt-bibliography, th) {
+        background-color: var(--rd-box);
+    }
+    .reader-body .rich-content :is(blockquote, .rt-toc, .rt-bibliography, th, td, .footnotes, p.rt-concept) {
+        border-color: var(--rd-rule);
+    }
+    .reader-body .rich-content blockquote {
+        border-left-color: var(--rd-accent);
+    }
+    .reader-body .rich-content a:not(.document-marker):not(.footnote-back):not(.rt-concept-link),
+    .reader-body .rich-content :is(sup.footnote-ref a, sup.cite-ref a, .rt-toc li a) {
+        color: var(--rd-link);
+    }
+
+    /* Sözlük Kavramlarını Göster (Okuma modu 14): kapalıyken bağlı kelime düz metin; açıkken sarı
+       kutucuk. Vurgu gölgeyle — dolgu satırı genişletip sayfaları kaydırırdı. */
+    .reader-body .rich-content a.rt-concept-link {
+        color: inherit;
+        border-bottom: 0;
+        pointer-events: none;
+        cursor: text;
+    }
+    .reader-body[data-concepts="on"] .rich-content a.rt-concept-link {
+        pointer-events: auto;
+        cursor: pointer;
+        border-radius: 0.3em;
+        background-color: var(--rd-concept);
+        box-shadow: 0 0 0 0.14em var(--rd-concept), 0 0.12em 0.4em 0.1em rgba(90, 60, 10, 0.22);
+    }
+
+    /* Okuma düzeninin kabuğu: başlık, menüler, çekmece, sayfa düğmeleri. */
+    .reader-chrome {
+        background-color: var(--rd-chrome);
+        border-color: var(--rd-rule);
+        color: var(--rd-soft);
+    }
+    .reader-icon-btn {
+        @apply inline-grid h-10 min-w-10 place-items-center rounded-md px-1.5 transition-colors disabled:opacity-30;
+        color: var(--rd-soft);
+    }
+    .reader-icon-btn:hover,
+    .reader-icon-btn[aria-expanded="true"] {
+        background-color: var(--rd-box);
+        color: var(--rd-heading);
+    }
+    .reader-panel {
+        @apply rounded-xl border shadow-2xl shadow-slate-900/20;
+        background-color: var(--rd-paper);
+        border-color: var(--rd-rule);
+        color: var(--rd-ink);
+    }
+    .reader-card {
+        border-color: var(--rd-rule);
+        background-color: var(--rd-box);
+    }
+    .reader-heading { color: var(--rd-heading); }
+    .reader-muted { color: var(--rd-muted); }
+    .reader-rule { border-color: var(--rd-rule); }
+    .reader-btn {
+        @apply inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg border px-3 text-sm transition-colors disabled:opacity-40;
+        border-color: var(--rd-rule);
+        background-color: var(--rd-box);
+        color: var(--rd-soft);
+    }
+    .reader-btn-primary {
+        @apply inline-flex h-10 shrink-0 items-center gap-1.5 rounded-lg px-3 text-sm transition-opacity hover:opacity-90 disabled:opacity-40;
+        background-color: var(--rd-primary);
+        color: var(--rd-primary-ink);
+    }
+    .reader-input {
+        @apply rounded-lg border px-3 text-sm focus:outline-none focus:ring-2;
+        background-color: var(--rd-box);
+        border-color: var(--rd-rule);
+        color: var(--rd-ink);
+        --tw-ring-color: var(--rd-accent);
+    }
+    .reader-input:focus {
+        border-color: var(--rd-accent);
+        box-shadow: 0 0 0 1px var(--rd-accent);
+    }
+    .reader-input::placeholder { color: var(--rd-muted); }
+    .reader-input::-webkit-search-cancel-button { display: none; }
+    .reader-switch {
+        @apply relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors;
+        background-color: var(--rd-rule);
+    }
+    .reader-switch[aria-checked="true"] {
+        background-color: #E2790E;
+    }
+    .reader-switch span {
+        @apply inline-block h-5 w-5 translate-x-0.5 rounded-full bg-white shadow transition-transform;
+    }
+    .reader-switch[aria-checked="true"] span {
+        @apply translate-x-[1.375rem];
+    }
+    /* İçindekiler: okunan yer altın çizgi ve kalın (Okuma modu 9). */
+    .reader-toc-link {
+        @apply flex min-w-0 flex-1 items-baseline gap-2 border-l-2 border-transparent py-1.5 pl-2.5 pr-1 transition-colors;
+    }
+    .reader-toc-link:hover {
+        color: var(--rd-heading);
+    }
+    .reader-toc-link.is-current {
+        @apply font-semibold;
+        border-left-color: var(--rd-accent);
+        color: var(--rd-heading);
+    }
+    /* Kitap içi arama: bulunan yer (CSS Custom Highlight — metne dokunmadan boyar). */
+    ::highlight(reader-search) {
+        background-color: var(--rd-mark, rgba(226, 121, 14, 0.28));
+        color: inherit;
+    }
+    .reader-search-mark {
+        @apply rounded-sm font-semibold;
+        color: inherit;
+        background-color: var(--rd-mark);
     }
 }

@@ -26,16 +26,16 @@
         @if (\App\Support\RichText::hasText($entry->content))
             <div class="rich-content">{!! $entry->renderedContent() !!}</div>
         @else
-            <p class="text-center font-reading text-lg text-slate-500">Bu maddenin tanımı henüz yazılmamış.</p>
+            <p class="reader-muted text-center font-reading text-lg">Bu maddenin tanımı henüz yazılmamış.</p>
         @endif
     @else
         <div class="relative">
             <div class="rich-content"><p>{{ $entry->excerpt }}</p></div>
-            <div class="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-parchment to-transparent" aria-hidden="true"></div>
+            <div class="pointer-events-none absolute inset-x-0 bottom-0 h-16" style="background: linear-gradient(to top, var(--rd-paper), transparent)" aria-hidden="true"></div>
         </div>
-        <div class="mt-8 rounded-lg border border-gold/40 bg-white/50 p-5 text-center font-sans">
-            <p class="text-slate-700">Maddenin tamamı <span class="font-semibold">{{ $book->title }}</span> sözlüğünde.</p>
-            <a href="{{ route('kitaplar.show', $book) }}" class="btn-dark mt-3">Sözlüğü İncele</a>
+        <div class="reader-card mt-8 rounded-lg border p-5 text-center font-sans">
+            <p>Maddenin tamamı <span class="font-semibold">{{ $book->title }}</span> sözlüğünde.</p>
+            <a href="{{ route('kitaplar.show', $book) }}" class="reader-btn-primary mt-3">Sözlüğü İncele</a>
         </div>
     @endif
 
@@ -43,7 +43,7 @@
         <x-reader-ornament />
         @if ($readable)
             <p class="mt-4 text-center">
-                <a href="{{ $entry->readUrl() }}" class="inline-flex items-center gap-1.5 text-sm font-medium text-navy hover:text-brand-700">
+                <a href="{{ $entry->readUrl() }}" class="reader-heading inline-flex items-center gap-1.5 text-sm font-medium hover:opacity-75">
                     <x-heroicon-o-book-open class="w-4 h-4" /> Sözlükte, yerinde oku
                 </a>
             </p>
@@ -51,14 +51,14 @@
 
         <nav class="mt-8 flex items-center justify-between gap-3" aria-label="Maddeler arası geçiş">
             @if ($previous)
-                <a href="{{ route('sozlukler.madde', [$book, $previous]) }}" class="inline-flex min-w-0 items-center gap-1.5 rounded-lg border border-gold/40 bg-white/40 px-3.5 py-2 text-sm text-slate-700 hover:bg-white/80">
+                <a href="{{ route('sozlukler.madde', [$book, $previous]) }}" class="reader-btn min-w-0 shrink px-3.5">
                     &larr; <span class="truncate">{{ $previous->term }}</span>
                 </a>
             @else
                 <span></span>
             @endif
             @if ($next)
-                <a href="{{ route('sozlukler.madde', [$book, $next]) }}" class="inline-flex min-w-0 items-center gap-1.5 rounded-lg bg-navy px-3.5 py-2 text-sm text-white hover:bg-navy/90">
+                <a href="{{ route('sozlukler.madde', [$book, $next]) }}" class="reader-btn-primary min-w-0 shrink px-3.5">
                     <span class="truncate">{{ $next->term }}</span> &rarr;
                 </a>
             @endif

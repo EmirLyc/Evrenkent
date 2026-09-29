@@ -1,15 +1,18 @@
 {{--
     Okuma modu (Faz F4, mockup 3 "Okuma modundayken sayfanın görünümü"). Uygulama kabuğu
-    (header arama/sepet, sidebar) yok — dikkat metinde. Masaüstünde koyu zemin üzerinde
-    ortalı kâğıt sayfa, mobilde tam genişlik kâğıt.
+    (header arama/sepet, sidebar) yok — dikkat metinde.
 
-    Section'lar: title, reader_back_url, reader_back_label, reader_drawer (isteğe bağlı —
-    "Bölümler" çekmecesi), reader_paged (Faz G4: içerik x-paged-reader — sayfalar kendi kâğıdında,
-    başlıkta yakınlaştırma), content. Sayfasız içerikte klavye ←/→ sayfadaki
-    [data-reader-prev] / [data-reader-next] bağlantılarına gider.
+    Faz H1 ("Okurun Gözünden" — Okuma modu 7, 8, 9): başlıkta solda ← ve ☰ (İçindekiler), sağda 🔍
+    (kitap içi arama) ve Aa (Okuma Görünümü: tema, gece modu, sözlük kavramları, sayfa büyüklüğü).
+    Sayfalı okumada okur sayfa çevirince başlık ve sayfa düğmeleri çekiliyor ("Okurken arayüz
+    mümkün olduğunca ortadan kaybolmalı"); fare kıpırdayınca ya da sayfaya dokununca geri geliyor.
 
-    Okurun yazı boyutu ayarı Faz G4'te kalktı (belge: punto değişirse dizgi bozulur); sayfa
-    büyütülüyor.
+    Section'lar: title, reader_back_url, reader_back_label, reader_paged (içerik x-paged-reader),
+    content. Sayfasız içerikte klavye ←/→ sayfadaki [data-reader-prev] / [data-reader-next]
+    bağlantılarına gider.
+
+    Okurun yazı boyutu ve yazı tipi ayarı yok (G4 / H1 kararı: punto ya da yazı tipi değişirse
+    dizgi ve sayfa numaraları bozulur); sayfa büyütülüyor.
 --}}
 <!DOCTYPE html>
 <html lang="tr">
@@ -27,32 +30,98 @@
 
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    <body class="font-sans antialiased bg-parchment-deep text-slate-800">
-        <div x-data="reader" @keydown.window="keyNav($event)" @scroll.window.throttle.50ms="trackProgress()" @pager-navigated.window="drawer = false" class="min-h-screen flex flex-col">
-            <header class="sticky top-0 z-30 bg-parchment/95 backdrop-blur border-b border-gold/20">
-                <div class="mx-auto flex h-14 max-w-4xl items-center gap-2 px-3 sm:px-6">
-                    <a href="@yield('reader_back_url', route('home'))" class="inline-flex min-w-0 items-center gap-1.5 rounded-md px-2 py-1.5 text-sm text-slate-600 hover:bg-white/60 hover:text-slate-900">
-                        <x-heroicon-o-arrow-left class="w-4 h-4 shrink-0" />
-                        <span class="truncate">@yield('reader_back_label', 'Geri')</span>
+    <body class="reader-body font-sans antialiased" data-reader-theme="acik" data-concepts="off">
+        {{-- Okurun görünüm tercihi ilk boyamadan önce (açık temadan koyuya "yanıp sönme" olmasın). --}}
+        <script>
+            (() => {
+                let prefs = {};
+                try { prefs = JSON.parse(localStorage.getItem('evrenkent.reader.prefs')) || {}; } catch (e) {}
+                const dark = prefs.auto && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                document.body.dataset.readerTheme = dark ? 'koyu' : (['acik', 'sepya', 'koyu'].includes(prefs.theme) ? prefs.theme : 'acik');
+                document.body.dataset.concepts = prefs.concepts ? 'on' : 'off';
+            })();
+        </script>
+
+        <div x-data="reader" @keydown.window="keyNav($event)" @scroll.window.throttle.50ms="trackProgress()"
+             @pager-turned.window="hideChrome()" @reader-tap.window="toggleChrome()" @pointermove.window.throttle.200ms="pointerMoved($event)"
+             class="min-h-screen flex flex-col">
+            <header data-reader-chrome class="reader-chrome sticky top-0 z-30 border-b backdrop-blur transition-opacity duration-300"
+                    :class="$store.pager.chrome || 'opacity-0 pointer-events-none'" @focusin="showChrome()">
+                <div class="mx-auto flex h-14 max-w-4xl items-center gap-1 px-2 sm:px-6">
+                    <a href="@yield('reader_back_url', route('home'))" class="reader-icon-btn" title="@yield('reader_back_label', 'Geri')" aria-label="Geri: @yield('reader_back_label', 'Geri')">
+                        <x-heroicon-o-arrow-left class="w-6 h-6" />
                     </a>
+                    <span x-show="$store.pager.active" x-cloak class="reader-rule mx-1 h-6 border-l" aria-hidden="true"></span>
+                    <button type="button" x-show="$store.pager.active" x-cloak class="reader-icon-btn" @click="$dispatch('reader-toc')" aria-label="İçindekiler">
+                        <x-heroicon-o-bars-3 class="w-6 h-6" />
+                    </button>
 
                     <div class="ml-auto flex shrink-0 items-center gap-1">
-                        {{-- Sayfayı büyüt / küçült (sayfalı okuma; bu cihazda hatırlanır). --}}
-                        <div x-show="$store.pager.active" x-cloak class="flex items-center rounded-md border border-gold/30 bg-white/50" role="group" aria-label="Sayfa büyüklüğü">
-                            <button type="button" class="grid h-9 w-9 place-items-center text-slate-600 hover:text-slate-900 disabled:opacity-30" @click="$dispatch('pager-zoom', -1)" :disabled="!$store.pager.canZoomOut" aria-label="Sayfayı küçült"><x-heroicon-o-magnifying-glass-minus class="w-5 h-5" /></button>
-                            <span class="w-11 text-center text-xs tabular-nums text-slate-600" x-text="$store.pager.percent + '%'"></span>
-                            <button type="button" class="grid h-9 w-9 place-items-center text-slate-600 hover:text-slate-900 disabled:opacity-30" @click="$dispatch('pager-zoom', 1)" :disabled="!$store.pager.canZoomIn" aria-label="Sayfayı büyüt"><x-heroicon-o-magnifying-glass-plus class="w-5 h-5" /></button>
+                        <button type="button" x-show="$store.pager.active" x-cloak data-reader-search-toggle class="reader-icon-btn" @click="$dispatch('reader-search')" aria-label="Metinde ara">
+                            <x-heroicon-o-magnifying-glass class="w-6 h-6" />
+                        </button>
+                        <span x-show="$store.pager.active" x-cloak class="reader-rule mx-1 h-6 border-l" aria-hidden="true"></span>
+
+                        {{-- Aa: Okuma Görünümü (Okuma modu 8 / 14). --}}
+                        <div class="relative" @click.outside="aa = false" @keydown.escape.window="aa = false">
+                            <button type="button" class="reader-icon-btn px-2 font-reading text-[1.6rem] leading-none" @click="aa = !aa" :aria-expanded="aa.toString()" aria-haspopup="dialog" aria-label="Okuma görünümü">Aa</button>
+
+                            <div x-show="aa" x-cloak x-transition.origin.top.right class="reader-panel absolute right-0 top-full mt-2 w-[21rem] max-w-[calc(100vw-1rem)] font-reading" role="dialog" aria-label="Okuma Görünümü">
+                                <p class="reader-heading reader-rule border-b px-5 pb-3 pt-4 text-xl font-semibold">Okuma Görünümü</p>
+
+                                <div class="reader-rule border-b px-5 py-4">
+                                    <p class="reader-heading text-base">Tema</p>
+                                    <div class="mt-3 grid grid-cols-3 gap-2 text-center text-[0.95rem]">
+                                        @foreach (['acik' => ['Açık', '#FFFFFF', '#E2790E'], 'sepya' => ['Sepya', '#E9DCC8', 'transparent'], 'koyu' => ['Koyu', '#0B1F33', 'transparent']] as $key => [$label, $fill, $ring])
+                                            <button type="button" class="group flex flex-col items-center gap-1.5 rounded-lg py-1" @click="setTheme('{{ $key }}')" :aria-pressed="(prefs.theme === '{{ $key }}').toString()">
+                                                {{-- :style nesneyle: metin verilirse Alpine sabit style'ı (dolgu rengi) siler. --}}
+                                                <span class="h-11 w-11 rounded-full border shadow-sm transition" style="background-color: {{ $fill }}; border-color: rgba(120, 100, 70, 0.3)"
+                                                      :style="{ boxShadow: prefs.theme === '{{ $key }}' ? '0 0 0 2px var(--rd-paper), 0 0 0 4px #E2790E' : '' }"></span>
+                                                <span :class="prefs.theme === '{{ $key }}' ? 'reader-heading font-semibold' : 'reader-muted'">{{ $label }}</span>
+                                            </button>
+                                        @endforeach
+                                    </div>
+                                </div>
+
+                                {{-- Sayfa büyüklüğü (G4): punto değil sayfa büyür, dizgi aynı kalır. --}}
+                                <div x-show="$store.pager.active" x-cloak class="reader-rule flex items-center justify-between gap-3 border-b px-5 py-3.5">
+                                    <span class="reader-heading text-base">Sayfa Büyüklüğü</span>
+                                    <div class="reader-rule flex items-center rounded-lg border font-sans" role="group" aria-label="Sayfa büyüklüğü">
+                                        <button type="button" class="reader-icon-btn h-9 min-w-9" @click="$dispatch('pager-zoom', -1)" :disabled="!$store.pager.canZoomOut" aria-label="Sayfayı küçült"><x-heroicon-o-minus class="w-4 h-4" /></button>
+                                        <span class="reader-heading w-12 text-center text-xs tabular-nums" x-text="$store.pager.percent + '%'"></span>
+                                        <button type="button" class="reader-icon-btn h-9 min-w-9" @click="$dispatch('pager-zoom', 1)" :disabled="!$store.pager.canZoomIn" aria-label="Sayfayı büyüt"><x-heroicon-o-plus class="w-4 h-4" /></button>
+                                    </div>
+                                </div>
+
+                                <div class="reader-rule flex items-center gap-3 border-b px-5 py-3.5">
+                                    <x-heroicon-o-moon class="reader-heading w-6 h-6 shrink-0" />
+                                    <div class="min-w-0 flex-1">
+                                        <p class="reader-heading text-[0.95rem] leading-snug">Gece Modunu Otomatik Aç</p>
+                                        <p x-show="prefs.auto" x-cloak class="reader-muted text-sm italic leading-snug">Cihaz karanlık moddayken Koyu tema açılır.</p>
+                                    </div>
+                                    <button type="button" role="switch" class="reader-switch" :aria-checked="prefs.auto.toString()" @click="setPref('auto', !prefs.auto)" aria-label="Gece modunu otomatik aç"><span></span></button>
+                                </div>
+
+                                <div class="reader-rule flex items-center gap-3 border-b px-5 py-3.5">
+                                    <x-heroicon-o-book-open class="w-6 h-6 shrink-0 text-gold" />
+                                    <div class="min-w-0 flex-1">
+                                        <p class="reader-heading text-[0.95rem] leading-snug">Sözlük Kavramlarını Göster</p>
+                                        <p x-show="prefs.concepts" x-cloak class="reader-muted text-sm italic leading-snug">Metindeki sözlükle bağlantılı kelimeleri vurgular.</p>
+                                    </div>
+                                    <button type="button" role="switch" class="reader-switch" :aria-checked="prefs.concepts.toString()" @click="setPref('concepts', !prefs.concepts)" aria-label="Sözlük kavramlarını göster"><span></span></button>
+                                </div>
+
+                                <div class="flex justify-end px-5 py-3">
+                                    <button type="button" class="reader-heading inline-flex items-center gap-2 rounded-md px-2 py-1 text-[0.95rem] hover:opacity-75" @click="resetPrefs()">
+                                        <x-heroicon-o-arrow-path class="w-5 h-5" /> Varsayılanlara Dön
+                                    </button>
+                                </div>
+                            </div>
                         </div>
-                        @hasSection('reader_drawer')
-                            <button type="button" class="inline-flex h-9 items-center gap-1.5 rounded-md px-2.5 text-sm text-slate-600 hover:bg-white/60 hover:text-slate-900" @click="drawer = true" aria-label="Bölümler">
-                                <x-heroicon-o-list-bullet class="w-5 h-5" />
-                                <span class="hidden sm:inline">Bölümler</span>
-                            </button>
-                        @endif
                     </div>
                 </div>
                 {{-- Okuma ilerlemesi --}}
-                <div class="h-0.5 bg-gold/70 origin-left transition-transform duration-100" :style="`transform: scaleX(${$store.pager.active ? $store.pager.progress : progress})`" aria-hidden="true"></div>
+                <div class="h-0.5 origin-left bg-gold/70 transition-transform duration-100" :style="`transform: scaleX(${$store.pager.active ? $store.pager.progress : progress})`" aria-hidden="true"></div>
             </header>
 
             @hasSection('reader_paged')
@@ -77,23 +146,6 @@
                         @yield('content')
                     </article>
                 </main>
-            @endif
-
-            @hasSection('reader_drawer')
-                <div x-show="drawer" x-cloak class="fixed inset-0 z-40" @keydown.escape.window="drawer = false">
-                    <div class="absolute inset-0 bg-slate-900/40" x-show="drawer" x-transition.opacity @click="drawer = false"></div>
-                    <nav class="absolute inset-y-0 right-0 flex w-80 max-w-[85vw] flex-col bg-parchment shadow-2xl" x-show="drawer"
-                         x-transition:enter="transition duration-200" x-transition:enter-start="translate-x-full" x-transition:leave="transition duration-150" x-transition:leave-end="translate-x-full"
-                         aria-label="Bölümler">
-                        <div class="flex items-center justify-between border-b border-gold/20 px-4 py-3">
-                            <span class="font-reading text-lg font-semibold text-navy">Bölümler</span>
-                            <button type="button" class="rich-editor-btn" @click="drawer = false" aria-label="Kapat"><x-heroicon-o-x-mark class="w-5 h-5" /></button>
-                        </div>
-                        <div class="flex-1 overflow-y-auto overscroll-contain p-2">
-                            @yield('reader_drawer')
-                        </div>
-                    </nav>
-                </div>
             @endif
         </div>
 
