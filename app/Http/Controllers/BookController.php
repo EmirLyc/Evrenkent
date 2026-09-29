@@ -95,7 +95,8 @@ class BookController extends Controller
             abort(404);
         }
 
-        if ($user && $chapter) {
+        // Yazarın kendi taslağını önizlemesi okuma listesine / Kitaplığım'a girmesin.
+        if ($user && $chapter && $book->status === ContentStatus::Yayinda) {
             $readingListItem = $user->readingListItems()->firstOrCreate([
                 'readable_type' => Book::class,
                 'readable_id' => $book->id,
@@ -125,21 +126,31 @@ class BookController extends Controller
     }
 
     /**
-     * Sayfalı okumada okur başka bir bölüme geçince (sayfa çevirerek) okuma listesindeki
-     * konum güncelleniyor — "kaldığın yerden devam et" bölüm bazında.
+     * Sayfalı okumada okur sayfa çevirdikçe okuma listesindeki konum güncelleniyor: "kaldığın
+     * yerden devam et" bölüm bazında, Kitaplığım'daki "%45 okundu" sayfa bazında (sayfa /
+     * toplam sayfa — kitap her cihazda aynı sayfalara bölünüyor).
      */
     public function position(Request $request, Book $book): Response
     {
         $user = $request->user();
         abort_unless($book->isReadableBy($user), 403);
 
-        $order = (int) $request->input('bolum');
-        abort_unless($book->chapters()->where('order', $order)->exists(), 422);
+        $data = $request->validate([
+            'bolum' => ['required', 'integer'],
+            'sayfa' => ['nullable', 'integer', 'min:0', 'max:100000'],
+            'toplam' => ['nullable', 'integer', 'min:1', 'max:100000'],
+        ]);
+        abort_unless($book->chapters()->where('order', $data['bolum'])->exists(), 422);
+
+        // Yazarın kendi taslağını önizlemesi kaydedilmez (bkz. read()).
+        if ($book->status !== ContentStatus::Yayinda) {
+            return response()->noContent();
+        }
 
         $user->readingListItems()->firstOrCreate(
             ['readable_type' => Book::class, 'readable_id' => $book->id],
             ['status' => ReadingStatus::Listede],
-        )->update(['last_chapter_number' => $order]);
+        )->recordPosition($data['bolum'], $data['sayfa'] ?? null, $data['toplam'] ?? null);
 
         return response()->noContent();
     }

@@ -41,6 +41,7 @@ class ReadingListController extends Controller
         $readingListItem->update([
             'status' => ReadingStatus::Tamamlandi,
             'completed_at' => now(),
+            'progress' => 100,
         ]);
 
         return back()->with('status', 'Tamamlandı olarak işaretlendi.');
@@ -50,9 +51,11 @@ class ReadingListController extends Controller
     {
         $this->authorize('update', $readingListItem);
 
+        // Yeniden okumaya başlıyor: ilerleme baştan sayılır.
         $readingListItem->update([
             'status' => ReadingStatus::Listede,
             'completed_at' => null,
+            'progress' => null,
         ]);
 
         return back()->with('status', 'Okuma listesine geri alındı.');

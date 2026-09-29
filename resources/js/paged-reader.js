@@ -81,6 +81,8 @@ export default function pagedReader(config) {
     const PAGE = config.pageWidth;
     let relayoutTimer = null;
     let positionTimer = null;
+    let sentPage = null;
+    let pendingPosition = null;
     let touch = null;
     // Arama sonuçlarının Range'leri reaktif olmayan yerde (Alpine vekili yerel nesneleri bozar).
     let searchRanges = [];
@@ -118,6 +120,11 @@ export default function pagedReader(config) {
             this.onKey = (event) => this.key(event);
             this.onClick = (event) => this.link(event);
             this.onFonts = () => this.scheduleRelayout();
+            // Sayfadan çıkarken son sayfa hemen kaydedilsin: Turbo geçişinde yeni sayfa istenmeden
+            // önce (yoksa Kitaplığım bir önceki yüzdeyi gösterebiliyordu), sekme kapanırken de.
+            this.onPageHide = () => this.flushPosition();
+            window.addEventListener('pagehide', this.onPageHide);
+            document.addEventListener('turbo:before-visit', this.onPageHide);
             window.addEventListener('resize', this.onResize);
             window.addEventListener('keydown', this.onKey);
             // Yakalama aşamasında: kitap içi bağlantılar (içindekiler, dipnot, kaynak, sözlük
@@ -143,12 +150,14 @@ export default function pagedReader(config) {
             this.initMarks();
         },
         destroy() {
+            window.removeEventListener('pagehide', this.onPageHide);
+            document.removeEventListener('turbo:before-visit', this.onPageHide);
             window.removeEventListener('resize', this.onResize);
             window.removeEventListener('keydown', this.onKey);
             window.removeEventListener('click', this.onClick, true);
             document.fonts?.removeEventListener?.('loadingdone', this.onFonts);
             clearTimeout(relayoutTimer);
-            clearTimeout(positionTimer);
+            this.flushPosition();
             CSS.highlights?.delete('reader-search');
             this.destroyMarks();
             this.$store.pager.active = false;
@@ -307,28 +316,39 @@ export default function pagedReader(config) {
                 location: `Sayfa ${this.label(this.page)}${this.chapterTitle ? ` · ${this.chapterTitle}` : ''}`,
             });
             if (changed) this.chapterChanged();
+            if (this.ready && this.page !== sentPage) this.savePosition();
         },
-        // Adres çubuğu okunan bölümü göstersin (yenileyince aynı yere dönülür) ve okuma
-        // listesindeki konum güncellensin.
+        // Adres çubuğu okunan bölümü göstersin (yenileyince aynı yere dönülür).
         chapterChanged() {
             if (config.readBase && this.chapter) {
                 window.history.replaceState(window.history.state, '', `${config.readBase}/${this.chapter}`);
             }
+        },
+        // Okuma listesindeki konum: bölüm ("kaldığın yerden devam et") ve sayfa / toplam sayfa
+        // (Kitaplığım'daki "%45 okundu"). Hızlı çevirmede tek istek.
+        savePosition() {
             if (!config.positionUrl || !this.chapter) return;
             clearTimeout(positionTimer);
-            const chapter = this.chapter;
-            positionTimer = setTimeout(() => {
-                fetch(config.positionUrl, {
-                    method: 'POST',
-                    keepalive: true,
-                    headers: {
-                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content,
-                        Accept: 'application/json',
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ bolum: chapter }),
-                }).catch(() => {});
-            }, 1200);
+            pendingPosition = JSON.stringify({ bolum: this.chapter, sayfa: this.page, toplam: this.total });
+            sentPage = this.page;
+            positionTimer = setTimeout(() => this.flushPosition(), 1200);
+        },
+        // Bekleyen konumu hemen gönderir (sayfadan çıkarken de — keepalive istek sayfa gitse de tamamlanır).
+        flushPosition() {
+            clearTimeout(positionTimer);
+            if (!pendingPosition) return;
+            const body = pendingPosition;
+            pendingPosition = null;
+            fetch(config.positionUrl, {
+                method: 'POST',
+                keepalive: true,
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content,
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                },
+                body,
+            }).catch(() => {});
         },
 
         key(event) {
