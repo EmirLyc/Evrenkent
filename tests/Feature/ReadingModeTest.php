@@ -155,11 +155,13 @@ class ReadingModeTest extends TestCase
     public function test_text_column_is_narrow_enough_for_65_to_75_characters_a_line(): void
     {
         // "Bazı Prensipler": satır 65–75 karakter. 736 px sayfada yanlarda 96 px → 544 px metin.
+        // Kırpma kutusu metnin 40 px solundan başlıyor (not simgeleri — Faz H3), akış o kadar içeride.
         $book = Book::factory()->create(['status' => ContentStatus::Yayinda, 'price' => 0, 'page_ratio' => '13x20']);
         Chapter::factory()->for($book)->create(['order' => 1]);
 
         $this->get(route('kitaplar.oku', $book))->assertOk()
-            ->assertSee('left: 96px; top: 56px; width: 544px; height: 1020px', false);
+            ->assertSee('left: 56px; top: 56px; width: 624px; height: 1020px', false)
+            ->assertSee('style="margin-left: 40px;', false);
     }
 
     public function test_footnotes_and_sources_open_in_a_window_with_a_way_to_their_list(): void

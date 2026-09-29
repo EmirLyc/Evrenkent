@@ -20,7 +20,7 @@ class SubscriptionController extends Controller
     {
         return view('subscriptions.index', [
             'discountPercent' => PlatformSettings::get('premium_discount_percent'),
-            'quotas' => collect(NoteType::cases())->mapWithKeys(fn (NoteType $type) => [$type->label() => PlatformSettings::noteQuota($type)]),
+            'quotas' => collect(NoteType::quotaTypes())->mapWithKeys(fn (NoteType $type) => [$type->label() => PlatformSettings::noteQuota($type)]),
         ]);
     }
 
@@ -31,7 +31,7 @@ class SubscriptionController extends Controller
 
         return view('panel.aboneligim', [
             'subscriptions' => $user->subscriptions()->latest()->get(),
-            'quotaUsage' => collect(NoteType::cases())->map(fn (NoteType $type) => (object) [
+            'quotaUsage' => collect(NoteType::quotaTypes())->map(fn (NoteType $type) => (object) [
                 'label' => $type->label(),
                 'used' => $user->notes()->where('type', $type)->count(),
                 'quota' => PlatformSettings::noteQuota($type),

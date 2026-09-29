@@ -174,11 +174,35 @@ class User extends Authenticatable
 
     /**
      * Çalışma alanındaki (Defter/Not/Alıntı) kayıt sınırı — premium üyede sınırsız (null),
-     * ücretsiz hesapta Süper Admin'in ayarladığı kota (her alan ayrı, varsayılan 10).
+     * ücretsiz hesapta Süper Admin'in ayarladığı kota (her alan ayrı, varsayılan 10). Fosforun
+     * sınırı yok (Faz H3).
      */
     public function noteQuota(NoteType $type): ?int
     {
-        return $this->isPremium() ? null : PlatformSettings::noteQuota($type);
+        if ($this->isPremium() || ! in_array($type, NoteType::quotaTypes(), true)) {
+            return null;
+        }
+
+        return PlatformSettings::noteQuota($type);
+    }
+
+    /**
+     * Okuma sayfasında metinde gösterilecek alıntı / not / fosforlar (Faz H3). Konumsuz eski
+     * kayıtlar (elle eklenenler) metinde görünmez, listelerde durur.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function readingMarksFor(Model $work): array
+    {
+        return $this->notes()
+            ->where('noteable_type', $work::class)
+            ->where('noteable_id', $work->getKey())
+            ->whereIn('type', NoteType::readingMarks())
+            ->whereNotNull('anchor')
+            ->oldest()
+            ->get()
+            ->map->toReadingMark()
+            ->all();
     }
 
     public function canCreateNote(NoteType $type): bool

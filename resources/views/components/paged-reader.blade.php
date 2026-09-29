@@ -13,6 +13,10 @@
     numaraları sayfalar dizilince yazılıyor, "Sayfaya git") ve kitap içi arama (giriş yapmış okura).
     Başlıktaki ☰ ve 🔍 düğmeleri reader-toc / reader-search olaylarıyla açıyor.
 
+    Faz H3: okur metni seçince Alıntıla / Not Al / Fosforla ($marks — okurun bu eserdeki işaretleri;
+    ziyaretçide null, seçim menüsü çıkmaz). Not simgesi sayfanın sol kenar boşluğunda durduğu için
+    kırpma kutusu metnin 40 px solundan başlıyor (akış o kadar içeride; komşu sayfa 192 px uzakta).
+
     İçerik: slot'taki <section data-chapter data-title> blokları (kitapta her bölüm; bölüm yeni
     sayfada başlar; giriş bölümünde data-preface). $after: sayfanın altındaki alan.
 --}}
@@ -23,6 +27,9 @@
     'positionUrl' => null,
     'initialChapter' => null,
     'contents' => [],
+    'marks' => null,
+    'noteableType' => null,
+    'noteableId' => null,
 ])
 
 @php
@@ -30,6 +37,7 @@
     $pageWidth = 736;
     $marginX = 96;
     $marginY = 56;
+    $gutter = 40;
     $pageHeight = (int) round($pageWidth * ($h > 0 && $w > 0 ? $h / $w : 20 / 13));
     $textHeight = $pageHeight - 2 * $marginY;
 
@@ -50,6 +58,13 @@
         'initialChapter' => $initialChapter,
         'toc' => $toc,
         'canSearch' => auth()->check(),
+        'marks' => auth()->check() && $marks !== null ? array_values($marks) : null,
+        'noteableType' => $noteableType,
+        'noteableId' => $noteableId,
+        'marksUrl' => auth()->check() ? route('panel.isaretler.ekle') : null,
+        'markUrl' => auth()->check() ? route('panel.isaretler.sil', ['note' => '__ID__']) : null,
+        'quotesUrl' => auth()->check() ? route('panel.alintilarim') : null,
+        'notesUrl' => auth()->check() ? route('panel.notlarim') : null,
     ];
     $tocIndex = 0;
 @endphp
@@ -63,8 +78,8 @@
     <div x-ref="viewport" class="overflow-x-auto overflow-y-hidden pb-2" @touchstart.passive="touchStart($event)" @touchend.passive="touchEnd($event)" @click="tap($event)">
         <div x-ref="sizer" class="relative mx-auto" style="width: {{ $pageWidth }}px; height: {{ $pageHeight }}px" :style="{ width: Math.round({{ $pageWidth }} * scale) + 'px', height: Math.round({{ $pageHeight }} * scale) + 'px' }">
             <div class="rt-page reader-paper absolute left-0 top-0 origin-top-left" style="width: {{ $pageWidth }}px; height: {{ $pageHeight }}px" :style="{ transform: `scale(${scale})` }">
-                <div x-ref="clip" @scroll="clipScrolled()" class="absolute overflow-hidden" style="left: {{ $marginX }}px; top: {{ $marginY }}px; width: {{ $pageWidth - 2 * $marginX }}px; height: {{ $textHeight }}px">
-                    <div x-ref="flow" class="rt-flow" :class="ready || 'invisible'" style="height: {{ $textHeight }}px; --rt-text-height: {{ $textHeight }}px" :style="{ transform: `translateX(${-page * {{ $pageWidth }}}px)` }">
+                <div x-ref="clip" @scroll="clipScrolled()" class="absolute overflow-hidden" style="left: {{ $marginX - $gutter }}px; top: {{ $marginY }}px; width: {{ $pageWidth - 2 * $marginX + 2 * $gutter }}px; height: {{ $textHeight }}px">
+                    <div x-ref="flow" class="rt-flow" :class="ready || 'invisible'" style="margin-left: {{ $gutter }}px; height: {{ $textHeight }}px; --rt-text-height: {{ $textHeight }}px" :style="{ transform: `translateX(${-page * {{ $pageWidth }}}px)` }">
                         {{ $slot }}
                     </div>
                 </div>
@@ -191,4 +206,90 @@
             @endif
         </div>
     </div>
+
+    @if ($config['marks'] !== null)
+        {{-- Seçim menüsü (Okuma modu 1): Alıntıla · Not Al · Fosforla. --}}
+        <div x-show="selBar" x-cloak class="reader-panel fixed z-40 flex items-stretch rounded-xl p-1 font-reading text-[1.02rem] shadow-xl"
+             :class="selBar?.above && '-translate-y-full'" :style="selBar && { left: selBar.x + 'px', top: selBar.y + 'px' }"
+             @mousedown.prevent role="toolbar" aria-label="Seçilen metin">
+            <button type="button" class="reader-mark-btn" @click="quoteSelection()" :disabled="markBusy">
+                <span class="font-serif text-xl font-bold leading-none" aria-hidden="true">&ldquo;</span> Alıntıla
+            </button>
+            <span class="reader-rule my-2 border-l" aria-hidden="true"></span>
+            <button type="button" class="reader-mark-btn" @click="startNote()" :disabled="markBusy">
+                <x-heroicon-o-document-text class="w-5 h-5" /> Not Al
+            </button>
+            <span class="reader-rule my-2 border-l" aria-hidden="true"></span>
+            <button type="button" class="reader-mark-btn" @click="highlightSelection()" :disabled="markBusy">
+                <x-heroicon-o-pencil class="w-5 h-5" /> Fosforla
+            </button>
+        </div>
+
+        {{-- Not Al (Okuma modu 11) / Notum (Okuma modu 13): seçimin ya da not simgesinin altında. --}}
+        <div x-show="notePanel" x-cloak class="fixed inset-0 z-40" @keydown.escape.window="notePanel?.mode === 'new' ? cancelNote() : (notePanel = null)">
+            <div class="absolute inset-0" @click="notePanel?.mode === 'new' ? cancelNote() : (notePanel = null)"></div>
+            <div class="reader-panel reader-note absolute w-[26rem] max-w-[calc(100vw-1rem)] overflow-hidden font-reading"
+                 :class="notePanel?.above && '-translate-y-full'" :style="notePanel && { left: notePanel.x + 'px', top: notePanel.y + 'px' }"
+                 role="dialog" :aria-label="notePanel?.mode === 'new' ? 'Not al' : 'Notum'">
+                <div class="reader-note-head flex items-center gap-2.5 px-4 py-2.5">
+                    <x-heroicon-o-chat-bubble-bottom-center-text class="w-6 h-6" />
+                    <span class="font-sans text-sm font-semibold tracking-[0.14em]" x-text="notePanel?.mode === 'new' ? 'NOT AL' : 'NOTUM'"></span>
+                    <button type="button" class="ml-auto grid h-8 w-8 place-items-center rounded-md hover:bg-black/5" @click="notePanel?.mode === 'new' ? cancelNote() : (notePanel = null)" aria-label="Kapat"><x-heroicon-o-x-mark class="w-5 h-5" /></button>
+                </div>
+                <div class="px-5 pb-4 pt-3">
+                    <p class="reader-muted reader-rule line-clamp-4 border-b pb-3 italic leading-snug" x-text="'“' + (notePanel?.quote || '').replace(/\n+/g, ' ') + '”'"></p>
+
+                    <template x-if="notePanel && notePanel.mode !== 'view'">
+                        <form class="pt-3" @submit.prevent="notePanel.mode === 'new' ? saveNote() : updateNote()">
+                            <label for="reader-note-text" class="reader-heading text-base">Notun</label>
+                            <textarea id="reader-note-text" x-ref="noteText" rows="3" maxlength="5000" placeholder="Düşünceni yaz…" class="reader-input mt-1.5 block w-full resize-y py-2 font-reading text-base"
+                                      x-model="notePanel[notePanel.mode === 'new' ? 'text' : 'draft']" @keydown.meta.enter="$el.form.requestSubmit()" @keydown.ctrl.enter="$el.form.requestSubmit()"></textarea>
+                            <div class="mt-3 flex items-center justify-end gap-2">
+                                <button type="button" class="reader-heading rounded-md px-3 py-2 text-base hover:opacity-70" @click="notePanel.mode === 'new' ? cancelNote() : (notePanel = { ...notePanel, mode: 'view' })">İptal</button>
+                                <button type="submit" class="reader-note-save rounded-md px-5 py-2 text-base" :disabled="markBusy || !(notePanel[notePanel.mode === 'new' ? 'text' : 'draft'] || '').trim()">Kaydet</button>
+                            </div>
+                        </form>
+                    </template>
+
+                    <template x-if="notePanel && notePanel.mode === 'view'">
+                        <div class="pt-3">
+                            <p class="whitespace-pre-line text-[1.05rem] leading-relaxed" x-text="notePanel.text"></p>
+                            <div class="reader-rule mt-4 flex items-center justify-between border-t pt-3 font-sans text-sm">
+                                <button type="button" class="reader-note-action inline-flex items-center gap-1.5 rounded-md px-2 py-1 hover:bg-black/5" @click="editNote()">
+                                    <x-heroicon-o-pencil class="w-4 h-4" /> Düzenle
+                                </button>
+                                <div class="flex items-center gap-2" x-show="notePanel.confirm" x-cloak>
+                                    <span class="reader-muted">Silinsin mi?</span>
+                                    <button type="button" class="rounded-md px-2 py-1 font-medium text-red-600 hover:bg-red-500/10" @click="deleteMark(notePanel.id)">Sil</button>
+                                    <button type="button" class="reader-muted rounded-md px-2 py-1 hover:bg-black/5" @click="notePanel.confirm = false">Vazgeç</button>
+                                </div>
+                                <button type="button" x-show="!notePanel.confirm" class="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-red-600 hover:bg-red-500/10" @click="notePanel.confirm = true">
+                                    <x-heroicon-o-trash class="w-4 h-4" /> Sil
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+
+        {{-- Alıntıya / fosfora tıklayınca: kaldırma. --}}
+        <div x-show="markMenu" x-cloak class="reader-panel fixed z-40 w-60 max-w-[calc(100vw-1rem)] p-1.5 font-sans text-sm"
+             :style="markMenu && { left: markMenu.x + 'px', top: markMenu.y + 'px' }" @click.outside="markMenu = null" @keydown.escape.window="markMenu = null" role="menu">
+            <p class="reader-muted px-3 pb-1 pt-1.5 text-xs font-semibold uppercase tracking-wider" x-text="markMenu?.type === 'alinti' ? 'Alıntı' : 'Fosfor'"></p>
+            <a x-show="markMenu?.type === 'alinti'" href="{{ $config['quotesUrl'] }}" class="reader-heading flex items-center gap-2 rounded-md px-3 py-2 hover:bg-black/5" role="menuitem">
+                <x-heroicon-o-chat-bubble-left-right class="w-4 h-4" /> Alıntılarım
+            </a>
+            <button type="button" class="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-red-600 hover:bg-red-500/10" @click="deleteMark(markMenu.id)" :disabled="markBusy" role="menuitem">
+                <x-heroicon-o-trash class="w-4 h-4" /> <span x-text="markMenu?.type === 'alinti' ? 'Alıntıyı kaldır' : 'Fosforu kaldır'"></span>
+            </button>
+        </div>
+
+        <div x-show="toast" x-cloak x-transition.opacity class="fixed inset-x-0 bottom-6 z-50 flex justify-center px-4 font-sans" role="status">
+            <div class="flex max-w-lg items-center gap-3 rounded-full bg-slate-900 px-5 py-2.5 text-sm text-white shadow-lg">
+                <span x-text="toast?.text"></span>
+                <a x-show="toast?.link" :href="toast?.link?.href" class="shrink-0 font-semibold text-brand-300 underline" x-text="toast?.link?.text"></a>
+            </div>
+        </div>
+    @endif
 </div>

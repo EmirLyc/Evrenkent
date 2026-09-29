@@ -8,6 +8,8 @@
 // Durum Alpine.store('pager')'da da tutuluyor: okuma düzeninin başlığı (Aa menüsündeki
 // yakınlaştırma, ilerleme çubuğu, arayüzün gizlenmesi) ve not formu buradan okuyor.
 
+import readingMarks from './reading-marks.js';
+
 const ZOOMS = [0.75, 1, 1.25, 1.5, 2, 2.5, 3];
 const DEFAULT_ZOOM = 1;
 const ZOOM_KEY = 'evrenkent.reader.zoom';
@@ -84,6 +86,9 @@ export default function pagedReader(config) {
     let searchRanges = [];
 
     return {
+        // Alıntıla / Not Al / Fosforla (Faz H3) — bkz. reading-marks.js.
+        ...readingMarks(config),
+
         page: 0,
         total: 1,
         front: 0,
@@ -131,8 +136,10 @@ export default function pagedReader(config) {
                     this.layout();
                     this.ready = true;
                     this.openInitial();
+                    this.renderMarks();
                 });
             });
+            this.initMarks();
         },
         destroy() {
             window.removeEventListener('resize', this.onResize);
@@ -142,6 +149,7 @@ export default function pagedReader(config) {
             clearTimeout(relayoutTimer);
             clearTimeout(positionTimer);
             CSS.highlights?.delete('reader-search');
+            this.destroyMarks();
             this.$store.pager.active = false;
         },
 
@@ -210,6 +218,7 @@ export default function pagedReader(config) {
                 this.layout();
                 const start = this.starts.find((item) => item.order === current?.order);
                 this.go((start?.page ?? 0) + offset, { remember: false });
+                this.placePins();
             }, 150);
         },
 
@@ -232,7 +241,9 @@ export default function pagedReader(config) {
             this.go(start ? start.page : 0);
         },
         go(page, { remember = true } = {}) {
-            this.page = Math.min(this.total - 1, Math.max(0, page));
+            const target = Math.min(this.total - 1, Math.max(0, page));
+            if (target !== this.page) this.dismissMarks();
+            this.page = target;
             this.sync();
             if (remember) storage.set(config.storageKey, { page: this.page, chapter: this.chapter });
         },
@@ -381,7 +392,7 @@ export default function pagedReader(config) {
         },
         // Sayfaya dokunmak (bağlantı ya da seçim değilse) gizlenen arayüzü geri getirir / gizler.
         tap(event) {
-            if (!this.ready || event.target.closest('a, button, input, textarea, [data-document-viewer]')) return;
+            if (!this.ready || event.target.closest('a, button, input, textarea, mark[data-mark], [data-document-viewer]')) return;
             if (!(window.getSelection()?.isCollapsed ?? true)) return;
             window.dispatchEvent(new CustomEvent('reader-tap'));
         },

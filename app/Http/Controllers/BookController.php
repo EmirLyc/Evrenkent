@@ -114,8 +114,10 @@ class BookController extends Controller
         ]);
 
         $contents = $outline->contents;
+        // Faz H3: okurun bu kitaptaki alıntı / not / fosforları metinde gösterilsin.
+        $marks = $user?->readingMarksFor($book);
 
-        return view('books.read', compact('book', 'chapters', 'chapter', 'sections', 'readingListItem', 'contents'));
+        return view('books.read', compact('book', 'chapters', 'chapter', 'sections', 'readingListItem', 'contents', 'marks'));
     }
 
     /**

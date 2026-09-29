@@ -31,6 +31,9 @@
             :position-url="auth()->check() ? route('kitaplar.konum', $book) : null"
             :initial-chapter="$chapter?->order"
             :contents="$contents"
+            :marks="$marks"
+            :noteable-type="\App\Models\Book::class"
+            :noteable-id="$book->id"
         >
             @foreach ($sections as $section)
                 @php $c = $section['chapter']; @endphp
@@ -49,37 +52,20 @@
                 </section>
             @endforeach
 
-            <x-slot:after>
-                <div class="mx-auto mt-6 w-full max-w-[46rem] space-y-6 px-1 font-sans">
-                    @if (auth()->check() && $readingListItem)
-                        <div x-show="$store.pager.last" x-cloak class="text-center">
-                            <form method="POST" action="{{ route('panel.okuma-listesi.tamamla', $readingListItem) }}">
-                                @csrf
-                                @method('PATCH')
-                                <button type="submit" class="reader-btn-primary px-4">
-                                    Tamamlandı Olarak İşaretle
-                                </button>
-                            </form>
-                        </div>
-                    @endif
-
-                    @auth
-                        {{-- Metnin akışını bölmesin diye kapalı; doğrulama hatasıyla dönülürse açık gelir. --}}
-                        <section x-data="{ open: @js($errors->has('content') || $errors->has('noteable_id')) }">
-                            <button type="button" class="reader-heading inline-flex items-center gap-2 text-sm font-medium hover:opacity-75" @click="open = !open" :aria-expanded="open">
-                                <x-heroicon-o-pencil-square class="w-4 h-4" /> Not / Alıntı Ekle
+            {{-- Not / alıntı artık metinde seçilerek (Faz H3) — sayfanın altındaki elle not formu kalktı. --}}
+            @if (auth()->check() && $readingListItem)
+                <x-slot:after>
+                    <div x-show="$store.pager.last" x-cloak class="mx-auto mt-6 w-full max-w-[46rem] px-1 text-center font-sans">
+                        <form method="POST" action="{{ route('panel.okuma-listesi.tamamla', $readingListItem) }}">
+                            @csrf
+                            @method('PATCH')
+                            <button type="submit" class="reader-btn-primary px-4">
+                                Tamamlandı Olarak İşaretle
                             </button>
-                            <div x-show="open" x-cloak class="mt-3">
-                                <x-quick-note-form
-                                    :noteable-type="\App\Models\Book::class"
-                                    :noteable-id="$book->id"
-                                    location-bind="$store.pager.location"
-                                />
-                            </div>
-                        </section>
-                    @endauth
-                </div>
-            </x-slot:after>
+                        </form>
+                    </div>
+                </x-slot:after>
+            @endif
         </x-paged-reader>
     @endif
 @endsection

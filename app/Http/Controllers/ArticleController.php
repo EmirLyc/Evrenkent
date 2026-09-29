@@ -15,7 +15,8 @@ class ArticleController extends Controller
         $article->load(['author', 'magazineIssue.magazine', 'documents']);
         // Okuma modunun İçindekiler çekmecesi (Faz H1).
         $contents = WorkOutline::for($article)->contents;
+        $marks = auth()->user()?->readingMarksFor($article);
 
-        return view('articles.show', compact('article', 'contents'));
+        return view('articles.show', compact('article', 'contents', 'marks'));
     }
 }

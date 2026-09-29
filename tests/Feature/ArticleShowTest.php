@@ -40,8 +40,9 @@ class ArticleShowTest extends TestCase
             ->assertSee('Taslak Makalem');
     }
 
-    public function test_authenticated_reader_sees_note_form(): void
+    public function test_signed_in_reader_can_mark_the_text_and_guest_is_asked_to_sign_in(): void
     {
+        // Faz H3: not / alıntı metinde seçilerek (Alıntıla · Not Al · Fosforla).
         $user = User::factory()->create();
         $user->assignRole('okur');
         $article = Article::factory()->create(['status' => ContentStatus::Yayinda]);
@@ -49,6 +50,12 @@ class ArticleShowTest extends TestCase
         $this->actingAs($user)
             ->get(route('makaleler.show', $article))
             ->assertOk()
-            ->assertSee('Not / Alıntı Ekle');
+            ->assertSeeInOrder(['Alıntıla', 'Not Al', 'Fosforla']);
+
+        $this->app['auth']->forgetGuards();
+        $this->get(route('makaleler.show', $article))
+            ->assertOk()
+            ->assertDontSee('Fosforla')
+            ->assertSee('alıntılamak, not almak ya da fosforlamak için');
     }
 }

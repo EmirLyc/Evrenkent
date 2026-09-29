@@ -21,6 +21,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PanelController;
 use App\Http\Controllers\PublicationController;
 use App\Http\Controllers\PurchaseController;
+use App\Http\Controllers\ReadingMarkController;
 use App\Http\Controllers\ReadingListController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\SuperAdminController;
@@ -57,6 +58,11 @@ Route::middleware('auth')->prefix('panel')->as('panel.')->group(function () {
     Route::post('/notlar', [NoteController::class, 'store'])->name('notlar.ekle');
     Route::put('/notlar/{note}', [NoteController::class, 'update'])->name('notlar.guncelle');
     Route::delete('/notlar/{note}', [NoteController::class, 'destroy'])->name('notlar.sil');
+
+    // Faz H3: okurken metinde Alıntıla / Not Al / Fosforla (okuma sayfası JSON ile).
+    Route::post('/isaretler', [ReadingMarkController::class, 'store'])->name('isaretler.ekle');
+    Route::patch('/isaretler/{note}', [ReadingMarkController::class, 'update'])->name('isaretler.guncelle');
+    Route::delete('/isaretler/{note}', [ReadingMarkController::class, 'destroy'])->name('isaretler.sil');
 
     Route::get('/satin-aldiklarim', [PurchaseController::class, 'index'])->name('satin-aldiklarim');
     Route::post('/satin-al/{book}', [PurchaseController::class, 'store'])->name('satin-al');
