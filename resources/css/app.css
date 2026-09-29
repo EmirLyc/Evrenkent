@@ -696,6 +696,29 @@
         border-color: var(--rd-rule);
         background-color: var(--rd-box);
     }
+    /* Dipnot / kaynak kartı (Okuma modu 5–6): açık temada beyaz, küçük, hafif gölgeli. */
+    .reader-tip {
+        @apply rounded-md border shadow-lg shadow-slate-900/10;
+        background-color: var(--rd-tip, #FFFFFF);
+        border-color: var(--rd-tip-border, rgba(15, 23, 42, 0.08));
+        color: var(--rd-soft);
+    }
+    /* Penceredeki "Kaynakçaya Git / Dipnota Git" (Okuma modu 3–4): açık bej, geniş, serif. */
+    .reader-goto {
+        background-color: var(--rd-goto, #F2E6D2);
+        border-color: var(--rd-rule);
+        color: var(--rd-heading);
+    }
+    .reader-body[data-reader-theme="sepya"] {
+        --rd-tip: #FBF2DF;
+        --rd-tip-border: rgba(122, 86, 40, 0.18);
+        --rd-goto: #E6CFA3;
+    }
+    .reader-body[data-reader-theme="koyu"] {
+        --rd-tip: #11283F;
+        --rd-tip-border: rgba(201, 165, 92, 0.22);
+        --rd-goto: rgba(201, 165, 92, 0.16);
+    }
     .reader-heading { color: var(--rd-heading); }
     .reader-muted { color: var(--rd-muted); }
     .reader-rule { border-color: var(--rd-rule); }
@@ -804,19 +827,23 @@
     .rt-flow mark.rt-mark-alinti {
         background-color: var(--rd-quote, rgba(206, 176, 128, 0.26));
     }
-    /* Alıntı: başında ve sonunda altın çizgi (Okuma Modu 10). */
-    .rt-flow mark.rt-mark-alinti.is-first::before,
-    .rt-flow mark.rt-mark-alinti.is-last::after {
+    /* Alıntı: başında ve sonunda altın çizgi (Okuma Modu 10), tek satır boyu. Çizgi, metnin tam
+       başında / sonundaki sıfır genişlikli işaretçide (reading-marks.js wrap) — alıntı kaç satıra
+       yayılırsa yayılsın ilk satırın başında ve son satırın sonunda durur. */
+    .rt-flow .rt-mark-cap {
+        position: relative;
+    }
+    .rt-flow .rt-mark-cap::before {
         content: "";
         position: absolute;
         top: -0.12em;
-        bottom: -0.18em;
+        height: 1.3em;
         width: 2px;
         border-radius: 1px;
         background-color: var(--rd-accent, #A8843F);
     }
-    .rt-flow mark.rt-mark-alinti.is-first::before { left: -5px; }
-    .rt-flow mark.rt-mark-alinti.is-last::after { right: -5px; }
+    .rt-flow .rt-mark-cap-start::before { left: -5px; }
+    .rt-flow .rt-mark-cap-end::before { left: 3px; }
     .rt-flow mark.rt-mark-not {
         border-radius: 3px;
         background-color: var(--rd-note, rgba(140, 190, 98, 0.3));

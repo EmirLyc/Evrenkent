@@ -242,6 +242,19 @@ Alpine.data('reader', () => ({
             href: link.getAttribute('href'),
         };
     },
+    // Kart ve pencerede kaynak, mockup'taki gibi satır satır: yazar / *eğik eser adı* / yayın
+    // bilgisi — eser adı yıldız içinde yazıldıysa (RichText::citationHtml ile aynı kural). Yıldız
+    // yoksa (ve dipnotta) metin olduğu gibi tek parça.
+    refLines(ref) {
+        const text = ref?.text ?? '';
+        const match = ref?.kind === 'kaynak' ? text.match(/^(.*?)\*([^*]+)\*(.*)$/s) : null;
+        if (!match) return [{ text, italic: false }];
+        return [
+            { text: match[1].replace(/[\s,;:]+$/, ''), italic: false },
+            { text: match[2].trim(), italic: true },
+            { text: match[3].replace(/^[\s,;:]+/, '').replace(/\*([^*]+)\*/g, '$1'), italic: false },
+        ].filter((line) => line.text !== '');
+    },
     refClicked(event) {
         const link = this.refOf(event);
         if (!this.$root.isConnected || !link || event.button > 0 || event.metaKey || event.ctrlKey || event.shiftKey) return;

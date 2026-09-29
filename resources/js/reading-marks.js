@@ -92,11 +92,20 @@ function wrap(model, start, end, type, id) {
         // Alıntılarım / Notlarım'dan "s. 24 →": /oku/{bölüm}#isaret-{id} o sayfayı açar.
         marks[0].id = `isaret-${id}`;
         marks[marks.length - 1].classList.add('is-last');
+        // Alıntının başındaki ve sonundaki altın çizgi, metnin tam başında / sonunda duran sıfır
+        // genişlikli bir işaretçiye bağlı: işaretin kendisine bağlanınca, birkaç satıra yayılan
+        // alıntıda çizgi işaretin bütün yüksekliğini alıyor ya da yanlış satıra kayıyordu. Metin
+        // düğümü olmadığı için okunur metindeki konumları değiştirmez.
+        if (type === 'alinti') {
+            marks[0].prepend(Object.assign(document.createElement('span'), { className: 'rt-mark-cap rt-mark-cap-start' }));
+            marks[marks.length - 1].append(Object.assign(document.createElement('span'), { className: 'rt-mark-cap rt-mark-cap-end' }));
+        }
     }
     return marks;
 }
 
 function unwrap(root, id) {
+    root.querySelectorAll(`mark[data-mark="${id}"] .rt-mark-cap`).forEach((cap) => cap.remove());
     root.querySelectorAll(`mark[data-mark="${id}"]`).forEach((mark) => {
         const parent = mark.parentNode;
         while (mark.firstChild) parent.insertBefore(mark.firstChild, mark);

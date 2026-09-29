@@ -8,19 +8,19 @@
  * "@kaynakca", [[dn:…]] dipnot, [[kaynak:…]] kaynak numarası.
  */
 
-$james = 'William James, The Principles of Psychology, New York: Henry Holt, 1890.';
-$simon = 'Herbert A. Simon, "Designing Organizations for an Information-Rich World", Computers, Communications, and the Public Interest içinde, Baltimore: Johns Hopkins Press, 1971.';
-$csikszentmihalyi = 'Mihaly Csikszentmihalyi, Flow: The Psychology of Optimal Experience, New York: Harper & Row, 1990.';
-$honore = 'Carl Honoré, In Praise of Slow, Londra: Orion, 2004.';
-$kahneman = 'Daniel Kahneman, Thinking, Fast and Slow, New York: Farrar, Straus and Giroux, 2011.';
-$ebbinghaus = 'Hermann Ebbinghaus, Über das Gedächtnis, Leipzig: Duncker & Humblot, 1885.';
-$bartlett = 'Frederic C. Bartlett, Remembering: A Study in Experimental and Social Psychology, Cambridge: Cambridge University Press, 1932.';
-$kierkegaard = 'Søren Kierkegaard, Kaygı Kavramı (Begrebet Angest), 1844.';
-$may = 'Rollo May, The Meaning of Anxiety, New York: Ronald Press, 1950.';
-$duhigg = 'Charles Duhigg, The Power of Habit, New York: Random House, 2012.';
-$winnicott = 'Donald W. Winnicott, "The Capacity to be Alone", International Journal of Psycho-Analysis, 39, 1958.';
-$storr = 'Anthony Storr, Solitude: A Return to the Self, New York: Free Press, 1988.';
-$pascal = 'Blaise Pascal, Düşünceler (Pensées), 1670.';
+$james = 'William James, *The Principles of Psychology*, New York: Henry Holt, 1890.';
+$simon = 'Herbert A. Simon, "Designing Organizations for an Information-Rich World", *Computers, Communications, and the Public Interest* içinde, Baltimore: Johns Hopkins Press, 1971.';
+$csikszentmihalyi = 'Mihaly Csikszentmihalyi, *Flow: The Psychology of Optimal Experience*, New York: Harper & Row, 1990.';
+$honore = 'Carl Honoré, *In Praise of Slow*, Londra: Orion, 2004.';
+$kahneman = 'Daniel Kahneman, *Thinking, Fast and Slow*, New York: Farrar, Straus and Giroux, 2011.';
+$ebbinghaus = 'Hermann Ebbinghaus, *Über das Gedächtnis*, Leipzig: Duncker & Humblot, 1885.';
+$bartlett = 'Frederic C. Bartlett, *Remembering: A Study in Experimental and Social Psychology*, Cambridge: Cambridge University Press, 1932.';
+$kierkegaard = 'Søren Kierkegaard, *Kaygı Kavramı (Begrebet Angest)*, 1844.';
+$may = 'Rollo May, *The Meaning of Anxiety*, New York: Ronald Press, 1950.';
+$duhigg = 'Charles Duhigg, *The Power of Habit*, New York: Random House, 2012.';
+$winnicott = 'Donald W. Winnicott, "The Capacity to be Alone", *International Journal of Psycho-Analysis*, 39, 1958.';
+$storr = 'Anthony Storr, *Solitude: A Return to the Self*, New York: Free Press, 1988.';
+$pascal = 'Blaise Pascal, *Düşünceler (Pensées)*, 1670.';
 
 return [
     'preface' => [

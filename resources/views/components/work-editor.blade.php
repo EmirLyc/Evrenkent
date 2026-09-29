@@ -225,7 +225,9 @@
                             </template>
                         </div>
                     </template>
-                    <textarea x-ref="panelFocus" rows="2" x-model="cite.text" @keydown.enter.ctrl.prevent="insertCitation()" placeholder="Yeni kaynak — ör. Arendt, H. (1951). Totalitarizmin Kaynakları. İstanbul: İletişim." class="w-full rounded-md border-slate-300 text-sm focus:border-slate-500 focus:ring-slate-500"></textarea>
+                    <textarea x-ref="panelFocus" rows="2" x-model="cite.text" @keydown.enter.ctrl.prevent="insertCitation()" placeholder="Yeni kaynak — ör. Krasner, Stephen D., *Sovereignty: Organized Hypocrisy*, Princeton University Press, 1999." class="w-full rounded-md border-slate-300 text-sm focus:border-slate-500 focus:ring-slate-500"></textarea>
+                    {{-- Okuma modu 3/5: okurun kartında ve penceresinde yazar / eğik eser adı / yayın bilgisi. --}}
+                    <p class="text-xs text-slate-500">Eser adını <span class="font-mono">*yıldız*</span> içine alın: okurken eğik ve ayrı satırda görünür.</p>
                 </div>
             </template>
             <template x-if="panel === 'video'">

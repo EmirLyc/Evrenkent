@@ -130,9 +130,14 @@
             </header>
 
             {{-- Dipnot / kaynak (Faz H2, "Okuma modu 3–6"): üstüne gelince kart, tıklayınca pencere. --}}
-            <div x-show="hoverRef" x-cloak class="reader-panel pointer-events-none fixed z-40 w-72 max-w-[calc(100vw-1rem)] rounded-lg px-4 py-3 font-reading shadow-xl"
+            {{-- Kart (Okuma modu 5–6): işaretin altında küçük, beyaz, sade — kaynakta satır satır, eser adı eğik. --}}
+            <div x-show="hoverRef" x-cloak class="reader-tip pointer-events-none fixed z-40 w-72 max-w-[calc(100vw-1rem)] px-4 py-3 font-reading"
                  :class="hoverRef?.above && '-translate-y-full'" :style="hoverRef && { left: hoverRef.x + 'px', top: hoverRef.y + 'px' }" role="tooltip">
-                <p class="whitespace-pre-line leading-snug" :class="hoverRef?.kind === 'dipnot' ? 'text-[0.95rem]' : 'text-base'" x-text="hoverRef?.text"></p>
+                <p class="text-[0.84rem] leading-relaxed">
+                    <template x-for="(line, i) in refLines(hoverRef)" :key="i">
+                        <span class="block whitespace-pre-line" :class="line.italic && 'italic'" x-text="line.text"></span>
+                    </template>
+                </p>
             </div>
 
             <div x-show="popRef" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" @keydown.escape.window="popRef = null" @pager-navigated.window="popRef = null">
@@ -143,12 +148,27 @@
                         <sup class="mt-2 text-base text-gold" x-text="popRef?.label"></sup>
                         <span class="reader-heading text-[1.75rem] leading-tight" x-text="popRef?.title"></span>
                     </p>
-                    <x-reader-ornament class="mt-3" />
-                    <p class="mt-4 whitespace-pre-line text-[1.08rem] leading-relaxed" x-text="popRef?.text"></p>
-                    <div class="reader-rule mt-5 border-t pt-4 text-center">
-                        <a :href="popRef?.href" class="reader-card inline-flex items-center gap-3 rounded-full border px-6 py-2 font-sans text-sm font-medium hover:opacity-80" @click="popRef = null">
+                    {{-- Okuma modu 3–4: pencere boyunca tek ince çizgi, ortasında süs motifi (arkası pencere rengi). --}}
+                    <div class="relative mt-3 flex h-5 items-center justify-center text-gold" aria-hidden="true">
+                        <span class="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-current"></span>
+                        <svg viewBox="52 0 56 20" class="relative h-5 w-14 px-0.5" style="background-color: var(--rd-paper)" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round">
+                            <circle cx="56.5" cy="10" r="1.4" fill="currentColor" stroke="none"/>
+                            <circle cx="103.5" cy="10" r="1.4" fill="currentColor" stroke="none"/>
+                            <path d="M61 10c3.5-4.5 9-4.5 12 0-3 4.5-8.5 4.5-12 0Z"/>
+                            <path d="M99 10c-3.5-4.5-9-4.5-12 0 3 4.5 8.5 4.5 12 0Z"/>
+                            <path d="M80 2.5c-3.2 3-3.2 12 0 15 3.2-3 3.2-12 0-15Z" fill="currentColor" stroke="none"/>
+                            <path d="M74.5 10h11"/>
+                        </svg>
+                    </div>
+                    <p class="mt-4 text-[1.08rem] leading-relaxed">
+                        <template x-for="(line, i) in refLines(popRef)" :key="i">
+                            <span class="block whitespace-pre-line" :class="line.italic && 'italic'" x-text="line.text"></span>
+                        </template>
+                    </p>
+                    <div class="reader-rule mt-5 border-t pt-5 text-center">
+                        <a :href="popRef?.href" class="reader-goto relative inline-flex w-full max-w-[20rem] items-center justify-center rounded-full border px-12 py-2.5 font-reading text-[1.02rem] font-medium hover:opacity-85" @click="popRef = null">
                             <span x-text="popRef?.kind === 'dipnot' ? 'Dipnota Git' : 'Kaynakçaya Git'"></span>
-                            <x-heroicon-o-arrow-right class="w-4 h-4" />
+                            <x-heroicon-o-arrow-right class="absolute right-5 w-4 h-4" />
                         </a>
                     </div>
                 </div>

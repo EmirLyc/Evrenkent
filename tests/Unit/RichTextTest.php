@@ -92,6 +92,18 @@ class RichTextTest extends TestCase
         $this->assertSame(['a', 'b', 'z', 'aa', 'az', 'ba'], array_map(RichText::footnoteLetter(...), [1, 2, 26, 27, 52, 53]));
     }
 
+    public function test_work_title_in_asterisks_is_italic_in_the_bibliography(): void
+    {
+        $this->assertSame('Krasner, Stephen D., <em>Sovereignty</em>, 1999 &amp; &lt;b&gt;', RichText::citationHtml('Krasner, Stephen D., *Sovereignty*, 1999 & <b>'));
+
+        $source = 'Krasner, *Sovereignty: Organized Hypocrisy*, Princeton, 1999.';
+        $html = RichText::render('<p>Egemenlik<span data-cite="'.e($source).'"></span></p><section data-bibliography="true"></section>', 'dn', null, ['sources' => [$source], 'bibliographyUrl' => '']);
+
+        $this->assertStringContainsString('<li id="kaynak-1">Krasner, <em>Sovereignty: Organized Hypocrisy</em>, Princeton, 1999.</li>', $html);
+        // Okumadaki kart ve pencere metni ham hâliyle alıyor (satırlara tarayıcı ayırıyor).
+        $this->assertStringContainsString('data-ref-text="Krasner, *Sovereignty: Organized Hypocrisy*, Princeton, 1999."', $html);
+    }
+
     public function test_empty_editor_output_has_no_text(): void
     {
         $this->assertFalse(RichText::hasText('<p></p><p>&nbsp;</p><p><br></p>'));

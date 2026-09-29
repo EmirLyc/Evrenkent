@@ -193,6 +193,16 @@ class RichText
             ->all();
     }
 
+    /**
+     * Kaynak metni HTML olarak: yıldız içindeki eser adı eğik ("Krasner, Stephen D., *Sovereignty:
+     * Organized Hypocrisy*, Princeton, 1999." — Okuma modu 3/5'teki gibi). Kaynak düz metin olarak
+     * saklanıyor; okumadaki kart ve pencere aynı kuralı tarayıcıda uyguluyor (app.js refLines).
+     */
+    public static function citationHtml(string $text): string
+    {
+        return preg_replace('/\*([^*]+)\*/u', '<em>$1</em>', e($text));
+    }
+
     /** Başlık numarası: Başlık 1 → "I.", altları "1.1.", "1.1.1." (mockup 1.1.1). */
     public static function headingNumber(array $counters, int $level): string
     {
@@ -553,7 +563,7 @@ class RichText
         foreach (iterator_to_array($xpath->query('//section[@data-bibliography]')) as $marker) {
             /** @var DOMElement $marker */
             $sources = array_values($context['sources']);
-            $items = collect($sources)->map(fn ($text, $i) => '<li id="kaynak-'.($i + 1).'">'.e($text).'</li>')->implode('');
+            $items = collect($sources)->map(fn ($text, $i) => '<li id="kaynak-'.($i + 1).'">'.self::citationHtml($text).'</li>')->implode('');
 
             $fragment = $dom->createDocumentFragment();
             $fragment->appendXML('<section class="rt-bibliography" aria-label="Kaynakça"><p class="rt-bibliography-title">Kaynakça</p>'
