@@ -16,6 +16,8 @@ const BLOCK_PARENTS = new Set(['SECTION', 'DIV', 'OL', 'UL', 'BLOCKQUOTE', 'TABL
 const CONTEXT = 32;
 const PIN_SIZE = 26;
 const PIN_GAP = 34;
+// Telefonda simge kâğıdın 22 px'lik kenar boşluğunda (app.css .is-flowing .rt-note-pin).
+const FLOW_PIN_SIZE = 22;
 
 const PIN_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9a1.5 1.5 0 0 1-1.5 1.5H10l-4.5 4v-4h0A1.5 1.5 0 0 1 4 14.5z"/><path d="M8 8.5h8M8 12h5"/></svg>';
 
@@ -178,18 +180,22 @@ export default function readingMarks(config) {
             this.placePins();
         },
         // Not simgesi notun ilk satırının solunda, sayfanın kenar boşluğunda. Akışın içinde mutlak
-        // konumlu: sayfalar kaydıkça onlarla gidiyor, sütunlara karışmıyor.
+        // konumlu: sayfalar kaydıkça onlarla gidiyor, sütunlara karışmıyor. Telefonda (alt alta
+        // sayfalar) kâğıdın sol kenarında, daha küçük.
         placePins() {
             if (!enabled) return;
             const flow = this.$refs.flow;
             flow.querySelectorAll(':scope > .rt-note-pin').forEach((pin) => pin.remove());
             const base = flow.getBoundingClientRect();
+            // Ölçek ekrandan: yakınlaştırma değişip henüz çizilmediyse de doğru.
+            const scale = this.flowing ? 1 : (this.$refs.page.getBoundingClientRect().width / config.pageWidth || this.scale);
+            const size = this.flowing ? FLOW_PIN_SIZE : PIN_SIZE;
             this.marks.filter((mark) => mark.type === 'not').forEach((mark) => {
                 const first = flow.querySelector(`mark[data-mark="${mark.id}"]`);
                 const rect = first?.getClientRects()[0];
                 if (!rect) return;
-                const x = (rect.left - base.left) / this.scale;
-                const y = (rect.top - base.top) / this.scale;
+                const x = (rect.left - base.left) / scale;
+                const y = (rect.top - base.top) / scale;
                 const page = Math.floor(x / config.pageWidth + 0.01);
                 const pin = document.createElement('button');
                 pin.type = 'button';
@@ -197,8 +203,8 @@ export default function readingMarks(config) {
                 pin.dataset.mark = String(mark.id);
                 pin.setAttribute('aria-label', 'Notu gör');
                 pin.innerHTML = PIN_ICON;
-                pin.style.left = `${page * config.pageWidth - PIN_GAP}px`;
-                pin.style.top = `${y + (rect.height / this.scale - PIN_SIZE) / 2}px`;
+                pin.style.left = this.flowing ? `${-FLOW_PIN_SIZE}px` : `${page * config.pageWidth - PIN_GAP}px`;
+                pin.style.top = `${y + (rect.height / scale - size) / 2}px`;
                 flow.appendChild(pin);
             });
         },

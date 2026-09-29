@@ -159,6 +159,8 @@ Alpine.store('pager', {
     percent: 100,
     canZoomIn: true,
     canZoomOut: true,
+    // Telefonda sayfalar alt alta (Faz H6): sayfa büyüklüğü ayarı yok.
+    flowing: false,
     chapter: null,
     last: false,
     progress: 0,

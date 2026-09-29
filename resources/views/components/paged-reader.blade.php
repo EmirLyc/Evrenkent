@@ -17,6 +17,10 @@
     ziyaretçide null, seçim menüsü çıkmaz). Not simgesi sayfanın sol kenar boşluğunda durduğu için
     kırpma kutusu metnin 40 px solundan başlıyor (akış o kadar içeride; komşu sayfa 192 px uzakta).
 
+    Faz H6 (telefon, 640 px altı): sayfa sınırları yine bu ölçülerle hesaplanıyor, sonra metin ekran
+    genişliğinde akıyor; sayfalar alt alta kâğıtlar (boyları içerikleri kadar), sınırda .rt-sheet
+    ayracı. Sayfa numaraları, işaretler ve "s. 24" bağlantıları her cihazda aynı sayfayı gösteriyor.
+
     İçerik: slot'taki <section data-chapter data-title> blokları (kitapta her bölüm; bölüm yeni
     sayfada başlar; giriş bölümünde data-preface). $after: sayfanın altındaki alan.
 --}}
@@ -75,21 +79,24 @@
      @reader-toc.window="openToc()"
      @reader-search.window="openSearch()"
      class="paged-reader">
-    <div x-ref="viewport" class="overflow-x-auto overflow-y-hidden pb-2" @touchstart.passive="touchStart($event)" @touchend.passive="touchEnd($event)" @click="tap($event)">
-        <div x-ref="sizer" class="relative mx-auto" style="width: {{ $pageWidth }}px; height: {{ $pageHeight }}px" :style="{ width: Math.round({{ $pageWidth }} * scale) + 'px', height: Math.round({{ $pageHeight }} * scale) + 'px' }">
-            <div class="rt-page reader-paper absolute left-0 top-0 origin-top-left" style="width: {{ $pageWidth }}px; height: {{ $pageHeight }}px" :style="{ transform: `scale(${scale})` }">
-                <div x-ref="clip" @scroll="clipScrolled()" class="absolute overflow-hidden" style="left: {{ $marginX - $gutter }}px; top: {{ $marginY }}px; width: {{ $pageWidth - 2 * $marginX + 2 * $gutter }}px; height: {{ $textHeight }}px">
+    {{-- rt-viewport / rt-sizer / rt-clip: telefonda (.is-flowing, Faz H6) sabit ölçüler app.css'te kalkıyor. --}}
+    <div x-ref="viewport" class="rt-viewport overflow-x-auto overflow-y-hidden pb-2" @touchstart.passive="touchStart($event)" @touchend.passive="touchEnd($event)" @click="tap($event)">
+        <div x-ref="sizer" class="rt-sizer relative mx-auto" style="width: {{ $pageWidth }}px; height: {{ $pageHeight }}px" :style="{ width: Math.round({{ $pageWidth }} * scale) + 'px', height: Math.round({{ $pageHeight }} * scale) + 'px' }">
+            <div x-ref="page" class="rt-page reader-paper absolute left-0 top-0 origin-top-left" style="width: {{ $pageWidth }}px; height: {{ $pageHeight }}px" :style="{ transform: `scale(${scale})` }">
+                <div x-ref="clip" @scroll="clipScrolled()" class="rt-clip absolute overflow-hidden" style="left: {{ $marginX - $gutter }}px; top: {{ $marginY }}px; width: {{ $pageWidth - 2 * $marginX + 2 * $gutter }}px; height: {{ $textHeight }}px">
                     <div x-ref="flow" class="rt-flow" :class="ready || 'invisible'" style="margin-left: {{ $gutter }}px; height: {{ $textHeight }}px; --rt-text-height: {{ $textHeight }}px" :style="{ transform: `translateX(${-page * {{ $pageWidth }}}px)` }">
                         {{ $slot }}
                     </div>
                 </div>
-                <div class="rt-page-number" x-show="ready" x-text="label(page)" aria-hidden="true"></div>
+                {{-- Telefonda alt alta sayfalar: her sayfanın numarası ayracında, bu da son sayfanınki. --}}
+                <div class="rt-page-number" x-show="ready" x-text="label(flowing ? total - 1 : page)" aria-hidden="true"></div>
                 <p x-show="!ready" class="reader-muted absolute inset-x-0 top-1/3 text-center font-reading text-lg">Sayfalar hazırlanıyor…</p>
             </div>
         </div>
     </div>
 
-    <nav data-reader-chrome class="mx-auto mt-4 flex w-full max-w-[46rem] items-center justify-between gap-3 px-1 font-sans transition-opacity duration-300" :class="$store.pager.chrome || 'opacity-0 pointer-events-none'" aria-label="Sayfalar">
+    {{-- Telefonda ekranın altında sabit (.reader-pager, arayüzle birlikte çekiliyor). --}}
+    <nav data-reader-chrome class="reader-pager mx-auto mt-4 flex w-full max-w-[46rem] items-center justify-between gap-3 px-1 font-sans transition-opacity duration-300" :class="$store.pager.chrome || 'opacity-0 pointer-events-none'" aria-label="Sayfalar">
         <button type="button" class="reader-btn" @click="prev()" :disabled="page === 0" aria-label="Önceki sayfa">
             <x-heroicon-o-chevron-left class="w-4 h-4" /> <span class="hidden sm:inline">Önceki</span>
         </button>
@@ -285,7 +292,7 @@
             </button>
         </div>
 
-        <div x-show="toast" x-cloak x-transition.opacity class="fixed inset-x-0 bottom-6 z-50 flex justify-center px-4 font-sans" role="status">
+        <div x-show="toast" x-cloak x-transition.opacity class="fixed inset-x-0 bottom-6 z-50 flex justify-center px-4 font-sans" :class="flowing && '!bottom-20'" role="status">
             <div class="flex max-w-lg items-center gap-3 rounded-full bg-slate-900 px-5 py-2.5 text-sm text-white shadow-lg">
                 <span x-text="toast?.text"></span>
                 <a x-show="toast?.link" :href="toast?.link?.href" class="shrink-0 font-semibold text-brand-300 underline" x-text="toast?.link?.text"></a>

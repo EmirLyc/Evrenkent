@@ -475,6 +475,144 @@
         color: theme('colors.slate.600');
     }
 
+    /* --- Faz H6: Telefonda sayfalar (x-paged-reader, 640 px altı → .is-flowing) -----------------
+       Sayfa her cihazda aynı: hangi metnin hangi sayfada olduğu yukarıdaki 544 px'lik dizgiden
+       ölçülüyor (paged-reader.js measureSheets). Telefonda satırlar ekran genişliğinde (aynı punto,
+       Georgia 16) ve sayfalar alt alta kâğıtlar — boyları içerikleri kadar. Sayfa sınırında .rt-sheet:
+       biten sayfanın numarası, masa rengi şerit, yeni kâğıdın üst boşluğu (60 px'te başlıyor; JS'teki
+       SHEET_START / SHEET_EDGE ile aynı ölçüler). Sabit sayfa ölçüleri satır içi stilde: !important. */
+    .rt-sheet {
+        display: none;
+    }
+    .paged-reader.is-flowing {
+        padding-bottom: 4.5rem;
+    }
+    .paged-reader.is-flowing .rt-viewport {
+        overflow: visible !important;
+        padding-bottom: 0;
+    }
+    .paged-reader.is-flowing .rt-sizer {
+        width: auto !important;
+        height: auto !important;
+    }
+    .paged-reader.is-flowing .rt-page {
+        position: relative;
+        width: auto !important;
+        height: auto !important;
+        transform: none !important;
+        padding: 32px 22px 0;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+    }
+    .paged-reader.is-flowing .rt-clip {
+        position: static;
+        width: auto !important;
+        height: auto !important;
+        overflow: visible;
+    }
+    .paged-reader.is-flowing .rt-flow {
+        position: relative;
+        width: auto;
+        columns: auto;
+        height: auto !important;
+        margin-left: 0 !important;
+        transform: none !important;
+    }
+    .paged-reader.is-flowing .rt-page-number {
+        position: static;
+        padding: 28px 0 18px;
+    }
+    /* Tarayıcı bir çapaya (#isaret-12, dipnot) kendisi atlarsa da başlığın altında kalsın (reveal ile aynı yer). */
+    .paged-reader.is-flowing .rt-flow [id] {
+        scroll-margin-top: 120px;
+    }
+    .paged-reader.is-flowing .rt-page-break {
+        display: none;
+    }
+    .paged-reader.is-flowing .rt-flow figure.rt-image img {
+        max-height: none;
+    }
+    .paged-reader.is-flowing .rt-opener {
+        padding-top: 12px;
+        margin-bottom: 36px;
+    }
+    .paged-reader.is-flowing .rt-opener-number {
+        font-size: 34px;
+    }
+    .paged-reader.is-flowing .rt-opener-title {
+        font-size: 26px;
+    }
+    .paged-reader.is-flowing :is(span, li).rt-sheet,
+    .paged-reader.is-flowing tr.rt-sheet > td {
+        display: block;
+        position: relative;
+        height: 92px;
+        margin: 0;
+        padding: 0;
+        border: 0;
+        background: none;
+        font: 400 15px/1 Georgia, Gelasio, 'Times New Roman', serif;
+        font-variant: normal;
+        letter-spacing: normal;
+        text-indent: 0;
+        text-transform: none;
+        text-align: center;
+        color: var(--rd-heading, theme('colors.navy'));
+        list-style: none;
+        pointer-events: none;
+        user-select: none;
+    }
+    .paged-reader.is-flowing tr.rt-sheet {
+        display: table-row;
+    }
+    .paged-reader.is-flowing tr.rt-sheet > td {
+        display: table-cell;
+    }
+    /* Sayfanın başı: ilk blokun üst boşluğu yok (sütunun başında da yoktu). */
+    .paged-reader.is-flowing .rt-sheet + * {
+        margin-top: 0;
+    }
+    .paged-reader.is-flowing :is(span, li).rt-sheet::before,
+    .paged-reader.is-flowing tr.rt-sheet > td::before {
+        content: attr(data-label);
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 16px;
+    }
+    .paged-reader.is-flowing :is(span, li).rt-sheet::after,
+    .paged-reader.is-flowing tr.rt-sheet > td::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 44px;
+        height: 16px;
+        background-color: var(--rd-desk, #E9E0CC);
+        box-shadow: inset 0 7px 6px -6px rgba(15, 23, 42, 0.2), inset 0 -7px 6px -6px rgba(15, 23, 42, 0.12);
+    }
+    .paged-reader.is-flowing .rt-note-pin {
+        width: 22px;
+        height: 22px;
+    }
+    .paged-reader.is-flowing .rt-note-pin svg {
+        width: 18px;
+        height: 18px;
+    }
+    /* Sayfa düğmeleri ekranın altında sabit. */
+    .paged-reader.is-flowing .reader-pager {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 30;
+        max-width: none;
+        margin: 0;
+        padding: 0.5rem 0.75rem calc(0.5rem + env(safe-area-inset-bottom));
+        background-color: var(--rd-chrome);
+        border-top: 1px solid var(--rd-rule);
+        backdrop-filter: blur(8px);
+    }
+
     /* Editör yüzeyi: varsayılan Georgia 16 (mockup'ta seçili olan) — okur da aynı dizgiyi görür. */
     .rt-editor-surface {
         @apply min-h-[24rem] outline-none text-slate-900;

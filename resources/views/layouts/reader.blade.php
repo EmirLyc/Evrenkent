@@ -6,6 +6,7 @@
     (kitap içi arama) ve Aa (Okuma Görünümü: tema, gece modu, sözlük kavramları, sayfa büyüklüğü).
     Sayfalı okumada okur sayfa çevirince başlık ve sayfa düğmeleri çekiliyor ("Okurken arayüz
     mümkün olduğunca ortadan kaybolmalı"); fare kıpırdayınca ya da sayfaya dokununca geri geliyor.
+    Telefonda (alt alta sayfalar, H6) aşağı kaydırınca çekiliyor, yukarı kaydırınca geliyor.
 
     Section'lar: title, reader_back_url, reader_back_label, reader_paged (içerik x-paged-reader),
     content. Sayfasız içerikte klavye ←/→ sayfadaki [data-reader-prev] / [data-reader-next]
@@ -43,7 +44,7 @@
         </script>
 
         <div x-data="reader" @keydown.window="keyNav($event)" @scroll.window.throttle.50ms="trackProgress()"
-             @pager-turned.window="hideChrome()" @reader-tap.window="toggleChrome()" @pointermove.window.throttle.200ms="pointerMoved($event)"
+             @pager-turned.window="hideChrome()" @pager-reveal.window="showChrome()" @reader-tap.window="toggleChrome()" @pointermove.window.throttle.200ms="pointerMoved($event)"
              class="min-h-screen flex flex-col">
             <header data-reader-chrome class="reader-chrome sticky top-0 z-30 border-b backdrop-blur transition-opacity duration-300"
                     :class="$store.pager.chrome || 'opacity-0 pointer-events-none'" @focusin="showChrome()">
@@ -88,8 +89,9 @@
                                     </div>
                                 </div>
 
-                                {{-- Sayfa büyüklüğü (G4): punto değil sayfa büyür, dizgi aynı kalır. --}}
-                                <div x-show="$store.pager.active" x-cloak class="reader-rule flex items-center justify-between gap-3 border-b px-5 py-3.5">
+                                {{-- Sayfa büyüklüğü (G4): punto değil sayfa büyür, dizgi aynı kalır. Telefonda
+                                     (alt alta sayfalar, H6) metin zaten okunur boyda — yok. --}}
+                                <div x-show="$store.pager.active && !$store.pager.flowing" x-cloak class="reader-rule flex items-center justify-between gap-3 border-b px-5 py-3.5">
                                     <span class="reader-heading text-base">Sayfa Büyüklüğü</span>
                                     <div class="reader-rule flex items-center rounded-lg border font-sans" role="group" aria-label="Sayfa büyüklüğü">
                                         <button type="button" class="reader-icon-btn h-9 min-w-9" @click="$dispatch('pager-zoom', -1)" :disabled="!$store.pager.canZoomOut" aria-label="Sayfayı küçült"><x-heroicon-o-minus class="w-4 h-4" /></button>
