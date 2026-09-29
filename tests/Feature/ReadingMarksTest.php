@@ -68,7 +68,7 @@ class ReadingMarksTest extends TestCase
         // Alıntı Alıntılarım'da (içerik = seçilen metin), not Notlarım'da (içerik = okurun notu).
         $this->assertSame('egemenlik, bölünemez', Note::find($quote['id'])->content);
         $this->assertSame(['alinti', 'not', 'fosfor'], $user->notes()->orderBy('id')->get()->map(fn (Note $note) => $note->type->value)->all());
-        $this->actingAs($user)->get(route('panel.alintilarim'))->assertSee('egemenlik, bölünemez');
+        $this->actingAs($user)->get(route('panel.alintilarim.seckim', ['kitap', $book->id]))->assertSee('egemenlik, bölünemez')->assertSee('s. 112');
         $this->actingAs($user)->get(route('panel.notlarim'))->assertSee('Hobbes ile karşılaştır.');
     }
 

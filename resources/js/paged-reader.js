@@ -135,8 +135,9 @@ export default function pagedReader(config) {
                     if (!this.$root.isConnected) return;
                     this.layout();
                     this.ready = true;
-                    this.openInitial();
+                    // İşaretler önce: adres bir işareti gösteriyorsa (#isaret-12) o sayfa açılsın.
                     this.renderMarks();
+                    this.openInitial();
                 });
             });
             this.initMarks();
@@ -230,6 +231,12 @@ export default function pagedReader(config) {
             if (target && this.$refs.flow.contains(target)) {
                 this.go(this.pageOf(target));
                 this.showPageTop();
+                // Alıntıdan / nottan gelindiyse yer kısa bir süre belirginleşir.
+                if (target.matches('mark[data-mark]')) {
+                    const marks = this.$refs.flow.querySelectorAll(`mark[data-mark="${target.dataset.mark}"]`);
+                    marks.forEach((mark) => mark.classList.add('is-flash'));
+                    setTimeout(() => marks.forEach((mark) => mark.classList.remove('is-flash')), 2400);
+                }
                 return;
             }
             const saved = storage.get(config.storageKey);

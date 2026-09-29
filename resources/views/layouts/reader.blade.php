@@ -47,9 +47,14 @@
              class="min-h-screen flex flex-col">
             <header data-reader-chrome class="reader-chrome sticky top-0 z-30 border-b backdrop-blur transition-opacity duration-300"
                     :class="$store.pager.chrome || 'opacity-0 pointer-events-none'" @focusin="showChrome()">
+                {{-- Sayfasız görünümde (sözlük maddesi, Benim Seçkim) geri bağlantısının adı da yazıyor
+                     ("← Alıntılarıma Dön"); sayfalı okumada sadece ok (Okuma modu 7). Arama sayfalı okumada
+                     ve reader_searchable tanımlayan sayfada (Benim Seçkim — kendi araması reader-search'ü dinler). --}}
+                @php $searchable = \Illuminate\Support\Facades\View::hasSection('reader_searchable') ? 'true' : 'false'; @endphp
                 <div class="mx-auto flex h-14 max-w-4xl items-center gap-1 px-2 sm:px-6">
-                    <a href="@yield('reader_back_url', route('home'))" class="reader-icon-btn" title="@yield('reader_back_label', 'Geri')" aria-label="Geri: @yield('reader_back_label', 'Geri')">
+                    <a href="@yield('reader_back_url', route('home'))" class="reader-icon-btn !inline-flex items-center gap-2" title="@yield('reader_back_label', 'Geri')" aria-label="Geri: @yield('reader_back_label', 'Geri')">
                         <x-heroicon-o-arrow-left class="w-6 h-6" />
+                        <span x-show="!$store.pager.active" class="hidden max-w-[16rem] truncate pr-1 font-reading text-[0.95rem] sm:inline" aria-hidden="true">@yield('reader_back_label', 'Geri')</span>
                     </a>
                     <span x-show="$store.pager.active" x-cloak class="reader-rule mx-1 h-6 border-l" aria-hidden="true"></span>
                     <button type="button" x-show="$store.pager.active" x-cloak class="reader-icon-btn" @click="$dispatch('reader-toc')" aria-label="İçindekiler">
@@ -57,10 +62,10 @@
                     </button>
 
                     <div class="ml-auto flex shrink-0 items-center gap-1">
-                        <button type="button" x-show="$store.pager.active" x-cloak data-reader-search-toggle class="reader-icon-btn" @click="$dispatch('reader-search')" aria-label="Metinde ara">
+                        <button type="button" x-show="$store.pager.active || {{ $searchable }}" x-cloak data-reader-search-toggle class="reader-icon-btn" @click="$dispatch('reader-search')" aria-label="Metinde ara">
                             <x-heroicon-o-magnifying-glass class="w-6 h-6" />
                         </button>
-                        <span x-show="$store.pager.active" x-cloak class="reader-rule mx-1 h-6 border-l" aria-hidden="true"></span>
+                        <span x-show="$store.pager.active || {{ $searchable }}" x-cloak class="reader-rule mx-1 h-6 border-l" aria-hidden="true"></span>
 
                         {{-- Aa: Okuma Görünümü (Okuma modu 8 / 14). --}}
                         <div class="relative" @click.outside="aa = false" @keydown.escape.window="aa = false">

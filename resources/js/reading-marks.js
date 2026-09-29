@@ -89,6 +89,8 @@ function wrap(model, start, end, type, id) {
     }
     if (marks.length) {
         marks[0].classList.add('is-first');
+        // Alıntılarım / Notlarım'dan "s. 24 →": /oku/{bölüm}#isaret-{id} o sayfayı açar.
+        marks[0].id = `isaret-${id}`;
         marks[marks.length - 1].classList.add('is-last');
     }
     return marks;

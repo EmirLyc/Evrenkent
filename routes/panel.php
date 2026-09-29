@@ -55,6 +55,7 @@ Route::middleware('auth')->prefix('panel')->as('panel.')->group(function () {
     Route::get('/defterim', [NoteController::class, 'defterim'])->name('defterim');
     Route::get('/notlarim', [NoteController::class, 'notlarim'])->name('notlarim');
     Route::get('/alintilarim', [NoteController::class, 'alintilarim'])->name('alintilarim');
+    Route::get('/alintilarim/{tur}/{id}', [NoteController::class, 'seckim'])->whereIn('tur', ['kitap', 'makale'])->whereNumber('id')->name('alintilarim.seckim');
     Route::post('/notlar', [NoteController::class, 'store'])->name('notlar.ekle');
     Route::put('/notlar/{note}', [NoteController::class, 'update'])->name('notlar.guncelle');
     Route::delete('/notlar/{note}', [NoteController::class, 'destroy'])->name('notlar.sil');
