@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\Book;
+use App\Models\Chapter;
 use DOMDocument;
 use DOMElement;
 use DOMNode;
@@ -75,15 +76,21 @@ class BookDocument
     {
         $sections = self::split($html);
 
-        DB::transaction(function () use ($book, $sections) {
+        // Otomatik kayıt her birkaç saniyede bütün kitabı gönderiyor: değişmemiş bölümlere hiç
+        // dokunulmuyor, belge/video sayımı bölüm başına değil en sonda bir kez (uzun kitapta her
+        // kayıt bütün bölümleri yeniden temizleyip yazıyor, süre bölüm sayısıyla katlanıyordu).
+        Chapter::withoutCountRefresh(fn () => DB::transaction(function () use ($book, $sections) {
             $existing = $book->chapters()->get()->values();
 
             // Fazla bölümler (belgeden silinenler).
             $existing->slice(count($sections))->each->delete();
             $existing = $existing->take(count($sections));
 
-            // (kitap, sıra) benzersiz: önce geçici sıralara taşı, sonra 1..n.
-            foreach ($existing as $chapter) {
+            // (kitap, sıra) benzersiz: sırası değişecek bölümler önce geçici sıralara, sonra 1..n.
+            foreach ($existing as $index => $chapter) {
+                if ($chapter->order === $index + 1) {
+                    continue;
+                }
                 $temporary = $chapter->order + 100000;
                 $chapter->newQueryWithoutScopes()->whereKey($chapter->id)->update(['order' => $temporary]);
                 // Modelin "orijinali" de geçici sıra olsun — yoksa yeni sıra eskisiyle aynıysa
@@ -92,12 +99,25 @@ class BookDocument
             }
 
             foreach ($sections as $index => $section) {
-                $attributes = ['title' => $section['title'], 'content' => $section['html'], 'order' => $index + 1, 'is_preface' => $section['preface']];
-                isset($existing[$index])
-                    ? $existing[$index]->fill($attributes)->save()
-                    : $book->chapters()->create($attributes);
+                $attributes = ['title' => $section['title'], 'order' => $index + 1, 'is_preface' => $section['preface']];
+                $chapter = $existing[$index] ?? null;
+
+                if (! $chapter) {
+                    $book->chapters()->create($attributes + ['content' => $section['html']]);
+
+                    continue;
+                }
+
+                // İçerik kayıtta RichText::normalize'dan geçiyor; aynıysa yeniden temizleme yok.
+                if ($chapter->content !== $section['html']) {
+                    $attributes['content'] = $section['html'];
+                }
+                $chapter->fill($attributes);
+                if ($chapter->isDirty()) {
+                    $chapter->save();
+                }
             }
-        });
+        }));
 
         $book->unsetRelation('chapters');
         $book->refreshContentCounts();

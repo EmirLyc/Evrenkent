@@ -44,5 +44,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // (makaleleriyle) ve makaleleri otomatik yayına alır. Sunucuda gerçekten
         // çalışması için cron'a `php artisan schedule:run` eklenmesi gerekiyor (bkz. DEPLOYMENT.md).
         $schedule->command('content:publish-scheduled')->everyMinute();
+        // Defterden çıkarılan (hiçbir defterde kalmayan) görseller.
+        $schedule->command('notebooks:prune-images')->dailyAt('04:00');
     })
     ->create();

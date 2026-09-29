@@ -42,11 +42,31 @@ class Chapter extends Model
         return RichText::render($this->content, $this->footnotePrefix(), $this->contentDocuments(), $outline->contextFor($this));
     }
 
+    /**
+     * Toplu kayıtta (BookDocument::sync) bölüm başına yeniden sayım kapalı — sayım en sonda bir
+     * kez yapılıyor. Açık kalsa her bölüm kaydı bütün kitabı yeniden okurdu (80 bölümde 80 kez).
+     */
+    private static bool $countsPaused = false;
+
+    public static function withoutCountRefresh(callable $callback): mixed
+    {
+        $previous = self::$countsPaused;
+        self::$countsPaused = true;
+
+        try {
+            return $callback();
+        } finally {
+            self::$countsPaused = $previous;
+        }
+    }
+
     /** Kitabın belge/video sayısı metinden hesaplanıyor (Book::refreshContentCounts). */
     protected static function booted(): void
     {
-        static::saved(fn (Chapter $chapter) => $chapter->book?->refreshContentCounts());
-        static::deleted(fn (Chapter $chapter) => $chapter->book?->refreshContentCounts());
+        $refresh = fn (Chapter $chapter) => self::$countsPaused ? null : $chapter->book?->refreshContentCounts();
+
+        static::saved($refresh);
+        static::deleted($refresh);
     }
 
     protected function footnotePrefix(): string

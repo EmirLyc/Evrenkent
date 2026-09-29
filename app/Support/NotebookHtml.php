@@ -2,6 +2,8 @@
 
 namespace App\Support;
 
+use App\Enums\NoteType;
+use App\Models\Note;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HtmlSanitizer\HtmlSanitizer;
 use Symfony\Component\HtmlSanitizer\HtmlSanitizerConfig;
@@ -66,5 +68,54 @@ class NotebookHtml
     public static function imageBaseUrl(): string
     {
         return Storage::disk(config('filesystems.covers_disk'))->url('defterler');
+    }
+
+    /**
+     * Metindeki defter görsellerinin diskteki yolları (defterler/{kullanıcı}/{dosya}).
+     *
+     * @return list<string>
+     */
+    public static function imagePaths(?string $html): array
+    {
+        $base = preg_quote(rtrim(self::imageBaseUrl(), '/'), '#');
+        preg_match_all('#<img\b[^>]*\bsrc="'.$base.'/([^"?\#]+)"#i', (string) $html, $matches);
+
+        return array_values(array_unique(array_map(fn ($path) => 'defterler/'.rawurldecode($path), $matches[1])));
+    }
+
+    /**
+     * Artık hiçbir defterinde geçmeyen görselleri siler. Defter silinince hemen çağrılır;
+     * metinden çıkarılan görseller için zamanlanmış temizlik (notebooks:prune-images) var.
+     * $olderThan verilirse sadece o andan önce yüklenmiş dosyalar silinir — yeni yüklenmiş
+     * ama otomatik kaydı henüz gelmemiş bir görsel yanlışlıkla gitmesin.
+     *
+     * @param  list<string>|null  $candidates  bakılacak yollar (null: kullanıcının bütün görselleri)
+     * @return int silinen dosya sayısı
+     */
+    public static function pruneImages(int $userId, ?array $candidates = null, ?\DateTimeInterface $olderThan = null): int
+    {
+        $disk = Storage::disk(config('filesystems.covers_disk'));
+        $candidates ??= $disk->files('defterler/'.$userId);
+
+        $used = Note::where('user_id', $userId)
+            ->where('type', NoteType::Defter)
+            ->pluck('content')
+            ->flatMap(fn ($content) => self::imagePaths($content))
+            ->flip();
+
+        $deleted = 0;
+        foreach ($candidates as $path) {
+            // Sadece bu kullanıcının klasörü — başkasının görseli asla silinmez.
+            if (! str_starts_with($path, 'defterler/'.$userId.'/') || $used->has($path) || ! $disk->exists($path)) {
+                continue;
+            }
+            if ($olderThan && $disk->lastModified($path) > $olderThan->getTimestamp()) {
+                continue;
+            }
+            $disk->delete($path);
+            $deleted++;
+        }
+
+        return $deleted;
     }
 }

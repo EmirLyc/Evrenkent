@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\NoteType;
+use App\Support\NotebookHtml;
 use Database\Factories\NoteFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -18,6 +19,16 @@ class Note extends Model
 {
     /** @use HasFactory<NoteFactory> */
     use HasFactory;
+
+    /** Silinen defterin görselleri de gider (okurun başka bir defterine kopyaladıkları hariç). */
+    protected static function booted(): void
+    {
+        static::deleted(function (Note $note) {
+            if ($note->type === NoteType::Defter) {
+                NotebookHtml::pruneImages($note->user_id, NotebookHtml::imagePaths($note->content));
+            }
+        });
+    }
 
     protected $fillable = [
         'user_id', 'type', 'noteable_type', 'noteable_id', 'title', 'subtitle', 'content', 'quote', 'anchor', 'page', 'tags', 'info', 'location',

@@ -7,6 +7,7 @@ use App\Models\Book;
 use App\Models\Chapter;
 use App\Models\Document;
 use App\Models\User;
+use App\Support\BookDocument;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -60,6 +61,26 @@ class ContentCountsTest extends TestCase
 
         $chapter->delete();
         $this->assertNull($book->refresh()->video_count);
+    }
+
+    public function test_book_sync_rewrites_only_changed_chapters_and_still_counts(): void
+    {
+        $book = Book::factory()->create();
+        $document = $this->document($book);
+        BookDocument::sync($book, '<h1>Bir</h1><p>Birinci bölüm.</p><h1>İki</h1><p>İkinci bölüm.</p><h1>Üç</h1><p>Silinecek.</p>');
+
+        $this->travel(5)->minutes();
+        $saved = [];
+        Chapter::saved(function (Chapter $chapter) use (&$saved) {
+            $saved[] = $chapter->title;
+        });
+
+        // Sadece ikinci bölüm değişiyor (belge ekleniyor), üçüncü bölüm siliniyor.
+        BookDocument::sync($book, '<h1>Bir</h1><p>Birinci bölüm.</p><h1>İki</h1><p>İkinci bölüm.<span data-document="'.$document->id.'"></span></p>');
+
+        $this->assertSame(['İki'], $saved);
+        $this->assertSame(['Bir', 'İki'], $book->chapters()->pluck('title')->all());
+        $this->assertSame(1, $book->refresh()->document_count);
     }
 
     public function test_authors_can_no_longer_type_the_counts(): void

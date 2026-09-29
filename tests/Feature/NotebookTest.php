@@ -171,4 +171,53 @@ class NotebookTest extends TestCase
         $this->actingAs($user)->postJson(route('panel.defterim.gorsel', $note), ['image' => UploadedFile::fake()->create('belge.pdf', 10, 'application/pdf')])
             ->assertJsonValidationErrors('image');
     }
+
+    /** Diske bir defter görseli koyar ve metinde kullanılacak <img> etiketini döner. */
+    private function storedImage(User $user, string $name, int $ageInDays = 0): string
+    {
+        $path = 'defterler/'.$user->id.'/'.$name;
+        Storage::disk('public')->put($path, 'resim');
+        touch(Storage::disk('public')->path($path), now()->subDays($ageInDays)->getTimestamp());
+
+        return '<img src="'.Storage::disk('public')->url($path).'" alt="">';
+    }
+
+    public function test_deleting_a_notebook_deletes_its_images_but_keeps_ones_used_elsewhere(): void
+    {
+        Storage::fake('public');
+        config(['filesystems.covers_disk' => 'public']);
+        $user = $this->reader(['is_premium' => true]);
+        $other = $this->reader();
+        $own = $this->storedImage($user, 'sadece-bunda.png');
+        $shared = $this->storedImage($user, 'ikisinde.png');
+        $foreign = $this->storedImage($other, 'baskasinin.png');
+
+        $note = $this->notebook($user, ['content' => '<p>A</p>'.$own.$shared]);
+        $this->notebook($user, ['title' => 'Kopya', 'content' => '<p>B</p>'.$shared]);
+        // Başka okurun görselinin adresi metne elle konsa bile silinmez.
+        $note->forceFill(['content' => $note->content.$foreign])->saveQuietly();
+
+        $this->actingAs($user)->delete(route('panel.defterim.sil', $note))->assertRedirect(route('panel.defterim'));
+
+        Storage::disk('public')->assertMissing('defterler/'.$user->id.'/sadece-bunda.png');
+        Storage::disk('public')->assertExists('defterler/'.$user->id.'/ikisinde.png');
+        Storage::disk('public')->assertExists('defterler/'.$other->id.'/baskasinin.png');
+    }
+
+    public function test_scheduled_cleanup_removes_images_no_notebook_uses_any_more(): void
+    {
+        Storage::fake('public');
+        config(['filesystems.covers_disk' => 'public']);
+        $user = $this->reader();
+        $used = $this->storedImage($user, 'kullaniliyor.png', 3);
+        $this->storedImage($user, 'metinden-cikarildi.png', 3);
+        $this->storedImage($user, 'yeni-yuklendi.png'); // otomatik kaydı henüz gelmemiş olabilir
+        $this->notebook($user, ['content' => '<p>A</p>'.$used]);
+
+        $this->artisan('notebooks:prune-images')->assertSuccessful();
+
+        Storage::disk('public')->assertExists('defterler/'.$user->id.'/kullaniliyor.png');
+        Storage::disk('public')->assertMissing('defterler/'.$user->id.'/metinden-cikarildi.png');
+        Storage::disk('public')->assertExists('defterler/'.$user->id.'/yeni-yuklendi.png');
+    }
 }
