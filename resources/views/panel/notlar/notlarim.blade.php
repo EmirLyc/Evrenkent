@@ -5,30 +5,35 @@
     notları (Tüm Notlar / Bölümlere Göre / Tarihe Göre). Not okurken metinde seçilerek alınıyor
     (Faz H3) — buradaki elle ekleme formu kalktı. Dar ekranda önce eser listesi, eser seçilince
     notları ("← Kitaplar").
+    Hiç eser yokken (not yok ya da aramaya uyan yok) sağ sütun boş kalıp sayfa sola dayalı
+    görünüyordu — o durumda tek sütun, Alıntılarım'la aynı genişlik ve boş kutu.
 --}}
 
 @section('title', 'Notlarım')
-@section('main_width', 'max-w-7xl')
-@section('main_padding', 'px-4 py-6 sm:px-6 sm:py-8')
+@if ($works->isNotEmpty())
+    @section('main_width', 'max-w-7xl')
+    @section('main_padding', 'px-4 py-6 sm:px-6 sm:py-8')
+@endif
 
 @php
+    $empty = $works->isEmpty();
     $params = fn (array $extra = []) => array_filter(array_merge(['q' => $query ?: null, 'tur' => $kind, 'sirala' => $sort !== 'son' ? $sort : null], $extra), fn ($value) => $value !== null && $value !== '');
 @endphp
 
 @section('content')
-    <div class="grid gap-6 lg:grid-cols-[21rem_minmax(0,1fr)] lg:gap-8">
+    <div class="grid gap-6 {{ $empty ? '' : 'lg:grid-cols-[21rem_minmax(0,1fr)] lg:gap-8' }}">
         {{-- Eserler --}}
         <section class="{{ $showNotes ? 'hidden lg:block' : '' }}" aria-label="Notların olduğu eserler">
-            <h1 class="font-serif text-3xl font-semibold text-navy">Notlarım</h1>
-            <p class="mt-1 text-sm text-slate-600">Okurken aldığın notlar ve onlara bağlı metinler.</p>
+            <h1 class="font-serif text-3xl font-semibold text-navy {{ $empty ? 'sm:text-4xl' : '' }}">Notlarım</h1>
+            <p class="text-slate-600 {{ $empty ? 'mt-1.5' : 'mt-1 text-sm' }}">Okurken aldığın notlar ve onlara bağlı metinler.</p>
 
-            <form method="GET" class="mt-5 space-y-2.5">
-                <label class="relative block">
+            <form method="GET" class="{{ $empty ? 'mt-6 flex flex-col gap-3 sm:flex-row sm:items-center' : 'mt-5 space-y-2.5' }}">
+                <label class="relative block {{ $empty ? 'min-w-0 flex-1' : '' }}">
                     <span class="sr-only">Ara</span>
                     <x-heroicon-o-magnifying-glass class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                     <input type="search" name="q" value="{{ $query }}" placeholder="Notlarında veya kaynak metinlerde ara…" class="w-full rounded-lg border-slate-200 bg-white py-2 pl-9 text-sm focus:border-brand-400 focus:ring-brand-400">
                 </label>
-                <div class="grid grid-cols-2 gap-2.5">
+                <div class="grid grid-cols-2 gap-2.5 {{ $empty ? 'sm:w-80 sm:shrink-0' : '' }}">
                     <select name="tur" onchange="this.form.requestSubmit()" aria-label="Eser türü" class="rounded-lg border-slate-200 bg-white py-2 text-sm focus:border-brand-400 focus:ring-brand-400">
                         @foreach (['' => 'Tüm kitaplar', 'kitap' => 'Kitaplar', 'sozluk' => 'Sözlükler', 'makale' => 'Dergi yazıları'] as $value => $label)
                             <option value="{{ $value }}" @selected(($kind ?? '') === $value)>{{ $label }}</option>
@@ -42,16 +47,18 @@
                 </div>
             </form>
 
-            <div class="mt-3"><x-note-quota-notice :type="\App\Enums\NoteType::Not" /></div>
+            <div class="{{ $empty ? 'mt-4' : 'mt-3' }}"><x-note-quota-notice :type="\App\Enums\NoteType::Not" /></div>
 
-            @if ($works->isEmpty())
-                <p class="mt-6 rounded-lg border border-dashed border-slate-300 px-4 py-10 text-center text-sm text-slate-500">
+            @if ($empty)
+                <div class="mt-6 rounded-xl border border-dashed border-slate-300 px-6 py-14 text-center">
+                    <x-heroicon-o-pencil-square class="mx-auto mb-2 h-8 w-8 text-brand-300" aria-hidden="true" />
                     @if ($query !== '' || $kind)
-                        Aramaya uyan not yok.
+                        <p class="text-slate-600">Aramaya uyan not yok.</p>
                     @else
-                        Henüz not almadın. Okurken bir cümleyi seçip <span class="font-medium text-slate-700">Not Al</span>'a bastığında burada toplanır.
+                        <p class="font-medium text-slate-700">Henüz not almadın.</p>
+                        <p class="mx-auto mt-1 max-w-md text-sm text-slate-500">Okurken bir cümleyi seçip <span class="font-medium">Not Al</span>'a bastığında burada, kitabına göre toplanır.</p>
                     @endif
-                </p>
+                </div>
             @else
                 <ul class="mt-4 space-y-2.5">
                     @foreach ($works as $item)
@@ -75,6 +82,7 @@
         </section>
 
         {{-- Seçilen eserin notları --}}
+        @unless ($empty)
         <section class="{{ $showNotes ? '' : 'hidden lg:block' }} min-w-0" aria-label="Notlar">
             @if ($selected)
                 @php
@@ -170,5 +178,6 @@
                 <p class="rounded-lg border border-dashed border-slate-300 px-4 py-10 text-center text-sm text-slate-500">Notlarını görmek için bir eser seç.</p>
             @endif
         </section>
+        @endunless
     </div>
 @endsection
