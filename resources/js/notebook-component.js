@@ -48,7 +48,6 @@ export default function notebook(config) {
             });
             this.refreshStats();
             this.ready = true;
-            if (config.fresh) this.$nextTick(() => this.$refs.title?.select());
 
             this.onLeave = () => this.flush();
             this.onUnload = (event) => {

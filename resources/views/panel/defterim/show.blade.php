@@ -20,7 +20,6 @@
         'tags' => $notebook->tags ?? [],
         'info' => $notebook->info,
         'savedAt' => $notebook->updated_at->format('H:i'),
-        'fresh' => $notebook->title === 'Yeni Defter' && trim(strip_tags((string) $notebook->content)) === '',
         'wordLimit' => $wordLimit,
         'saveUrl' => route('panel.defterim.kaydet', $notebook),
         'imageUrl' => route('panel.defterim.gorsel', $notebook),
