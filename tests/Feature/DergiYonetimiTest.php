@@ -167,7 +167,8 @@ class DergiYonetimiTest extends TestCase
     {
         $editor = $this->dergiEditoru();
 
-        $this->assertSame('/panel/dergi', $editor->redirectPath());
+        $this->assertSame('/panel/dergi', $editor->panelPath());
+        $this->assertSame('/', $editor->redirectPath());
     }
 
     public function test_editor_can_create_a_new_issue_with_a_cover_image(): void

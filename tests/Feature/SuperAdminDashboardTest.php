@@ -104,6 +104,7 @@ class SuperAdminDashboardTest extends TestCase
     {
         $admin = $this->superAdmin();
 
-        $this->assertSame('/panel/admin-panel', $admin->redirectPath());
+        $this->assertSame('/panel/admin-panel', $admin->panelPath());
+        $this->assertSame('/', $admin->redirectPath());
     }
 }

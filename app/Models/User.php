@@ -281,13 +281,22 @@ class User extends Authenticatable
     }
 
     /**
-     * Girişten sonra role göre yönlendirilecek yol.
-     * Süper Admin -> kendi dashboard'u, Dergi Editörü -> kendi dashboard'u,
-     * Yazar -> Taslaklarım, Okur -> Anasayfa (panele değil — sidebar zaten açık
-     * geliyor, "Kitaplığım" bir tık uzakta, ayrıca kullanıcı doğrudan panele
-     * düşürülmek istemedi).
+     * Giriş / kayıt sonrası yönlendirilecek yol: rolden bağımsız herkes anasayfaya
+     * gelir (2026-09-30 müşteri isteği — panele doğrudan düşürülmek istenmiyor,
+     * panel sidebar'da bir tık uzakta). Korumalı bir linke tıklayıp girişe
+     * yönlenen kullanıcı yine redirect()->intended() ile o sayfaya döner.
      */
     public function redirectPath(): string
+    {
+        return '/';
+    }
+
+    /**
+     * Kullanıcının rolüne göre kendi paneli (eski /admin yer imleri buraya düşer).
+     * Süper Admin -> kendi dashboard'u, Dergi Editörü -> kendi dashboard'u,
+     * Yazar -> Taslaklarım, Okur -> Anasayfa.
+     */
+    public function panelPath(): string
     {
         if ($this->hasRole('super_admin')) {
             return '/panel/admin-panel';

@@ -35,7 +35,7 @@ Route::get('/dashboard', function () {
 })->middleware(['auth'])->name('dashboard');
 
 // Filament paneli 2026-09-28'de kaldırıldı — eski /admin yer imleri kullanıcının kendi paneline düşsün.
-Route::get('/admin/{path?}', fn () => redirect(auth()->user()?->redirectPath() ?? route('login')))
+Route::get('/admin/{path?}', fn () => redirect(auth()->user()?->panelPath() ?? route('login')))
     ->where('path', '.*');
 
 Route::middleware('auth')->group(function () {

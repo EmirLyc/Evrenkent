@@ -53,7 +53,8 @@ class TaslaklarimTest extends TestCase
         $this->actingAs($author)->get(route('panel.yayinlarim.index'))->assertRedirect(route('panel.yayinlarim.taslaklarim'));
         $this->actingAs($author)->get(route('panel.yayinlarim.gonderilenler'))->assertRedirect(route('panel.yayinlarim.taslaklarim', ['durum' => 'incelemede']));
         $this->actingAs($author)->get(route('panel.yayinlarim.geri-donenler'))->assertRedirect(route('panel.yayinlarim.taslaklarim', ['durum' => 'duzeltme']));
-        $this->assertSame('/panel/yayinlarim/taslaklarim', $author->redirectPath());
+        $this->assertSame('/panel/yayinlarim/taslaklarim', $author->panelPath());
+        $this->assertSame('/', $author->redirectPath());
     }
 
     public function test_status_tabs_group_statuses_the_way_the_author_sees_them(): void

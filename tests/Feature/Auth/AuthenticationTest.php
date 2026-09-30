@@ -27,9 +27,23 @@ class AuthenticationTest extends TestCase
         ]);
 
         $this->assertAuthenticated();
-        // Rolsüz bir kullanıcı (test fixture'ı) varsayılan olarak anasayfaya yönlendirilir
-        // (sidebar açık geliyor, panele zorla düşürülmüyor — bkz. User::redirectPath()).
+        // Giriş sonrası herkes anasayfaya gelir (bkz. User::redirectPath()).
         $response->assertRedirect('/');
+    }
+
+    public function test_users_with_panel_roles_land_on_homepage_after_login(): void
+    {
+        $this->seed(\Database\Seeders\RoleSeeder::class);
+
+        foreach (['super_admin', 'dergi_editoru', 'yazar'] as $role) {
+            $user = User::factory()->create();
+            $user->assignRole($role);
+
+            $this->post('/login', ['email' => $user->email, 'password' => 'password'])
+                ->assertRedirect('/');
+
+            $this->post('/logout');
+        }
     }
 
     public function test_users_can_not_authenticate_with_invalid_password(): void
