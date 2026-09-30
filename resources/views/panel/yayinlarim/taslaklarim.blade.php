@@ -27,16 +27,18 @@
             @endforeach
         </nav>
 
-        <form method="GET" class="flex flex-wrap items-center gap-2 2xl:ml-auto min-w-0">
+        {{-- sm ve üstünde tek satır: sekmelerin yanında yer darsa arama kutusu daralır,
+             görünüm düğmeleri alt satıra düşmez. --}}
+        <form method="GET" class="flex flex-wrap sm:flex-nowrap items-center gap-2 2xl:ml-auto min-w-0">
             @if ($tab !== 'tumu') <input type="hidden" name="durum" value="{{ $tab }}"> @endif
             @if ($view !== 'izgara') <input type="hidden" name="gorunum" value="{{ $view }}"> @endif
-            <label class="relative w-full sm:w-72 min-w-0">
+            <label class="relative w-full sm:w-72 min-w-0 sm:min-w-[10rem]">
                 <span class="sr-only">Ara</span>
                 <x-heroicon-o-magnifying-glass class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input type="search" name="q" value="{{ $q }}" placeholder="Başlık, konu veya tür ara…" class="w-full pl-9 rounded-md border-slate-300 text-sm focus:border-slate-500 focus:ring-slate-500">
             </label>
             <label class="sr-only" for="sirala">Sıralama</label>
-            <select id="sirala" name="sirala" onchange="this.form.requestSubmit()" class="rounded-md border-slate-300 text-sm focus:border-slate-500 focus:ring-slate-500">
+            <select id="sirala" name="sirala" onchange="this.form.requestSubmit()" class="shrink-0 rounded-md border-slate-300 text-sm focus:border-slate-500 focus:ring-slate-500">
                 @foreach (\App\Http\Controllers\PublicationController::SORTS as $key => $label)
                     <option value="{{ $key }}" @selected($sort === $key)>{{ $label }}</option>
                 @endforeach
@@ -59,10 +61,12 @@
     @endif
 
     <div class="flex items-center justify-between gap-3 flex-wrap mt-6">
-        <p class="text-sm text-slate-500">
-            Toplam {{ $items->total() }} yayın
+        {{-- flex + items-center: inline-flex link satır içinde ikonun tabanına oturup metinden yukarı kayıyordu. --}}
+        <p class="flex items-center gap-1.5 text-sm text-slate-500">
+            <span>Toplam {{ $items->total() }} yayın</span>
             @if ($trashCount)
-                · <a href="{{ route('panel.yayinlarim.cop-kutusu') }}" class="inline-flex items-center gap-1 text-slate-600 hover:text-slate-900 underline-offset-2 hover:underline"><x-heroicon-o-trash class="w-4 h-4" /> Çöp Kutusu ({{ $trashCount }})</a>
+                <span aria-hidden="true">·</span>
+                <a href="{{ route('panel.yayinlarim.cop-kutusu') }}" class="inline-flex items-center gap-1 text-slate-600 hover:text-slate-900 underline-offset-2 hover:underline"><x-heroicon-o-trash class="w-4 h-4" /> Çöp Kutusu ({{ $trashCount }})</a>
             @endif
         </p>
         {{ $items->onEachSide(1)->links('panel.yayinlarim._sayfalama') }}
