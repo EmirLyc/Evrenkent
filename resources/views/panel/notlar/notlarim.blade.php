@@ -102,10 +102,12 @@
                     <a href="{{ $readUrl }}" class="btn-dark shrink-0 gap-2"><x-heroicon-o-book-open class="h-5 w-5" /> Kitabı Aç</a>
                 </div>
 
-                <nav class="mt-6 flex gap-1 overflow-x-auto border-b border-slate-200 text-sm" aria-label="Görünüm">
+                {{-- Alt çizgi border değil iç gölge: sekmenin -mb-px taşması overflow-x-auto ile
+                     birleşince sağda dikey kaydırma çubuğu çıkıyordu. Seçili sekmenin çizgisi gölgenin üstüne biner. --}}
+                <nav class="scrollbar-none mt-6 flex gap-1 overflow-x-auto text-sm shadow-[inset_0_-1px_0_theme(colors.slate.200)]" aria-label="Görünüm">
                     @foreach (['tum' => 'Tüm Notlar ('.$selected->count.')', 'bolum' => 'Bölümlere Göre', 'tarih' => 'Tarihe Göre'] as $value => $label)
                         <a href="{{ route('panel.notlarim', $params(['eser' => $selectedKey, 'gorunum' => $value === 'tum' ? null : $value])) }}"
-                           class="-mb-px whitespace-nowrap border-b-2 px-4 py-2.5 font-medium {{ $view === $value ? 'border-brand-500 text-navy' : 'border-transparent text-slate-500 hover:text-slate-800' }}"
+                           class="whitespace-nowrap border-b-2 px-4 py-2.5 font-medium {{ $view === $value ? 'border-brand-500 text-navy' : 'border-transparent text-slate-500 hover:text-slate-800' }}"
                            @if ($view === $value) aria-current="page" @endif>{{ $label }}</a>
                     @endforeach
                 </nav>
