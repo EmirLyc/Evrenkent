@@ -49,7 +49,10 @@ class NotebookTest extends TestCase
         $response->assertRedirect(route('panel.defterim.goster', $note));
         $this->assertSame(['defter', 'Yeni Defter'], [$note->type->value, $note->title]);
 
-        $this->actingAs($user)->get(route('panel.defterim'))->assertRedirect(route('panel.defterim.goster', $note));
+        // Yönlendirme yok (Turbo'da çift çizim editörü tepkisiz bırakıyordu): son defter doğrudan açılır.
+        $this->actingAs($user)->get(route('panel.defterim'))->assertOk()
+            ->assertSee(route('panel.defterim.kaydet', $note), false)
+            ->assertSee('Tam ekran');
         $this->actingAs($user)->get(route('panel.defterim.goster', $note))->assertOk()
             ->assertSee('Alıntı ekle')
             ->assertSee('Not ekle')

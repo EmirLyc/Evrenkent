@@ -24,13 +24,14 @@ use Illuminate\View\View;
  */
 class NotebookController extends Controller
 {
-    public function index(Request $request): View|RedirectResponse
+    /**
+     * Son düzenlenen defteri yönlendirmeden, doğrudan gösterir. Yönlendirme yapınca Turbo sayfayı
+     * iki kez çiziyor ve editörün Alpine bileşeni yanlış ağaca bağlanıp tıklamalara tepkisiz
+     * kalıyordu (sayfayı yenileyince düzeliyordu).
+     */
+    public function index(Request $request): View
     {
-        $latest = $this->notebooks($request)->first();
-
-        return $latest
-            ? redirect()->route('panel.defterim.goster', array_filter([$latest, 'sirala' => $request->query('sirala')]))
-            : view('panel.defterim.show', $this->shared($request) + ['notebook' => null]);
+        return view('panel.defterim.show', $this->shared($request) + ['notebook' => $this->notebooks($request)->first()]);
     }
 
     public function show(Request $request, Note $note): View
