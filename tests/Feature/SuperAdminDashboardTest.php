@@ -36,6 +36,18 @@ class SuperAdminDashboardTest extends TestCase
         $this->actingAs($okur)->get(route('panel.adminpanel.index'))->assertForbidden();
     }
 
+    public function test_site_menu_links_to_admin_panel_only_for_super_admin(): void
+    {
+        $this->actingAs($this->superAdmin())->get('/')->assertOk()
+            ->assertSee(route('panel.adminpanel.index'), false)
+            ->assertSee('Yönetim Paneli');
+
+        $okur = User::factory()->create();
+        $okur->assignRole('okur');
+        $this->actingAs($okur)->get('/')->assertOk()
+            ->assertDontSee(route('panel.adminpanel.index'), false);
+    }
+
     public function test_dashboard_shows_real_totals(): void
     {
         $admin = $this->superAdmin();

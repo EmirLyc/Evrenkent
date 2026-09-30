@@ -45,6 +45,20 @@
 
 {{-- Ziyaretçide (auth()->user() null) rol grupları hiç görünmez, sadece okur grupları görünür —
      linkleri auth korumalı olduğu için tıklanınca giriş ekranına yönlenir. --}}
+{{-- Süper Admin paneli ayrı düzende (layouts/admin-panel); girişte artık herkes anasayfaya geldiği
+     için (bkz. User::redirectPath()) oraya buradan geçiliyor. --}}
+@if (auth()->user()?->hasRole('super_admin'))
+    <div class="mb-7">
+        <div class="{{ $groupHeading }} text-brand-700">Süper Admin</div>
+        <div class="space-y-0.5">
+            <a href="{{ route('panel.adminpanel.index') }}" class="{{ $navLinkBase }} {{ $navLinkInactive }}">
+                @svg('heroicon-o-shield-check', 'w-4 h-4 shrink-0')
+                <span class="ml-2.5 truncate">Yönetim Paneli</span>
+            </a>
+        </div>
+    </div>
+@endif
+
 {{-- Dergi Editörü de Yayın Yönetimi'ni görür (rol PDF'i: "Yazar'ın paneline ek olarak" Dergi Yönetimi). --}}
 @if (auth()->user()?->canAuthor())
     <div class="mb-7">
