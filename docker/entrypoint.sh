@@ -10,7 +10,9 @@ if [ -z "$APP_KEY" ]; then
     exit 1
 fi
 
-php artisan optimize:clear
+# optimize:clear burada YOK: içindeki cache:clear CACHE_STORE=database iken veritabanına gidiyor,
+# ilk açılışta `cache` tablosu henüz yokken container'ı düşürüyordu. Yeni container'da temizlenecek
+# önbellek de yok (bootstrap/cache imaja girmiyor, .dockerignore). optimize veritabanına dokunmuyor.
 php artisan optimize
 
 case "${CONTAINER_ROLE:-web}" in
