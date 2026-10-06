@@ -17,7 +17,7 @@ Bucket herkese açık olamadığı için kapak/defter görselleri uygulama üzer
 
 **Kurulum (Railway dashboard):**
 
-1. **New Project → Deploy from GitHub repo** → `LycPartners/evrenkent`. Servisin adını **web** yapın (aşağıdaki referanslar bu ada bakıyor).
+1. **New Project → Deploy from GitHub repo** → `LycPartners/evrenkent`. Servisin adı **evrenkent** (aşağıdaki `${{evrenkent.…}}` referansları bu ada bakıyor; ad farklıysa referansları ona göre değiştirin).
 2. Aynı projede **+ Create → Database → MySQL** ve **+ Create → Bucket** ekleyin.
 3. **web → Settings → Networking → Generate Domain** (port 8080). Müşteriye verilecek adres bu.
 4. **web → Variables → Raw Editor**'e yapıştırın (`APP_KEY` için yerelde `php artisan key:generate --show`; bir kere üretilip hiç değiştirilmez — değişirse oturumlar düşer):
@@ -26,7 +26,7 @@ Bucket herkese açık olamadığı için kapak/defter görselleri uygulama üzer
    APP_ENV=production
    APP_DEBUG=false
    APP_KEY=base64:...
-   APP_URL=https://${{web.RAILWAY_PUBLIC_DOMAIN}}
+   APP_URL=https://${{evrenkent.RAILWAY_PUBLIC_DOMAIN}}
    APP_LOCALE=tr
    APP_FALLBACK_LOCALE=en
    LOG_CHANNEL=stderr
@@ -53,7 +53,7 @@ Bucket herkese açık olamadığı için kapak/defter görselleri uygulama üzer
    - Settings → **Config-as-code → `railway.scheduler.json`** (health check'siz, her zaman yeniden başlar; `railway.json` web içindir).
    - Settings → Networking: domain **vermeyin**.
    - Variables: web'deki bloğun aynısı + `CONTAINER_ROLE=scheduler`, `SEED_DEMO` olmadan.
-   - ⚠️ `APP_URL` scheduler'da da **web'in adresi** olmalı (`https://${{web.RAILWAY_PUBLIC_DOMAIN}}` aynen kalır). Defter görseli temizliği notlardaki görselleri bu adrese göre tanıyor; farklı olursa kullanılan görselleri de "kullanılmıyor" sanıp siler.
+   - ⚠️ `APP_URL` scheduler'da da **web'in adresi** olmalı (`https://${{evrenkent.RAILWAY_PUBLIC_DOMAIN}}` aynen kalır). Defter görseli temizliği notlardaki görselleri bu adrese göre tanıyor; farklı olursa kullanılan görselleri de "kullanılmıyor" sanıp siler.
 6. İlk açılışta web migration'ları çalıştırır; `SEED_DEMO=true` ise ve veritabanında hiç kullanıcı yoksa demo hesaplarını ve içeriği bir kereliğine ekler (`demo:seed-if-empty`). Kullanıcı varsa hiçbir şeye dokunmaz — sonradan eklenen/silinen içerik deploy'larda geri gelmez. Demo hesapları: `admin|editor|author|reader@evrenkent.test`, şifre `password`.
 7. Özel alan adı (ör. `demo.evrenkent.com`) bağlanırsa `APP_URL`'i iki serviste de o adrese çevirin.
 
