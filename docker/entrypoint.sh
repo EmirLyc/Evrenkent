@@ -1,24 +1,32 @@
 #!/bin/sh
 set -e
 
-# SQLite veritabanı dosyası yoksa oluştur (Railway volume /app/database'e bağlıysa kalıcı olur)
-if [ "${DB_CONNECTION:-sqlite}" = "sqlite" ]; then
-    DB_FILE="${DB_DATABASE:-/app/database/database.sqlite}"
-    mkdir -p "$(dirname "$DB_FILE")"
-    [ -f "$DB_FILE" ] || touch "$DB_FILE"
-fi
+# Aynı imaj iki Railway servisinde çalışıyor; görevi CONTAINER_ROLE belirliyor:
+#   web       (varsayılan) — migration, önbellekler, FrankenPHP
+#   scheduler — zamanlanmış görevler (planlanan yayınlar, defter görseli temizliği)
 
-# APP_KEY yoksa üret (Railway env değişkeninde kalıcı tutulmalı, aşağıya bakın)
 if [ -z "$APP_KEY" ]; then
-    echo "UYARI: APP_KEY tanımlı değil, geçici bir key üretiliyor. Kalıcı olması için Railway'de APP_KEY env değişkenini elle set edin."
-    export APP_KEY=$(php artisan key:generate --show)
+    echo "HATA: APP_KEY tanımlı değil. Railway → Variables'a kalıcı bir APP_KEY ekleyin (bkz. DEPLOYMENT.md)." >&2
+    exit 1
 fi
 
-php artisan config:clear
-php artisan migrate --force
-php artisan storage:link || true
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
+php artisan optimize:clear
+php artisan optimize
 
-exec php artisan serve --host=0.0.0.0 --port="${PORT:-8080}"
+case "${CONTAINER_ROLE:-web}" in
+    scheduler)
+        exec php artisan schedule:work
+        ;;
+    web)
+        php artisan migrate --force
+        if [ "${SEED_DEMO:-false}" = "true" ]; then
+            php artisan demo:seed-if-empty
+        fi
+        php artisan storage:link || true
+        exec frankenphp php-server --listen ":${PORT:-8080}" --root /app/public
+        ;;
+    *)
+        echo "HATA: bilinmeyen CONTAINER_ROLE: ${CONTAINER_ROLE}" >&2
+        exit 1
+        ;;
+esac

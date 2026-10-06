@@ -9,6 +9,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\MagazineCatalogController;
 use App\Http\Controllers\MagazineController;
 use App\Http\Controllers\MagazineIssueController;
+use App\Http\Controllers\MediaController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SubscriptionController;
@@ -29,6 +30,11 @@ Route::get('/sozlukler/{book:slug}/{entry:slug}', [DictionaryController::class, 
 Route::get('/abonelik', [SubscriptionController::class, 'index'])->name('abonelik');
 // Faz F2: gömülü belgeyi site içinde gösterme — erişim içeriği okuyabilmeye bağlı (ziyaretçi ücretsiz kitabı okuyabilir).
 Route::get('/belge/{document}', [DocumentController::class, 'show'])->name('belgeler.goster');
+// Kapak/defter görselleri — Railway'de bucket'tan (bkz. MediaController). Sadece görsel uzantıları,
+// ".." ya da başka karakter içeren yol route'a hiç eşleşmez.
+Route::get('/media/{path}', [MediaController::class, 'show'])
+    ->where('path', '[A-Za-z0-9_\-]+(/[A-Za-z0-9_\-]+)*\.(jpe?g|png|gif|webp|bmp)')
+    ->name('media');
 
 Route::get('/dashboard', function () {
     return redirect(auth()->user()?->redirectPath() ?? '/');

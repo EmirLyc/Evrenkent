@@ -1,29 +1,65 @@
 # Evrenkent — Canlıya Alma Öncesi Kontrol Listesi
 
-## 🚂 Railway'de gösterim (demo) amaçlı deploy
+## 🚂 Railway kurulumu
 
-Bu repo Railway için hazır bir `Dockerfile` + `railway.json` içeriyor (nginx/php-fpm yok, basit `php artisan serve` ile — sadece geliştirme aşamasında başkalarına göstermek için, tam prod kurulumu değil, bkz. aşağıdaki kritik madde listesi).
+Kaynak repo: `LycPartners/evrenkent` (ücretli Railway hesabı). Railway'in Laravel rehberindeki yapı: container'lar geçici, kalıcı olan her şey yönetilen servislerde.
 
-**Kurulum adımları (railway.app dashboard):**
+| Servis | Ne | Kalıcı veri |
+|---|---|---|
+| **web** | `Dockerfile` → FrankenPHP (Caddy + PHP). Açılışta migration + önbellekler. Health check `/up`. | — |
+| **scheduler** | Aynı imaj, `CONTAINER_ROLE=scheduler` → `php artisan schedule:work` (planlanan yayınlar her dakika, defter görseli temizliği 04:00). | — |
+| **MySQL** | Railway veritabanı servisi. | Bütün kayıtlar, oturumlar, önbellek |
+| **Bucket** | Railway Storage Bucket (S3 uyumlu, herkese kapalı). | `public/` kapaklar + defter görselleri, `private/` gömülü belgeler |
 
-1. **New Project → Deploy from GitHub repo** → `EmirLyc/Evrenkent` seçin.
-2. Railway `Dockerfile`'ı otomatik algılar (builder: DOCKERFILE, `railway.json` sayesinde).
-3. Servise şu environment değişkenlerini ekleyin (Settings → Variables):
-   - `APP_NAME=Evrenkent`
-   - `APP_ENV=production`
-   - `APP_DEBUG=false`
-   - `APP_KEY=` → önce boş bırakıp bir deploy yapın, loglarda üretilen key'i görüp buraya **kalıcı olarak** yapıştırın (aksi halde her redeploy'da key değişir, oturumlar/şifreleme bozulur).
-   - `APP_URL=https://<railway-verdiği-domain>` (Settings → Networking → Generate Domain sonrası).
-   - `DB_CONNECTION=sqlite`
-   - `DB_DATABASE=/app/database/database.sqlite`
-   - `SESSION_SECURE_COOKIE=true`
-   - `MAIL_MAILER=log` (gerçek SMTP eklenene kadar)
-4. **Volume ekleyin** (Settings → Volumes → New Volume, mount path: `/app/database`) — böylece SQLite dosyası her redeploy'da silinmez, veriler kalıcı olur. Volume eklemezseniz her deploy'da veritabanı sıfırlanır (demo için bu bile kabul edilebilir olabilir).
-   ⚠️ **Bu volume yüklenen kitap/dergi kapak görsellerini kapsamaz** (onlar `storage/app/public`'e yazılıyor, ayrı bir yol) — ya `storage/app/public`'i de ayrı bir volume'a mount edin ya da (önerilen, bkz. madde 4 altındaki not) `COVERS_DISK=s3` ile bulut depolamaya geçin.
-5. Networking → **Generate Domain** ile bir `*.up.railway.app` adresi alın, sonra `APP_URL` değişkenini bu adresle güncelleyip yeniden deploy edin.
-6. İlk deploy'da `entrypoint.sh` otomatik olarak migration çalıştırır. Demo verisi (`DemoContentSeeder`) istenirse Railway'in Shell/CLI'ından elle tetiklenebilir — otomatik çalışmaz (aşağıdaki kritik maddeye bakın).
+Kuyruk işi yok (`ShouldQueue` kullanılmıyor), bu yüzden worker servisi yok; `QUEUE_CONNECTION=sync`. İleride kuyruklu iş eklenirse aynı imajla üçüncü bir servis (`php artisan queue:work`) eklenir.
 
-Bu bir **gösterim/demo** kurulumudur — aşağıdaki "🔴 Kritik" maddeler gerçek canlıya geçmeden önce hâlâ geçerlidir (özellikle mock ödeme ve gerçek e-posta servisi).
+Bucket herkese açık olamadığı için kapak/defter görselleri uygulama üzerinden veriliyor: `bucket_public` disk'inin adresi `APP_URL/media/...`, dosyayı `MediaController` bucket'tan akıtıyor (bir yıl tarayıcı önbelleği — dosya adları rastgele, içerik değişmiyor). Belgeler `private/` altında ve sadece `DocumentController` üzerinden, okuma yetkisi olana açılıyor.
+
+**Kurulum (Railway dashboard):**
+
+1. **New Project → Deploy from GitHub repo** → `LycPartners/evrenkent`. Servisin adını **web** yapın (aşağıdaki referanslar bu ada bakıyor).
+2. Aynı projede **+ Create → Database → MySQL** ve **+ Create → Bucket** ekleyin.
+3. **web → Settings → Networking → Generate Domain** (port 8080). Müşteriye verilecek adres bu.
+4. **web → Variables → Raw Editor**'e yapıştırın (`APP_KEY` için yerelde `php artisan key:generate --show`; bir kere üretilip hiç değiştirilmez — değişirse oturumlar düşer):
+   ```
+   APP_NAME=Evrenkent
+   APP_ENV=production
+   APP_DEBUG=false
+   APP_KEY=base64:...
+   APP_URL=https://${{web.RAILWAY_PUBLIC_DOMAIN}}
+   APP_LOCALE=tr
+   APP_FALLBACK_LOCALE=en
+   LOG_CHANNEL=stderr
+   LOG_LEVEL=info
+   DB_CONNECTION=mysql
+   DB_URL=${{MySQL.MYSQL_URL}}
+   SESSION_DRIVER=database
+   SESSION_SECURE_COOKIE=true
+   CACHE_STORE=database
+   QUEUE_CONNECTION=sync
+   MAIL_MAILER=log
+   COVERS_DISK=bucket_public
+   DOCUMENTS_DISK=bucket_private
+   AWS_ACCESS_KEY_ID=${{Bucket.ACCESS_KEY_ID}}
+   AWS_SECRET_ACCESS_KEY=${{Bucket.SECRET_ACCESS_KEY}}
+   AWS_DEFAULT_REGION=${{Bucket.REGION}}
+   AWS_BUCKET=${{Bucket.BUCKET}}
+   AWS_ENDPOINT=${{Bucket.ENDPOINT}}
+   AWS_USE_PATH_STYLE_ENDPOINT=false
+   SEED_DEMO=true
+   ```
+   `MySQL` / `Bucket` servislerin dashboard'daki adları; farklıysa referansları ona göre düzeltin (Raw Editor `${{` yazınca öneriyor). Bucket'ın Credentials sekmesi "path style" diyorsa `AWS_USE_PATH_STYLE_ENDPOINT=true`.
+5. **Scheduler servisi:** **+ Create → GitHub Repo** → yine `LycPartners/evrenkent`, adı **scheduler**.
+   - Settings → **Config-as-code → `railway.scheduler.json`** (health check'siz, her zaman yeniden başlar; `railway.json` web içindir).
+   - Settings → Networking: domain **vermeyin**.
+   - Variables: web'deki bloğun aynısı + `CONTAINER_ROLE=scheduler`, `SEED_DEMO` olmadan.
+   - ⚠️ `APP_URL` scheduler'da da **web'in adresi** olmalı (`https://${{web.RAILWAY_PUBLIC_DOMAIN}}` aynen kalır). Defter görseli temizliği notlardaki görselleri bu adrese göre tanıyor; farklı olursa kullanılan görselleri de "kullanılmıyor" sanıp siler.
+6. İlk açılışta web migration'ları çalıştırır; `SEED_DEMO=true` ise ve veritabanında hiç kullanıcı yoksa demo hesaplarını ve içeriği bir kereliğine ekler (`demo:seed-if-empty`). Kullanıcı varsa hiçbir şeye dokunmaz — sonradan eklenen/silinen içerik deploy'larda geri gelmez. Demo hesapları: `admin|editor|author|reader@evrenkent.test`, şifre `password`.
+7. Özel alan adı (ör. `demo.evrenkent.com`) bağlanırsa `APP_URL`'i iki serviste de o adrese çevirin.
+
+**Yedek:** MySQL servisi → Backups'tan otomatik yedek açılabilir. Bucket yedeği yok (Railway henüz versiyonlama desteklemiyor).
+
+Bu bir **gösterim/demo** kurulumudur — aşağıdaki "🔴 Kritik" maddeler gerçek canlıya geçmeden önce hâlâ geçerlidir (özellikle mock ödeme, gerçek e-posta servisi ve demo hesaplarının silinmesi).
 
 
 Bu proje şu an **yerel geliştirme ortamı** için yapılandırılmıştır. Gerçek bir sunucuya (canlı ortama) taşınmadan önce aşağıdaki maddeler mutlaka ele alınmalıdır. Bunlar kod değişikliği değil, ortam/konfigürasyon işleridir.
@@ -39,17 +75,17 @@ Bu proje şu an **yerel geliştirme ortamı** için yapılandırılmıştır. Ge
 - [ ] **Kitap `average_rating`/`review_count` alanları şu an elle giriliyor (Süper Admin → Kitaplar → Düzenle), gerçek bir yorum sistemi yok.** Demo kitaplardaki örnek puanlar (4.8/128 değerlendirme vb.) canlıya taşınmadan önce ya temizlenmeli ya da gerçek bir yorum/puanlama sistemi kurulup bu alanlar otomatik hesaplanır hale getirilmeli — kullanıcı onayıyla bilinçli bir geçici istisna (bkz. `UI_RESTYLE_NOTES.md` madde 17).
 - [ ] **Sepet/satın alma ve premium abonelik hâlâ mock ödeme.** `User::purchase()` (hem tekil "Satın Al" hem sepet checkout'u bunu kullanıyor) ve `User::subscribe()` (Abonelik sayfasındaki aylık/yıllık plan) ödeme sorgusu yapmadan anında "tamamlandı" kaydı oluşturuyor — gerçek bir ödeme gateway'i (Stripe/iyzico) entegre edilmeden asıl parayla satış canlıya alınmamalı. Abonelik sayfasının SSS'sindeki "Ödeme yöntemleri" cevabı da gateway gelince güncellenmeli.
 - [ ] **`php artisan migrate:fresh` gibi yıkıcı komutları canlı veritabanında asla çalıştırma.**
-- [ ] **Kapak görselleri için kalıcı depolama kur.** Yüklenen kitap/dergi kapakları `storage/app/public` altına (yerel disk) yazılıyor — Railway gibi container'ın yazılabilir katmanı her redeploy'da sıfırlanan ortamlarda bu **kalıcı değil**. Disk adı artık koda gömülü değil, tek bir config'ten okunuyor (`config('filesystems.covers_disk')`, `.env`'de `COVERS_DISK`) — bulut depolamaya geçmek için: `composer require league/flysystem-aws-s3-v3`, `.env`'e `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`/`AWS_DEFAULT_REGION`/`AWS_BUCKET` doldurulur, `COVERS_DISK=s3` yapılır — başka hiçbir kod değişikliği gerekmez.
-- [ ] **Gömülü belgeler (Faz F2) için de kalıcı ve herkese kapalı depolama kur.** Kitap/makale belgeleri (PDF/JPG/PNG) `storage/app/private/documents` altına yazılıyor (`config('filesystems.documents_disk')`, `.env`'de `DOCUMENTS_DISK`, varsayılan `local`) — kapaklarla aynı sorun: Railway'de redeploy'da silinir. S3/R2'ye geçerken `DOCUMENTS_DISK=s3` yeterli, ama bu bucket **public olmamalı**: dosyalar sadece `DocumentController::show` üzerinden, içeriği okuyabilen kişiye veriliyor (satın alınmamış kitabın belgesi açılmaz).
+- [x] **Kapak görselleri için kalıcı depolama.** Railway'de `COVERS_DISK=bucket_public` (Railway Bucket, `/media/...` üzerinden `MediaController`). Yerelde varsayılan `public` disk. Başka bir S3 uyumlu sağlayıcıya (R2, AWS) geçmek sadece `AWS_*` değişkenlerini değiştirmek.
+- [x] **Gömülü belgeler (Faz F2) için kalıcı ve herkese kapalı depolama.** Railway'de `DOCUMENTS_DISK=bucket_private` — aynı bucket'ın `private/` klasörü, `/media`'dan erişilemez (`MediaTest`), sadece `DocumentController::show` üzerinden içeriği okuyabilen kişiye veriliyor.
 
 ## 🟠 Önemli
 
-- [ ] **`SESSION_SECURE_COOKIE=true` yap** (site HTTPS üzerinden çalışacaksa — ki çalışmalı).
-- [ ] **`php artisan storage:link` çalıştır** (kapak görsellerinin görünmesi için — sembolik link `.gitignore`'da olduğundan repoya taşınmaz, her ortamda ayrıca oluşturulmalı).
-- [ ] **Gerçek bir veritabanına geç** (şu an SQLite kullanılıyor — MySQL/PostgreSQL gibi bir üretim veritabanına geçiş `.env`'de `DB_CONNECTION` değiştirilerek yapılabilir).
-- [ ] **`php artisan config:cache`, `route:cache`, `view:cache` çalıştır** (performans için).
-- [ ] **Kuyruk çalıştırıcısını (queue worker) kur** — `QUEUE_CONNECTION=database` kullanılıyor, ileride e-posta/bildirim gibi kuyruklu işler eklenirse `php artisan queue:work` bir process manager (Supervisor vb.) ile sürekli çalışır durumda olmalı.
-- [ ] **Cron kur (`php artisan schedule:run`).** "Yakında Çıkacaklar" için `content:publish-scheduled` komutu (eski adı `books:publish-scheduled`, takma ad olarak hâlâ çalışıyor) planlanan yayın tarihi gelmiş kitapları, dergi sayılarını (onaylı makaleleriyle birlikte) ve makaleleri otomatik yayınlıyor (`bootstrap/app.php` → `withSchedule()`, her dakika) — sunucuda `* * * * * php artisan schedule:run >> /dev/null 2>&1` cron girdisi olmadan bu hiç çalışmaz, zamanlanmış içerikler "Onaylandı" durumunda takılı kalır, sitede geri sayım "Yayına giriyor"da bekler. Aynı cron günde bir `notebooks:prune-images`'ı da çalıştırır (hiçbir defterde kullanılmayan Defterim görsellerini siler).
+- [x] **`SESSION_SECURE_COOKIE=true`** — Railway değişkenlerinde var.
+- [x] **`php artisan storage:link`** — yerel disk kullanılan ortamlar için entrypoint her açılışta çalıştırıyor (Railway'de bucket kullanıldığı için gerekmiyor).
+- [x] **Gerçek bir veritabanı** — Railway'de MySQL (`DB_URL=${{MySQL.MYSQL_URL}}`). Bütün migration'lar, demo seeder'ları ve test paketi MySQL 8.4'te de denendi (2026-10-06). Yerelde SQLite kalıyor.
+- [x] **Önbellekler** — entrypoint her açılışta `php artisan optimize` (config, route, view, event) çalıştırıyor; imajda OPcache açık.
+- [ ] **Kuyruk çalıştırıcısı (queue worker)** — şu an kuyruklu iş yok, Railway'de `QUEUE_CONNECTION=sync`. E-posta/bildirim gibi kuyruklu işler eklenirse `QUEUE_CONNECTION=database` + aynı imajla `php artisan queue:work` çalıştıran ayrı bir servis.
+- [x] **Cron (`php artisan schedule:run`)** — Railway'de ayrı **scheduler** servisi (`CONTAINER_ROLE=scheduler` → `schedule:work`). "Yakında Çıkacaklar" için `content:publish-scheduled` komutu (eski adı `books:publish-scheduled`, takma ad olarak hâlâ çalışıyor) planlanan yayın tarihi gelmiş kitapları, dergi sayılarını (onaylı makaleleriyle birlikte) ve makaleleri otomatik yayınlıyor (`bootstrap/app.php` → `withSchedule()`, her dakika) — Railway dışındaki bir sunucuda `* * * * * php artisan schedule:run >> /dev/null 2>&1` cron girdisi olmadan bu hiç çalışmaz, zamanlanmış içerikler "Onaylandı" durumunda takılı kalır, sitede geri sayım "Yayına giriyor"da bekler. Aynı cron günde bir `notebooks:prune-images`'ı da çalıştırır (hiçbir defterde kullanılmayan Defterim görsellerini siler).
 
 ## 🟡 Küçük / Gözden Geçirilmeli
 

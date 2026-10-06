@@ -122,7 +122,10 @@ class WorkspaceQuotaTest extends TestCase
         ])->assertSessionHasNoErrors();
 
         $user->refresh();
-        $this->assertSame(['defter' => 5, 'defter_words' => 3000, 'not' => 30], $user->quota_overrides);
+        // MySQL JSON sütunu anahtar sırasını kendi düzenine çeviriyor; sıra değil değerler önemli.
+        $overrides = $user->quota_overrides;
+        ksort($overrides);
+        $this->assertSame(['defter' => 5, 'defter_words' => 3000, 'not' => 30], $overrides);
         $this->assertSame(5, $user->noteQuota(NoteType::Defter));
         $this->assertSame(30, $user->noteQuota(NoteType::Not));
         $this->assertSame(10, $user->noteQuota(NoteType::Alinti));

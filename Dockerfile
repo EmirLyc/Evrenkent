@@ -10,12 +10,14 @@ COPY vite.config.js tailwind.config.js postcss.config.js ./
 RUN npm run build
 
 # --- PHP app ---
-FROM php:8.3-cli-alpine
+# FrankenPHP: Caddy + PHP tek süreçte (Railway'in Laravel için kullandığı sunucu). Klasik modda
+# çalışıyor — her istek ayrı, `php artisan serve` gibi tek iş parçacığına sıkışmıyor.
+FROM dunglas/frankenphp:1-php8.3-alpine
 
-RUN apk add --no-cache \
-        git unzip libzip-dev libpng-dev icu-dev oniguruma-dev sqlite sqlite-dev \
-    && docker-php-ext-install pdo pdo_sqlite pdo_mysql zip gd intl bcmath \
-    && rm -rf /var/cache/apk/*
+RUN apk add --no-cache git unzip \
+    && install-php-extensions pdo_mysql pdo_sqlite zip gd intl bcmath opcache pcntl \
+    && cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
+COPY docker/php.ini "$PHP_INI_DIR/conf.d/zz-evrenkent.ini"
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
@@ -30,7 +32,8 @@ COPY . .
 COPY --from=assets /app/public/build public/build
 
 RUN composer dump-autoload --optimize \
-    && mkdir -p storage/framework/{cache,sessions,testing,views} storage/logs database \
+    && mkdir -p storage/framework/cache storage/framework/sessions storage/framework/testing \
+        storage/framework/views storage/logs bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
 COPY docker/entrypoint.sh /entrypoint.sh
